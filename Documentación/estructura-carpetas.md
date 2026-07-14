@@ -144,7 +144,8 @@ platlab/
     │   │   ├── use_cases/
     │   │   │   ├── invitar_estudiantes.py
     │   │   │   ├── aceptar_invitacion.py
-    │   │   │   └── rechazar_invitacion.py
+    │   │   │   ├── rechazar_invitacion.py
+    │   │   │   └── modificar_vencimiento.py
     │   │   └── queries/
     │   │       ├── listar_asignaciones.py
     │   │       └── filtrar_estudiantes.py

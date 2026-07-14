@@ -5,7 +5,7 @@
 ---
 
 ## UC-01 — Autenticación y gestión de cuenta
-**HU relacionadas:** HV-04, RF-02, RF-03
+**HU relacionadas:** HV-04, HV-05, RF-02, RF-03
 **Actores:** Visitante, Estudiante, Instructor, Administrador
 
 **Precondiciones:** El sistema tiene configurados los proveedores OAuth (Google, GitHub) y el servicio de envío de correo.
@@ -53,7 +53,7 @@
 **Flujo principal:**
 1. El estudiante escribe una flag en el campo de la sección práctica y la envía.
 2. El sistema calcula el hash de la flag ingresada y lo compara contra el hash almacenado (la flag real nunca se expone).
-3. Si coincide, el sistema marca la flag como resuelta, registra el intento como correcto, actualiza el progreso (HE-07) y desbloquea la siguiente sección/contenido si aplica.
+3. Si coincide, el sistema marca la flag como resuelta, registra el intento como correcto, actualiza el progreso (HE-07) y **desbloquea la siguiente sección** (las secciones son secuenciales obligatorias: no se puede saltar a una sección sin haber completado la anterior).
 4. El sistema persiste el estado inmediatamente (sin acción explícita de "guardar").
 
 **Flujo alternativo A1 — Intento incorrecto:**
@@ -67,7 +67,7 @@
 2b. El sistema recupera el último estado persistido (sección, contador de fallos, pistas desbloqueadas) sin pérdida de progreso (RNF-03.3).
 
 **Excepciones:**
-- E1: Envíos repetidos en menos de 1 segundo (posible scripting/fuerza bruta) → rate limiting específico sobre el endpoint de validación de flag.
+- E1: Envíos repetidos en menos de 1 segundo (posible scripting/fuerza bruta) → rate limiting específico sobre el endpoint de validación de flag (RNF-01.9: máx. 30 intentos/minuto por usuario, 10 intentos/minuto por flag, HTTP 429 al exceder).
 - E2: Escritura concurrente desde dos pestañas del mismo usuario → el sistema aplica última escritura válida por timestamp, sin duplicar contadores de fallos.
 - E3: Flag corrupta o sección eliminada tras la carga del estudiante → el sistema informa error y redirige al listado de secciones.
 
@@ -88,8 +88,9 @@
 4. El sistema califica automáticamente y registra el puntaje en el historial (HE-10).
 
 **Flujo alternativo A1 — Laboratorio personalizado (con examen definido por instructor):**
-1a. El instructor definió previamente las preguntas/criterios del examen al crear o copiar el laboratorio (HI-02/HI-03).
+1a. El instructor definió previamente las preguntas del examen al crear o copiar el laboratorio (HI-02/HI-03). El examen es de **opción múltiple** con un mínimo de **1 pregunta** y un máximo de **15 preguntas**.
 2a. El flujo del estudiante es idéntico al principal, pero las preguntas provienen de la configuración del instructor.
+3a. El sistema califica automáticamente comparando las respuestas del estudiante contra las respuestas correctas definidas por el instructor.
 
 **Flujo alternativo A2 — Laboratorio personalizado sin examen configurado:**
 1b. Si el instructor no definió examen, el sistema marca el laboratorio como "completado" directamente al finalizar secciones, sin bloquear al estudiante.
@@ -112,7 +113,7 @@
 1. El instructor inicia la creación de un nuevo laboratorio (nombre, descripción, nivel, temas).
 2. El instructor agrega secciones en orden, con contenido teórico por sección.
 3. El instructor define flags por sección práctica; el sistema cifra cada flag antes de almacenarla (RNF-01.5).
-4. El instructor opcionalmente define un examen final (ver UC-03, A1).
+4. El instructor opcionalmente define un examen final (ver UC-03, A1) de opción múltiple, entre 1 y 15 preguntas, cada una con sus opciones y la respuesta correcta marcada.
 5. El sistema guarda el laboratorio con estado `borrador`, propiedad del instructor, tipo `personalizado`.
 6. El instructor publica el laboratorio (cambia estado a `publicado`), quedando disponible para asignación (UC-06).
 
@@ -148,34 +149,40 @@
 
 ---
 
-## UC-06 — Invitación y asignación de laboratorio con vencimiento
-**HU relacionadas:** HI-07, HI-09
+## UC-06 — Invitación y asignación de laboratorio
+**HU relacionadas:** HI-07, HI-09, HE-13
 **Actores:** Instructor, Estudiante
 
 **Precondiciones:** El instructor tiene un laboratorio propio (creado o copiado) publicado.
 
-**Flujo principal:**
+**Flujo principal (asignación sin vencimiento):**
 1. El instructor selecciona el laboratorio y elige estudiante(s) a invitar (por email o username).
-2. El instructor define fecha/hora de vencimiento del acceso.
-3. El sistema crea la invitación en estado `pendiente` y notifica al estudiante (UC-11).
-4. El estudiante revisa la invitación y la **acepta**.
-5. El sistema otorga acceso al laboratorio y comienza a contar el plazo hacia el vencimiento definido.
-6. El estudiante accede y practica normalmente (UC-02).
+2. El sistema crea la invitación en estado `pendiente` y notifica al estudiante (UC-11).
+3. El estudiante revisa la invitación y la **acepta**.
+4. El sistema otorga acceso permanente al laboratorio.
+5. El estudiante accede y practica normalmente (UC-02).
 
-**Flujo alternativo A1 — Rechazo de invitación:**
-1a. El estudiante rechaza la invitación.
-2a. El sistema marca la invitación como `rechazada` y no otorga acceso; notifica al instructor (opcional, según política de negocio).
+**Flujo alternativo A1 — Asignación con vencimiento:**
+1a. Durante la invitación (paso 2), el instructor marca que el acceso **tiene vencimiento** y define fecha/hora.
+2a. El sistema crea la invitación con el vencimiento asociado y notifica al estudiante (UC-11).
+3a. El estudiante acepta y el sistema otorga acceso; comienza a contar el plazo hacia el vencimiento definido.
+4a. El sistema evalúa periódicamente (job programado) las asignaciones activas contra su fecha de vencimiento (ver UC-07).
 
-**Flujo alternativo A2 — Vencimiento del acceso:**
-1b. El sistema evalúa periódicamente (job programado) las asignaciones activas contra su fecha de vencimiento.
-2b. Al cumplirse la fecha, el sistema revoca el acceso automáticamente (ver UC-07) y notifica al estudiante próximo a vencer (24h antes, HE-13).
+**Flujo alternativo A2 — Rechazo de invitación:**
+1b. El estudiante rechaza la invitación.
+2b. El sistema marca la invitación como `rechazada` y no otorga acceso; notifica al instructor (opcional, según política de negocio).
+
+**Flujo alternativo A3 — Modificar vencimiento después de asignado:**
+1c. El instructor edita la asignación de un estudiante que ya tiene acceso vigente y cambia la fecha/hora de vencimiento (agregar, quitar o modificar).
+2c. El sistema actualiza el vencimiento y notifica al estudiante del cambio (UC-11).
+3c. Si se quitó el vencimiento, el acceso pasa a ser permanente.
 
 **Excepciones:**
 - E1: Invitación a un email no registrado en la plataforma → el sistema genera una invitación pendiente que se resuelve automáticamente si el usuario se registra con ese correo, o se define reenvío manual.
 - E2: Instructor invita a un estudiante que ya tiene acceso vigente al mismo laboratorio → el sistema informa el estado actual sin duplicar la asignación.
 - E3: Diferencia de zona horaria entre servidor y cliente al definir vencimiento → el sistema normaliza y almacena en UTC, mostrando conversión local en la UI.
 
-**Postcondiciones:** Estudiante con acceso vigente y con fecha de expiración clara; instructor con visibilidad del estado de sus invitaciones (HI-04).
+**Postcondiciones:** Estudiante con acceso vigente (con o sin vencimiento, según lo que haya definido el instructor); instructor con visibilidad del estado de sus invitaciones y asignaciones (HI-04).
 
 ---
 
@@ -249,7 +256,7 @@
 ---
 
 ## UC-10 — Editor visual de contenido (laboratorios predeterminados)
-**HU relacionada:** HA-02
+**HU relacionadas:** HA-02, HA-06
 **Actor:** Administrador
 
 **Precondiciones:** Usuario autenticado con rol Administrador.

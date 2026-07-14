@@ -112,4 +112,4 @@ bloqueada → en_progreso → completada
 
 Sin puntos abiertos. Secuencialidad de secciones confirmada como **obligatoria**.
 
-**Trazabilidad:** cada entidad/servicio aquí definido responde directamente a una HU o Caso de Uso ya aprobados (ver `historias-usuario-completas.md` y `casos-de-uso.md`).
+**Trazabilidad:** cada entidad/servicio aquí definido responde directamente a una HU o Caso de Uso ya aprobados (ver `historias-de-usuario.md` y `casos-de-uso.md`).

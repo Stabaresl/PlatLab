@@ -52,10 +52,10 @@
 | `/auth/register/` | POST | Registro con email/password (HV-04) | Sí |
 | `/auth/oauth/{provider}/` | POST | Callback OAuth (`google`\|`github`) — recibe `code`, retorna JWT | Sí |
 | `/auth/login/` | POST | Login email/password → `{access, refresh}` | Sí |
-| `/auth/refresh/` | POST | Rota refresh token, detecta reuso (RF-07) | Sí (requiere refresh válido) |
+| `/auth/refresh/` | POST | Rota refresh token, detecta reuso (seguridad: reuso de refresh token invalida toda la familia) | Sí (requiere refresh válido) |
 | `/auth/logout/` | POST | Invalida el refresh token actual | No |
-| `/auth/logout-all/` | POST | Invalida todos los refresh tokens del usuario (HE-14) | No |
-| `/auth/password-reset/` | POST | Solicita token de recuperación (RF-04) | Sí |
+| `/auth/logout-all/` | POST | Invalida todos los refresh tokens del usuario (seguridad: reuso de refresh token invalida toda la familia) | No |
+| `/auth/password-reset/` | POST | Solicita token de recuperación (RF-03) | Sí |
 | `/auth/password-reset/confirm/` | POST | Confirma nueva contraseña con token | Sí |
 | `/auth/verify-email/{token}/` | GET | Verifica correo tras registro | Sí |
 
@@ -132,6 +132,7 @@ El backend calcula el hash y **nunca** retorna `valor` en ninguna respuesta post
 | `/assignments/invitations/` | POST | Invitar estudiante(s) a un laboratorio, con `fecha_vencimiento` (HI-07, HI-09) | Instructor |
 | `/assignments/invitations/{id}/accept/` | POST | Aceptar — crea `Progreso` inicial (UC-06) | Estudiante (destinatario) |
 | `/assignments/invitations/{id}/reject/` | POST | Rechazar | Estudiante (destinatario) |
+| `/assignments/invitations/{id}/expiration/` | PATCH | Modificar/quitar fecha de vencimiento después de asignado (UC-06 A3) | Instructor |
 | `/assignments/` | GET | Listar asignaciones propias (instructor: las que creó; estudiante: las suyas) | Instructor, Estudiante |
 | `/assignments/students/` | GET | Filtrar estudiantes por nombre/avance/laboratorio (HI-04) | Instructor |
 
@@ -164,7 +165,7 @@ El backend calcula el hash y **nunca** retorna `valor` en ninguna respuesta post
 // Response 200 (incorrecta, con pista desbloqueada)
 { "correcto": false, "intentos_fallidos": 5, "pista_disponible": true, "pista": "Revisa el parámetro `id`..." }
 ```
-**Errores:** 403 si la sección está `bloqueada` para ese estudiante (secuencialidad obligatoria); 429 si excede el rate limit específico del endpoint (UC-02, E1).
+**Errores:** 422 `BUSINESS_RULE_VIOLATION` si la sección está `bloqueada` para ese estudiante (secuencialidad obligatoria); 429 si excede el rate limit específico del endpoint (UC-02, E1).
 
 **DTO — Enviar examen:**
 ```json
@@ -212,7 +213,7 @@ El backend calcula el hash y **nunca** retorna `valor` en ninguna respuesta post
 
 | Endpoint | Método | Descripción | Público |
 |---|---|---|---|
-| `/health/` | GET | Estado de BD/dependencias (HA-04, RF-28) | Sí |
+| `/health/` | GET | Estado de BD/dependencias (HA-04, RF-29) | Sí |
 | `/schema/` | GET | Especificación OpenAPI | Sí |
 
 ---
@@ -223,7 +224,7 @@ El backend calcula el hash y **nunca** retorna `valor` en ninguna respuesta post
 |---|---|
 | `/auth/login/` | 5 intentos / 15 min por IP+usuario |
 | `/auth/password-reset/` | 3 solicitudes / hora por email |
-| `/progress/*/flag/` | 20 intentos / minuto por usuario+sección (evita scripting sobre UC-02) |
+| `/progress/*/flag/` | 30 intentos / minuto por usuario, 10 intentos / minuto por flag (RNF-01.9) |
 
 ## Estado
 ✅ API definida sobre los 8 módulos activos + Sistema. `LabEnvironments` no expone endpoints aún (módulo reservado).

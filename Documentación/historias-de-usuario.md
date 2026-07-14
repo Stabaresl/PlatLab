@@ -6,7 +6,7 @@
 
 ## 1. Historias de Usuario
 
-###  Visitante (No autenticado)
+### 👤 Visitante (No autenticado)
 
 #### HV-01 — Landing page
 **Como** visitante, **quiero** ver una landing page con bienvenida, login y registro, **para** conocer el propósito de la plataforma antes de decidir registrarme.
@@ -58,7 +58,7 @@
 - **Prioridad:** Alta | **Sprint:** 1
 - **Criterios de aceptación:**
   - Formulario "olvidé mi contraseña" solicita el email registrado.
-  - Envía un enlace de recuperación válido por 1 hora.
+  - Envía un enlace de recuperación válido por 15 minutos.
   - El enlace permite establecer una nueva contraseña.
   - Aplica rate limiting (RNF-01.4) para evitar abusos.
 - **Dependencias:** HV-04
@@ -66,7 +66,7 @@
 
 ---
 
-###  Estudiante
+### 🎓 Estudiante
 
 #### HE-01 — Dashboard de progreso
 **Como** estudiante, **quiero** un dashboard con mi progreso general y los laboratorios en los que estoy inscrito, **para** saber por dónde retomar.
@@ -92,10 +92,10 @@
 
 - **Prioridad:** Alta | **Sprint:** 3
 - **Criterios de aceptación:**
-  - Secciones en el orden definido por el laboratorio.
+  - Secciones en el orden definido por el laboratorio, de navegación **secuencial obligatoria**: no se puede saltar a una sección sin haber completado la anterior.
   - Indicador visual por sección: completada / pendiente / bloqueada.
 - **Dependencias:** HE-02
-- **Riesgos:** Definir si las secciones son secuenciales obligatorias o de libre navegación (pendiente de negocio).
+- **Riesgos:** —
 
 #### HE-04 — Contenido teórico
 **Como** estudiante, **quiero** leer el contenido teórico de cada sección, **para** aprender los conceptos antes de ponerlos a prueba.
@@ -203,7 +203,7 @@
 
 ---
 
-### Instructor
+### 👨‍🏫 Instructor
 
 #### HI-01 — Ver catálogo completo
 **Como** instructor, **quiero** ver los laboratorios predeterminados del catálogo general y mis propios laboratorios, **para** conocer todo el material disponible.
@@ -265,13 +265,14 @@
 - **Riesgos:** —
 
 #### HI-07 — Asignación con límite de tiempo
-**Como** instructor, **quiero** asignar un laboratorio a estudiantes con un límite de tiempo, **para** que el acceso se cierre automáticamente al vencer.
+**Como** instructor, **quiero** asignar un laboratorio a estudiantes con o sin límite de tiempo, **para** controlar el acceso y que se cierre automáticamente al vencer si lo definí.
 
 - **Prioridad:** Media | **Sprint:** 5
 - **Criterios de aceptación:**
-  - Define fecha/hora de vencimiento al asignar.
-  - Tras vencer, el acceso se bloquea automáticamente (RF-32).
-  - El estudiante ve el tiempo restante.
+  - El instructor elige si la asignación tiene o no vencimiento.
+  - Si tiene vencimiento: define fecha/hora; tras vencer, el acceso se bloquea automáticamente (RF-32).
+  - El instructor puede agregar, modificar o quitar el vencimiento después de asignado.
+  - El estudiante ve el tiempo restante si hay vencimiento definido.
 - **Dependencias:** HI-09
 - **Riesgos:** Inconsistencias de zona horaria entre servidor y cliente.
 
@@ -280,8 +281,10 @@
 
 - **Prioridad:** Media | **Sprint:** 5
 - **Criterios de aceptación:**
-  - Define preguntas/criterios del examen.
+  - El examen es de **opción múltiple**, con un mínimo de **1 pregunta** y un máximo de **15 preguntas**.
+  - Por cada pregunta define las opciones y marca la respuesta correcta.
   - Se presenta al estudiante al completar las secciones del laboratorio personalizado.
+  - El sistema califica automáticamente comparando las respuestas contra las correctas definidas.
 - **Dependencias:** HI-02
 - **Riesgos:** —
 
@@ -298,7 +301,7 @@
 
 ---
 
-###  Administrador
+### 🔧 Administrador
 
 #### HA-01 — CRUD de usuarios
 **Como** administrador, **quiero** un CRUD completo de usuarios (estudiantes e instructores), **para** gestionar quién tiene acceso a la plataforma.
@@ -393,7 +396,7 @@
 | RF-21 | Filtros de estudiantes (instructor) | El sistema debe permitir filtrar estudiantes por nombre, avance o laboratorio asignado. | Instructor |
 | RF-22 | Filtros de laboratorios (instructor) | El sistema debe permitir filtrar laboratorios propios por nombre, fecha o dificultad. | Instructor |
 | RF-23 | Panel principal del instructor | El sistema debe mostrar todos los laboratorios asociados al instructor en su página principal. | Instructor |
-| RF-24 | Asignación con límite de tiempo | El sistema debe permitir asignar un laboratorio con fecha/hora de vencimiento, bloqueando el acceso tras cumplirse. | Instructor, Estudiante |
+| RF-24 | Asignación con límite de tiempo (opcional) | El sistema debe permitir al instructor asignar un laboratorio con o sin fecha de vencimiento, y modificar ese vencimiento después de asignado. Al cumplirse la fecha, el acceso se bloquea. | Instructor, Estudiante |
 | RF-25 | Invitación a laboratorio | El sistema debe enviar invitación al estudiante y requerir su aceptación para acceder. | Instructor, Estudiante |
 | RF-26 | CRUD de usuarios (admin) | El sistema debe permitir crear, editar, visualizar, deshabilitar y cambiar el rol de usuarios. | Admin |
 | RF-27 | Editor de contenido visual | El sistema debe proveer una interfaz WYSIWYG para crear/editar contenido de laboratorios. | Admin |
@@ -419,6 +422,7 @@
 | RNF-01.6 | Entornos de laboratorio aislados de la red interna. |
 | RNF-01.7 | Validación de entrada cliente y servidor. |
 | RNF-01.8 | Logging de accesos y operaciones sensibles. |
+| RNF-01.9 | Rate limiting específico en el endpoint de validación de flags: máx. 30 intentos/minuto por usuario y 10 intentos/minuto por flag; responder HTTP 429 al exceder. |
 
 ### RNF-02 Rendimiento
 | ID | Requerimiento |
@@ -513,7 +517,7 @@
 |---|---|
 | Historias de usuario | 33 |  <!-- + HV-05 + HA-06 -->
 | Requisitos funcionales (RF) | 33 |
-| Requisitos no funcionales (RNF) | 25 |
+| Requisitos no funcionales (RNF) | 26 |
 
 **Stack confirmado:**
 - **Backend:** Django + DRF, PostgreSQL, Celery + Redis

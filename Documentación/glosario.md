@@ -8,7 +8,7 @@
 
 | Prefijo | Significa | Ejemplo | Dónde vive |
 |---|---|---|---|
-| `HV-` | Historia de Usuario — Visitante | HV-04 | `historias-usuario-completas.md` |
+| `HV-` | Historia de Usuario — Visitante | HV-04 | `historias-de-usuario.md` |
 | `HE-` | Historia de Usuario — Estudiante | HE-05 | ídem |
 | `HI-` | Historia de Usuario — Instructor | HI-09 | ídem |
 | `HA-` | Historia de Usuario — Administrador | HA-02 | ídem |

@@ -54,7 +54,7 @@ Todos los módulos dependen de `Shared`; `Shared` no depende de ningún módulo 
 
 | Capa | Componentes |
 |---|---|
-| **Casos de uso** | `InvitarEstudiantesUseCase`, `AceptarInvitacionUseCase` (crea `Progreso` inicial vía evento `AssignmentAccepted`), `RechazarInvitacionUseCase`, `ListarAsignacionesQuery`, `FiltrarEstudiantesQuery` |
+| **Casos de uso** | `InvitarEstudiantesUseCase`, `AceptarInvitacionUseCase` (crea `Progreso` inicial vía evento `AssignmentAccepted`), `RechazarInvitacionUseCase`, `ModificarVencimientoUseCase`, `ListarAsignacionesQuery`, `FiltrarEstudiantesQuery` |
 | **Repositorios** | `IAsignacionRepository` |
 | **Controladores** | `InvitationViewSet`, `AssignmentViewSet` |
 | **DTOs** | `InvitarRequestDTO`, `AsignacionDTO`, `EstudianteFiltroDTO` |

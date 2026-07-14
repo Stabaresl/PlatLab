@@ -67,7 +67,7 @@
 |---|---|
 | Login | 5 intentos / 15 min por IP+usuario |
 | Recuperación de contraseña | 3 solicitudes / hora por email |
-| Validación de flag | 20 intentos / minuto por usuario+sección |
+| Validación de flag | 30 intentos / minuto por usuario, 10 intentos / minuto por flag (RNF-01.9) |
 | Global (catch-all) | 100 requests/minuto por IP, para endpoints públicos no cubiertos arriba (catálogo, health) |
 
 ---

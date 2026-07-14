@@ -99,7 +99,7 @@ PK compuesta `(laboratorio_id, tema_id)`.
 | id | UUID | PK |
 | examen_id | UUID | FK → examen, NOT NULL |
 | enunciado | text | NOT NULL |
-| tipo | enum(opcion_multiple, abierta) | NOT NULL |
+| tipo | enum(opcion_multiple) | NOT NULL |
 | opciones | jsonb | NULL (solo si `opcion_multiple`) |
 | respuesta_hash | varchar(255) | NOT NULL |
 
