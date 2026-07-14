@@ -1,0 +1,31 @@
+# Entorno
+.env
+.env.*
+!.env.example
+venv/
+env/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+/staticfiles/
+/media/
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
