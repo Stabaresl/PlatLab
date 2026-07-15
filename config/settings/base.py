@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'rest_framework',
+    'drf_spectacular',
+
     'modules.authentication',
     'modules.users',
     'modules.laboratories',
@@ -106,6 +109,27 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 
 
+# Email
+# https://docs.djangoproject.com/en/6.0/topics/email/
+
+EMAIL_BACKEND = env(
+    'EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = env('EMAIL_HOST', default='')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='no-reply@platlab.local')
+
+
+# Storage (adjuntos de reportes, imágenes de contenido)
+# Local en dev; se reemplaza por S3/MinIO en producción vía STORAGES (RNF-08.1)
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
@@ -141,3 +165,24 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+
+# Django REST Framework
+# https://www.django-rest-framework.org/api-guide/settings/
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.CursorPagination',
+    'PAGE_SIZE': 20,
+}
+
+
+# drf-spectacular (documentación OpenAPI, ver api.md §1)
+# https://drf-spectacular.readthedocs.io/en/latest/settings.html
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'PlatLAB API',
+    'DESCRIPTION': 'API REST de PlatLAB — plataforma de laboratorios de ciberseguridad.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
