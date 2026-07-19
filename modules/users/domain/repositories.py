@@ -10,8 +10,8 @@ class IUserRepository(Protocol):
     (Infrastructure) vive en `infrastructure/repositories.py` y traduce
     hacia/desde el ORM de Django vía `mappers.py`.
 
-    Se usa tanto desde Users como desde Authentication (backend.md §1: "vía
-    su Application Service") — Authentication nunca importa el modelo ORM
+    Se usa tanto desde Users como desde Authentication (backend.md "vía
+    Application Service") — Authentication nunca importa el modelo ORM
     directamente, solo consume esta interfaz.
     """
 
