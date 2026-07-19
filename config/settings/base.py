@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'rest_framework_simplejwt',
     'drf_spectacular',
 
     'modules.authentication',
@@ -174,6 +175,7 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.CursorPagination',
     'PAGE_SIZE': 20,
+    'EXCEPTION_HANDLER': 'config.exception_handler.custom_exception_handler',
 }
 
 
@@ -185,4 +187,18 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API REST de PlatLAB — plataforma de laboratorios de ciberseguridad.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+}
+
+
+# SimpleJWT (ver seguridad.md §2 — tiempos de vida y claims mínimos)
+# https://django-rest-framework-simplejwt.readthedocs.io/en/latest/settings.html
+
+from datetime import timedelta  # noqa: E402
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'USER_ID_CLAIM': 'sub',
 }
