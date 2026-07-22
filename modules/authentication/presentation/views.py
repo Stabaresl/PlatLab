@@ -9,6 +9,7 @@ from modules.authentication.application.use_cases.registrar_usuario import (
     RegistrarUsuarioUseCase,
 )
 from modules.authentication.infrastructure.jwt_service import JWTService
+from modules.authentication.infrastructure.refresh_token_store import RefreshTokenStore
 from modules.authentication.presentation.serializers import (
     LoginRequestSerializer,
     RegistroRequestSerializer,
@@ -59,6 +60,7 @@ class LoginView(APIView):
             event_dispatcher=EventDispatcher(),
             user_repository=UserRepository(),
             jwt_service=JWTService(),
+            refresh_token_store=RefreshTokenStore(),
         )
         tokens = use_case.execute(LoginDTO(**serializer.validated_data))
 

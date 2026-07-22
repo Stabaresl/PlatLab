@@ -5,6 +5,7 @@ from django.contrib.auth.hashers import check_password
 from modules.authentication.application.dtos import LoginDTO, TokenPairDTO
 from modules.authentication.domain.events import UserLoggedIn
 from modules.authentication.infrastructure.jwt_service import JWTService
+from modules.authentication.infrastructure.refresh_token_store import RefreshTokenStore
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
 from modules.shared.domain.exceptions import ForbiddenError, UnauthenticatedError
@@ -29,10 +30,12 @@ class LoginUseCase(BaseUseCase[LoginDTO, TokenPairDTO]):
         event_dispatcher,
         user_repository: IUserRepository,
         jwt_service: JWTService,
+        refresh_token_store: RefreshTokenStore,
     ):
         super().__init__(unit_of_work, event_dispatcher)
         self._user_repository = user_repository
         self._jwt_service = jwt_service
+        self._refresh_token_store = refresh_token_store
         self._validated_user: User | None = None
 
     def _validate(self, input_dto: LoginDTO) -> None:
@@ -57,6 +60,9 @@ class LoginUseCase(BaseUseCase[LoginDTO, TokenPairDTO]):
         self._user_repository.update(user)
 
         tokens = self._jwt_service.generate_token_pair(user_id=user.id, rol=user.rol.value)
+        refresh_claims = self._jwt_service.decode_refresh_token(tokens.refresh)
+        self._refresh_token_store.register_family(user_id=user.id, jti=refresh_claims["jti"])
+
         event = UserLoggedIn(user_id=user.id)
 
         return tokens, [event]

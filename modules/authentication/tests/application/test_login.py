@@ -4,6 +4,7 @@ from django.contrib.auth.hashers import make_password
 from modules.authentication.application.dtos import LoginDTO
 from modules.authentication.application.use_cases.login import LoginUseCase
 from modules.authentication.infrastructure.jwt_service import JWTService
+from modules.authentication.infrastructure.refresh_token_store import RefreshTokenStore
 from modules.shared.domain.exceptions import ForbiddenError, UnauthenticatedError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
@@ -18,6 +19,7 @@ def _build_use_case(dispatcher=None):
         event_dispatcher=dispatcher or EventDispatcher(),
         user_repository=UserRepository(),
         jwt_service=JWTService(),
+        refresh_token_store=RefreshTokenStore(),
     )
 
 

@@ -17,6 +17,11 @@ class LoginDTO:
 
 
 @dataclass(frozen=True)
+class RefreshRequestDTO:
+    refresh: str
+
+
+@dataclass(frozen=True)
 class RegistroResultDTO:
     id: uuid.UUID
     email: str
