@@ -1,3 +1,4 @@
+from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_default_exception_handler
@@ -35,6 +36,18 @@ def custom_exception_handler(exc, context):
         return Response(
             {"error": {"code": exc.code, "message": exc.message, "details": exc.details}},
             status=status_code,
+        )
+
+    if isinstance(exc, (AuthenticationFailed, NotAuthenticated)):
+        return Response(
+            {
+                "error": {
+                    "code": "UNAUTHENTICATED",
+                    "message": str(exc.detail) if hasattr(exc, "detail") else str(exc),
+                    "details": [],
+                }
+            },
+            status=401,
         )
 
     if isinstance(exc, DRFValidationError):

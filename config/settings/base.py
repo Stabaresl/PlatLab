@@ -176,6 +176,17 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.CursorPagination',
     'PAGE_SIZE': 20,
     'EXCEPTION_HANDLER': 'config.exception_handler.custom_exception_handler',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'modules.authentication.infrastructure.authentication.JWTAuthentication',
+    ],
+    # Protegido por defecto (api.md §1: "JWT Bearer... en todo endpoint
+    # salvo los explícitamente públicos"). Cada endpoint público declara
+    # permission_classes = [AllowAny] explícitamente, en vez de que lo
+    # público sea el default — un olvido nunca deja un endpoint abierto
+    # por accidente.
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
 
 
