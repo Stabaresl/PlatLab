@@ -51,6 +51,10 @@ class RefreshTokenStore:
 
         return family_id
 
+    def get_family_id(self, jti: str) -> str | None:
+        """Consulta a qué familia pertenece un jti, sin rotar ni validar vigencia."""
+        return self._redis.get(f"refresh:jti:{jti}")
+
     def validate_and_rotate(self, jti: str, new_jti: str) -> str:
         """
         Valida que `jti` sea el token vigente de su familia y lo rota a
