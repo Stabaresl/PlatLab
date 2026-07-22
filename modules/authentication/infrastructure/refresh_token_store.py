@@ -74,7 +74,12 @@ class RefreshTokenStore:
 
         self._redis.set(f"refresh:family:{family_id}", new_jti, ttl_seconds=self._ttl)
         self._redis.set(f"refresh:jti:{new_jti}", family_id, ttl_seconds=self._ttl)
-        self._redis.delete(f"refresh:jti:{jti}")
+        # OJO: no se borra `refresh:jti:{jti}` (el token viejo) — si se
+        # borrara, un reuso posterior de ese jti ya no se podría distinguir
+        # de un jti completamente desconocido, y la detección de reuso
+        # (el caso más importante) dejaría de funcionar. Se deja vivir con
+        # su misma expiración natural; el chequeo de `current_jti != jti`
+        # es lo que efectivamente detecta que ya no es el vigente.
 
         return family_id
 
