@@ -18,3 +18,7 @@ class RegistroRequestSerializer(serializers.Serializer):
 class LoginRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+
+class RefreshRequestSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
