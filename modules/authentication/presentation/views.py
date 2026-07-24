@@ -1,0 +1,105 @@
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from modules.authentication.application.dtos import LoginDTO, RefreshRequestDTO, RegistroDTO
+from modules.authentication.application.use_cases.login import LoginUseCase
+from modules.authentication.application.use_cases.refresh_token import RefreshTokenUseCase
+from modules.authentication.application.use_cases.registrar_usuario import (
+    RegistrarUsuarioUseCase,
+)
+from modules.authentication.infrastructure.jwt_service import JWTService
+from modules.authentication.infrastructure.refresh_token_store import RefreshTokenStore
+from modules.authentication.presentation.serializers import (
+    LoginRequestSerializer,
+    RefreshRequestSerializer,
+    RegistroRequestSerializer,
+)
+from modules.shared.infrastructure.event_dispatcher import EventDispatcher
+from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
+from modules.users.infrastructure.repositories import UserRepository
+
+
+class RegisterView(APIView):
+    """POST /api/v1/auth/register/ — UC-01 flujo principal (HV-04)."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RegistroRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = RegistrarUsuarioUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            user_repository=UserRepository(),
+        )
+        result = use_case.execute(RegistroDTO(**serializer.validated_data))
+
+        return Response(
+            {
+                "id": str(result.id),
+                "email": result.email,
+                "rol": result.rol,
+                "email_verificado": result.email_verificado,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class LoginView(APIView):
+    """POST /api/v1/auth/login/ — UC-01 flujo A2 (RF-02)."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = LoginRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = LoginUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            user_repository=UserRepository(),
+            jwt_service=JWTService(),
+            refresh_token_store=RefreshTokenStore(),
+        )
+        tokens = use_case.execute(LoginDTO(**serializer.validated_data))
+
+        return Response(
+            {
+                "access": tokens.access,
+                "refresh": tokens.refresh,
+                "expires_in": tokens.expires_in,
+                "rol": tokens.rol,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class RefreshTokenView(APIView):
+    """POST /api/v1/auth/refresh/ — rota el refresh token (RF-07)."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RefreshRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = RefreshTokenUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            jwt_service=JWTService(),
+            refresh_token_store=RefreshTokenStore(),
+        )
+        tokens = use_case.execute(RefreshRequestDTO(**serializer.validated_data))
+
+        return Response(
+            {
+                "access": tokens.access,
+                "refresh": tokens.refresh,
+                "expires_in": tokens.expires_in,
+                "rol": tokens.rol,
+            },
+            status=status.HTTP_200_OK,
+        )
