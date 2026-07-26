@@ -20,7 +20,8 @@ app.post("/api/register", (req, res) => {
     return
   }
 
-  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email)
+  const normalizedEmail = email.toLowerCase()
+  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(normalizedEmail)
   if (existing) {
     res.status(409).json({ error: "Email already registered" })
     return
@@ -29,15 +30,15 @@ app.post("/api/register", (req, res) => {
   const hashed = bcrypt.hashSync(password, 10)
   const result = db
     .prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)")
-    .run(name, email, hashed)
+    .run(name, normalizedEmail, hashed)
 
-  const token = jwt.sign({ id: result.lastInsertRowid, email }, JWT_SECRET, {
+  const token = jwt.sign({ id: result.lastInsertRowid, email: normalizedEmail }, JWT_SECRET, {
     expiresIn: "24h",
   })
 
   res.status(201).json({
     token,
-    user: { id: result.lastInsertRowid, name, email },
+    user: { id: result.lastInsertRowid, name, email: normalizedEmail },
   })
 })
 
@@ -50,7 +51,8 @@ app.post("/api/login", (req, res) => {
     return
   }
 
-  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as
+  const normalizedEmail = email.toLowerCase()
+  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(normalizedEmail) as
     | { id: number; name: string; email: string; password: string }
     | undefined
 
