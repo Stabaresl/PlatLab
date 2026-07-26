@@ -22,3 +22,13 @@ class LoginRequestSerializer(serializers.Serializer):
 
 class RefreshRequestSerializer(serializers.Serializer):
     refresh = serializers.CharField()
+
+
+class SolicitarRecuperacionRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class ConfirmarRecuperacionRequestSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+    password_confirm = serializers.CharField(write_only=True, trim_whitespace=False)

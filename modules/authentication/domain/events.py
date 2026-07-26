@@ -25,3 +25,23 @@ class UserLoggedIn(DomainEvent):
     """Se dispara en cada login exitoso — insumo para auditoría (UC-12)."""
 
     user_id: uuid.UUID
+
+
+@dataclass(frozen=True, kw_only=True)
+class PasswordResetRequested(DomainEvent):
+    """
+    Se dispara al solicitar recuperación de contraseña (UC-01 A3, paso 2c).
+    El envío real del correo lo hace un listener suscrito a este evento,
+    todavía no construido — mismo patrón que `UserRegistered`.
+
+    OJO: `token` viaja en este evento porque el (futuro) listener de envío
+    de correo lo necesita para armar el enlace. Si en algún momento se
+    construye un listener de auditoría que escuche "todos los eventos" de
+    forma genérica, este campo debe excluirse explícitamente del registro
+    persistido — un token de recuperación no debe quedar en un log.
+    """
+
+    user_id: uuid.UUID
+    email: str
+    nombre_completo: str
+    token: str

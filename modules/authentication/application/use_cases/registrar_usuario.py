@@ -1,19 +1,14 @@
-import re
-
 from django.contrib.auth.hashers import make_password
 
 from modules.authentication.application.dtos import RegistroDTO, RegistroResultDTO
 from modules.authentication.domain.events import UserRegistered
+from modules.authentication.domain.password_policy import validate_password_policy
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
 from modules.shared.domain.exceptions import ConflictError, ValidationError
 from modules.users.domain.entities import User
 from modules.users.domain.repositories import IUserRepository
 from modules.users.domain.value_objects import Email, Rol
-
-_PASSWORD_MIN_LENGTH = 8
-_PASSWORD_UPPERCASE_REGEX = re.compile(r"[A-Z]")
-_PASSWORD_DIGIT_REGEX = re.compile(r"\d")
 
 
 class RegistrarUsuarioUseCase(BaseUseCase[RegistroDTO, RegistroResultDTO]):
@@ -37,7 +32,7 @@ class RegistrarUsuarioUseCase(BaseUseCase[RegistroDTO, RegistroResultDTO]):
                 details=[{"field": "password_confirm", "message": "Las contraseñas no coinciden."}],
             )
 
-        self._validate_password_policy(input_dto.password)
+        validate_password_policy(input_dto.password)
 
         if self._user_repository.exists_by_email(input_dto.email):
             # Mensaje genérico a propósito: evita confirmar si el email ya
@@ -45,21 +40,6 @@ class RegistrarUsuarioUseCase(BaseUseCase[RegistroDTO, RegistroResultDTO]):
             raise ConflictError(
                 "Este correo ya está registrado.",
                 details=[{"field": "email", "message": "Este correo ya está registrado."}],
-            )
-
-    def _validate_password_policy(self, password: str) -> None:
-        errors = []
-        if len(password) < _PASSWORD_MIN_LENGTH:
-            errors.append(f"Debe tener al menos {_PASSWORD_MIN_LENGTH} caracteres.")
-        if not _PASSWORD_UPPERCASE_REGEX.search(password):
-            errors.append("Debe incluir al menos una mayúscula.")
-        if not _PASSWORD_DIGIT_REGEX.search(password):
-            errors.append("Debe incluir al menos un número.")
-
-        if errors:
-            raise ValidationError(
-                "La contraseña no cumple la política de seguridad.",
-                details=[{"field": "password", "message": msg} for msg in errors],
             )
 
     def _execute_domain_logic(

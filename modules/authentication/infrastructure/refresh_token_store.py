@@ -12,7 +12,7 @@ _SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60
 class RefreshTokenStore:
     """
     Guarda en Redis la "familia" de refresh tokens de cada sesión
-    (seguridad.md §2), con TTL igual a la expiración del refresh (7 días).
+    (seguridad.md), con TTL igual a la expiración del refresh (7 días).
 
     Modelo: cada login crea una `family_id` nueva. Dentro de una familia,
     solo un `jti` (identificador del token) es válido para refrescar en un

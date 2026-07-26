@@ -27,6 +27,18 @@ class LogoutDTO:
 
 
 @dataclass(frozen=True)
+class SolicitarRecuperacionDTO:
+    email: str
+
+
+@dataclass(frozen=True)
+class ConfirmarRecuperacionDTO:
+    token: str
+    password: str
+    password_confirm: str
+
+
+@dataclass(frozen=True)
 class RegistroResultDTO:
     id: uuid.UUID
     email: str
