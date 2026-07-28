@@ -45,3 +45,8 @@ class ForbiddenError(DomainError):
 class UnauthenticatedError(DomainError):
     """Token ausente, inválido o expirado. Mapea a HTTP 401."""
     code = "UNAUTHENTICATED"
+
+
+class RateLimitedError(DomainError):
+    """Rate limiting excedido (seguridad.md §5, api.md §12). Mapea a HTTP 429."""
+    code = "RATE_LIMITED"
