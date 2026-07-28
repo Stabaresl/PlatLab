@@ -1,0 +1,174 @@
+import uuid
+
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from modules.laboratories.infrastructure.repositories import LaboratorioRepository
+from modules.progress.application.dtos import (
+    ObtenerContenidoSeccionDTO,
+    ObtenerHistorialDTO,
+    ObtenerPistaDTO,
+    ValidarFlagDTO,
+)
+from modules.progress.application.queries.obtener_contenido_seccion import (
+    ObtenerContenidoSeccionQuery,
+)
+from modules.progress.application.queries.obtener_historial import ObtenerHistorialQuery
+from modules.progress.application.queries.obtener_pista import ObtenerPistaQuery
+from modules.progress.application.use_cases.validar_flag import ValidarFlagUseCase
+from modules.progress.infrastructure.rate_limiter import FlagRateLimiter
+from modules.progress.infrastructure.repositories import ProgresoRepository
+from modules.progress.presentation.serializers import ValidarFlagRequestSerializer
+from modules.shared.domain.exceptions import NotFoundError
+from modules.shared.infrastructure.event_dispatcher import EventDispatcher
+from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
+
+_ID_INVALIDO_MSG = "Progreso no encontrado."
+
+
+def _parsear_uuid(valor: str) -> uuid.UUID:
+    try:
+        return uuid.UUID(valor)
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise NotFoundError(_ID_INVALIDO_MSG) from exc
+
+
+class ContenidoSeccionView(APIView):
+    """`GET /progress/{assignment_id}/sections/{section_id}/` — HE-03/HE-04, api.md §7."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, assignment_id, section_id):
+        resultado = ObtenerContenidoSeccionQuery(
+            progreso_repository=ProgresoRepository(),
+            laboratorio_repository=LaboratorioRepository(),
+        ).execute(
+            ObtenerContenidoSeccionDTO(
+                asignacion_id=_parsear_uuid(assignment_id),
+                seccion_id=_parsear_uuid(section_id),
+                estudiante_id=request.user.id,
+            )
+        )
+
+        return Response(
+            {
+                "seccion_id": str(resultado.seccion_id),
+                "titulo": resultado.titulo,
+                "contenido_teorico": resultado.contenido_teorico,
+                "tiene_practica": resultado.tiene_practica,
+                "estado": resultado.estado,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class FlagValidationView(APIView):
+    """
+    `POST /progress/{assignment_id}/sections/{section_id}/flag/` —
+    UC-02. Rate limit específico 20/min por usuario+sección
+    (seguridad.md §5, api.md §12) antes de tocar el caso de uso.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, assignment_id, section_id):
+        serializer = ValidarFlagRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        seccion_id = _parsear_uuid(section_id)
+        FlagRateLimiter().verificar(estudiante_id=request.user.id, seccion_id=seccion_id)
+
+        resultado = ValidarFlagUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            progreso_repository=ProgresoRepository(),
+            laboratorio_repository=LaboratorioRepository(),
+        ).execute(
+            ValidarFlagDTO(
+                asignacion_id=_parsear_uuid(assignment_id),
+                seccion_id=seccion_id,
+                valor=serializer.validated_data["valor"],
+                estudiante_id=request.user.id,
+            )
+        )
+
+        if resultado.correcto:
+            data = {
+                "correcto": True,
+                "seccion_desbloqueada": (
+                    str(resultado.seccion_desbloqueada)
+                    if resultado.seccion_desbloqueada
+                    else None
+                ),
+            }
+        else:
+            data = {
+                "correcto": False,
+                "intentos_fallidos": resultado.intentos_fallidos,
+                "pista_disponible": resultado.pista_disponible,
+            }
+            if resultado.pista_disponible:
+                data["pista"] = resultado.pista
+            if resultado.paso_a_paso_disponible:
+                data["paso_a_paso_disponible"] = True
+                data["paso_a_paso"] = resultado.paso_a_paso
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class HintView(APIView):
+    """`GET /progress/{assignment_id}/sections/{section_id}/hint/` — HE-06."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, assignment_id, section_id):
+        resultado = ObtenerPistaQuery(
+            progreso_repository=ProgresoRepository(),
+            laboratorio_repository=LaboratorioRepository(),
+        ).execute(
+            ObtenerPistaDTO(
+                asignacion_id=_parsear_uuid(assignment_id),
+                seccion_id=_parsear_uuid(section_id),
+                estudiante_id=request.user.id,
+            )
+        )
+
+        data = {
+            "intentos_fallidos": resultado.intentos_fallidos,
+            "pista_disponible": resultado.pista_disponible,
+            "paso_a_paso_disponible": resultado.paso_a_paso_disponible,
+        }
+        if resultado.pista_disponible:
+            data["pista"] = resultado.pista
+        if resultado.paso_a_paso_disponible:
+            data["paso_a_paso"] = resultado.paso_a_paso
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class HistoryView(APIView):
+    """`GET /progress/{assignment_id}/history/` — HE-10/HE-11."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, assignment_id):
+        resultado = ObtenerHistorialQuery(progreso_repository=ProgresoRepository()).execute(
+            ObtenerHistorialDTO(
+                asignacion_id=_parsear_uuid(assignment_id),
+                estudiante_id=request.user.id,
+            )
+        )
+
+        return Response(
+            [
+                {
+                    "numero_intento": item.numero_intento,
+                    "fecha_completado": item.fecha_completado.isoformat(),
+                    "puntaje": item.puntaje,
+                }
+                for item in resultado
+            ],
+            status=status.HTTP_200_OK,
+        )

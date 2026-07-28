@@ -36,4 +36,5 @@ urlpatterns = [
     ),
     path('api/v1/auth/', include('modules.authentication.presentation.urls')),
     path('api/v1/laboratories/', include('modules.laboratories.presentation.urls')),
+    path('api/v1/progress/', include('modules.progress.presentation.urls')),
 ]
