@@ -3,7 +3,7 @@ from django.contrib.auth.hashers import make_password
 from modules.laboratories.application.dtos import DefinirFlagDTO, DefinirFlagResultDTO
 from modules.laboratories.domain.entities import Flag
 from modules.laboratories.domain.repositories import ILaboratorioRepository
-from modules.laboratories.domain.value_objects import AyudaProgresiva
+from modules.laboratories.domain.value_objects import AyudaProgresiva, TipoLaboratorio
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
 from modules.shared.domain.exceptions import (
@@ -45,6 +45,15 @@ class DefinirFlagUseCase(BaseUseCase[DefinirFlagDTO, DefinirFlagResultDTO]):
             raise NotFoundError(_LAB_NO_ENCONTRADO_MSG)
 
         if input_dto.actor_rol == "instructor" and laboratorio.instructor_id != input_dto.actor_id:
+            raise ForbiddenError(_SIN_PERMISO_MSG)
+
+        # seguridad.md §1 (RBAC): el Administrador solo edita contenido de
+        # laboratorios `predeterminado` — uno `personalizado` es dominio
+        # exclusivo de su instructor dueño, ni siquiera el admin lo edita.
+        if (
+            input_dto.actor_rol == "administrador"
+            and laboratorio.tipo != TipoLaboratorio.PREDETERMINADO
+        ):
             raise ForbiddenError(_SIN_PERMISO_MSG)
 
         secciones = self._laboratorio_repository.get_secciones(input_dto.laboratorio_id)

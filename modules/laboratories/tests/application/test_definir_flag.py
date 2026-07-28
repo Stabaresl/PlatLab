@@ -53,6 +53,29 @@ def _crear_lab_con_seccion_practica(instructor_id: uuid.UUID) -> tuple[Laborator
     return lab, seccion
 
 
+def _crear_lab_predeterminado_con_seccion_practica() -> tuple[Laboratorio, Seccion]:
+    repo = LaboratorioRepository()
+    lab = repo.add(
+        Laboratorio(
+            nombre="Lab Flag Predeterminado",
+            descripcion="desc",
+            nivel_dificultad=NivelDificultad.BASICO,
+            estado=EstadoLaboratorio.BORRADOR,
+            tipo=TipoLaboratorio.PREDETERMINADO,
+        )
+    )
+    seccion = repo.add_seccion(
+        Seccion(
+            laboratorio_id=lab.id,
+            titulo="Practica 1",
+            contenido_teorico="...",
+            orden=1,
+            tiene_practica=True,
+        )
+    )
+    return lab, seccion
+
+
 @pytest.mark.django_db
 def test_definir_flag_exitoso_persiste_hash_no_valor_en_claro():
     instructor_id = uuid.uuid4()
@@ -131,8 +154,8 @@ def test_definir_flag_rol_estudiante_lanza_forbidden():
 
 
 @pytest.mark.django_db
-def test_definir_flag_administrador_puede_editar_laboratorio_ajeno():
-    lab, seccion = _crear_lab_con_seccion_practica(uuid.uuid4())
+def test_definir_flag_administrador_puede_editar_predeterminado():
+    lab, seccion = _crear_lab_predeterminado_con_seccion_practica()
 
     resultado = _build_use_case().execute(
         DefinirFlagDTO(
@@ -145,6 +168,23 @@ def test_definir_flag_administrador_puede_editar_laboratorio_ajeno():
     )
 
     assert resultado.seccion_id == seccion.id
+
+
+@pytest.mark.django_db
+def test_definir_flag_administrador_no_puede_editar_personalizado():
+    """seguridad.md §1: Administrador edita contenido/flags solo de predeterminados."""
+    lab, seccion = _crear_lab_con_seccion_practica(uuid.uuid4())
+
+    with pytest.raises(ForbiddenError):
+        _build_use_case().execute(
+            DefinirFlagDTO(
+                laboratorio_id=lab.id,
+                seccion_id=seccion.id,
+                valor="FLAG{admin}",
+                actor_id=uuid.uuid4(),
+                actor_rol="administrador",
+            )
+        )
 
 
 @pytest.mark.django_db
