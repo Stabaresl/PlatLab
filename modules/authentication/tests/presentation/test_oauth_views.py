@@ -41,6 +41,7 @@ def test_oauth_authorize_endpoint_unsupported_provider_returns_404():
     assert response.status_code == 404
 
 
+@pytest.mark.django_db
 def test_oauth_authorize_endpoint_is_public():
     response = _authorize(APIClient())
     assert response.status_code != 403
