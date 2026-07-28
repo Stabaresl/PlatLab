@@ -28,6 +28,10 @@ class ILaboratorioRepository(Protocol):
 
     def get_by_id(self, laboratorio_id: uuid.UUID) -> Laboratorio | None: ...
 
+    def update(self, laboratorio: Laboratorio) -> Laboratorio:
+        """Persiste nombre/descripción/dificultad/estado/temas — no crea ni borra filas."""
+        ...
+
     def get_secciones(self, laboratorio_id: uuid.UUID) -> list[Seccion]: ...
 
     def get_seccion_by_id(self, seccion_id: uuid.UUID) -> Seccion | None:

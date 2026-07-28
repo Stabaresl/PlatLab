@@ -74,3 +74,45 @@ class DefinirFlagDTO:
 class DefinirFlagResultDTO:
     id: uuid.UUID
     seccion_id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class CrearLaboratorioDTO:
+    """
+    api.md §5 `POST /laboratories/` (UC-04): `tipo` no lo elige el
+    cliente, se infiere de `actor_rol` (Instructor→personalizado,
+    Admin→predeterminado), igual que `instructor_id`/`estudiante_id` en
+    el catálogo.
+    """
+
+    nombre: str
+    descripcion: str
+    nivel_dificultad: str
+    actor_id: uuid.UUID
+    actor_rol: str
+    temas: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class EditarLaboratorioDTO:
+    """
+    api.md §5 `PATCH /laboratories/{id}/`. Solo metadatos editables
+    (nombre/descripción/dificultad/temas) — `tipo`/`estado` cambian solo
+    vía `PublicarLaboratorioUseCase`/`DuplicarLaboratorioUseCase`.
+    """
+
+    laboratorio_id: uuid.UUID
+    actor_id: uuid.UUID
+    actor_rol: str
+    nombre: str | None = None
+    descripcion: str | None = None
+    nivel_dificultad: str | None = None
+    temas: list[str] | None = None
+
+
+@dataclass(frozen=True)
+class LaboratorioResultDTO:
+    id: uuid.UUID
+    nombre: str
+    estado: str
+    tipo: str

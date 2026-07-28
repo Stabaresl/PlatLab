@@ -49,6 +49,20 @@ class LaboratorioRepository:
         model = LaboratorioModel.objects.filter(id=laboratorio_id).prefetch_related("temas").first()
         return laboratorio_to_entity(model) if model else None
 
+    def update(self, laboratorio: Laboratorio) -> Laboratorio:
+        model = LaboratorioModel.objects.get(id=laboratorio.id)
+        model.nombre = laboratorio.nombre
+        model.descripcion = laboratorio.descripcion
+        model.nivel_dificultad = laboratorio.nivel_dificultad.value
+        model.estado = laboratorio.estado.value
+        model.save()
+
+        temas_modelo = [
+            TemaModel.objects.get_or_create(nombre=nombre)[0] for nombre in laboratorio.temas
+        ]
+        model.temas.set(temas_modelo)
+        return laboratorio_to_entity(model)
+
     def get_secciones(self, laboratorio_id: uuid.UUID) -> list[Seccion]:
         modelos = SeccionModel.objects.filter(laboratorio_id=laboratorio_id).order_by("orden")
         return [seccion_to_entity(m) for m in modelos]
