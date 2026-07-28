@@ -5,6 +5,7 @@ from django.contrib.auth.hashers import make_password
 
 from modules.laboratories.domain.entities import Flag, Laboratorio, Seccion
 from modules.laboratories.domain.value_objects import (
+    AyudaProgresiva,
     EstadoLaboratorio,
     NivelDificultad,
     TipoLaboratorio,
@@ -43,7 +44,13 @@ def _crear_lab_con_secciones(n_secciones: int, valor_flag: str = "FLAG{correcta}
                 tiene_practica=True,
             )
         )
-        lab_repo.save_flag(Flag(seccion_id=seccion.id, hash=make_password(valor_flag)))
+        lab_repo.save_flag(
+            Flag(
+                seccion_id=seccion.id,
+                hash=make_password(valor_flag),
+                ayuda=AyudaProgresiva(pista="pista de prueba", paso_a_paso="paso a paso de prueba"),
+            )
+        )
         secciones.append(seccion)
     return lab, secciones
 
