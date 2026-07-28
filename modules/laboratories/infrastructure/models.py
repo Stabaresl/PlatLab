@@ -1,0 +1,102 @@
+import uuid
+
+from django.db import models
+
+
+class TemaModel(models.Model):
+    """Catálogo de temas (base-de-datos.md §1: evita grupos repetitivos)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        db_table = "laboratories_tema"
+
+    def __str__(self) -> str:
+        return self.nombre
+
+
+class LaboratorioModel(models.Model):
+    class NivelDificultad(models.TextChoices):
+        BASICO = "basico", "Básico"
+        INTERMEDIO = "intermedio", "Intermedio"
+        AVANZADO = "avanzado", "Avanzado"
+
+    class Estado(models.TextChoices):
+        BORRADOR = "borrador", "Borrador"
+        PUBLICADO = "publicado", "Publicado"
+
+    class Tipo(models.TextChoices):
+        PREDETERMINADO = "predeterminado", "Predeterminado"
+        PERSONALIZADO = "personalizado", "Personalizado"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField()
+    nivel_dificultad = models.CharField(max_length=20, choices=NivelDificultad.choices)
+    estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.BORRADOR)
+    tipo = models.CharField(max_length=20, choices=Tipo.choices)
+    temas = models.ManyToManyField(
+        TemaModel,
+        related_name="laboratorios",
+        db_table="laboratories_laboratorio_tema",
+        blank=True,
+    )
+    # origen_id/instructor_id: id suelto (sin FK), aislamiento entre
+    # agregados/módulos (Arquitectura §8, base-de-datos.md §7). origen sí
+    # apunta a este mismo modelo (auto-referencia, mismo agregado
+    # conceptual "Laboratorio", permitida).
+    origen = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="copias",
+    )
+    instructor_id = models.UUIDField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "laboratories_laboratorio"
+        indexes = [
+            models.Index(fields=["estado", "nivel_dificultad"], name="idx_lab_estado_dificultad"),
+            models.Index(fields=["tipo", "instructor_id"], name="idx_lab_tipo_instructor"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(tipo="predeterminado", instructor_id__isnull=True)
+                | ~models.Q(tipo="predeterminado"),
+                name="ck_lab_predeterminado_sin_instructor",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(tipo="personalizado") | models.Q(origen__isnull=True),
+                name="ck_lab_origen_solo_si_personalizado",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.nombre} ({self.tipo}/{self.estado})"
+
+
+class SeccionModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    laboratorio = models.ForeignKey(
+        LaboratorioModel, on_delete=models.CASCADE, related_name="secciones"
+    )
+    titulo = models.CharField(max_length=200)
+    contenido_teorico = models.TextField()
+    orden = models.PositiveIntegerField()
+    tiene_practica = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "laboratories_seccion"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["laboratorio", "orden"], name="uq_seccion_laboratorio_orden"
+            ),
+        ]
+        ordering = ["orden"]
+
+    def __str__(self) -> str:
+        return f"{self.orden}. {self.titulo}"
