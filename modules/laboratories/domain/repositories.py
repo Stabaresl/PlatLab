@@ -30,6 +30,14 @@ class ILaboratorioRepository(Protocol):
 
     def get_secciones(self, laboratorio_id: uuid.UUID) -> list[Seccion]: ...
 
+    def get_seccion_by_id(self, seccion_id: uuid.UUID) -> Seccion | None:
+        """
+        Busca una `Seccion` por su propio id, sin conocer su
+        `laboratorio_id` — necesario para módulos que solo guardan el
+        "id suelto" de la sección (ej. Progress, `ProgresoSeccion`).
+        """
+        ...
+
     def get_flag_by_seccion(self, seccion_id: uuid.UUID) -> Flag | None: ...
 
     def save_flag(self, flag: Flag) -> Flag:

@@ -26,7 +26,12 @@ class SectionCompleted(DomainEvent):
 
 @dataclass(frozen=True, kw_only=True)
 class LabCompleted(DomainEvent):
-    """Se dispara cuando la última sección se completa — habilita el examen final (UC-03)."""
+    """
+    Se dispara cuando la última `ProgresoSeccion` pasa a `completada` —
+    habilita el examen final (dominio.md §3, UC-03). No implica todavía
+    un `HistorialCompletitud` (eso lo crea `CalificadorDeExamen` al
+    calificar el examen, Sprint 5); es solo la señal de "secciones
+    completas".
+    """
 
     progreso_id: uuid.UUID
-    numero_intento: int

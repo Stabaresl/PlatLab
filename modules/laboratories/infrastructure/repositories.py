@@ -82,6 +82,10 @@ class LaboratorioRepository:
         )
         return seccion_to_entity(model)
 
+    def get_seccion_by_id(self, seccion_id: uuid.UUID) -> Seccion | None:
+        model = SeccionModel.objects.filter(id=seccion_id).first()
+        return seccion_to_entity(model) if model else None
+
     def get_flag_by_seccion(self, seccion_id: uuid.UUID) -> Flag | None:
         model = FlagModel.objects.filter(seccion_id=seccion_id).first()
         return flag_to_entity(model) if model else None
