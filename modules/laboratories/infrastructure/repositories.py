@@ -2,9 +2,18 @@ import uuid
 
 from django.db.models import Q
 
-from modules.laboratories.domain.entities import Laboratorio, Seccion
-from modules.laboratories.infrastructure.mappers import laboratorio_to_entity, seccion_to_entity
-from modules.laboratories.infrastructure.models import LaboratorioModel, SeccionModel, TemaModel
+from modules.laboratories.domain.entities import Flag, Laboratorio, Seccion
+from modules.laboratories.infrastructure.mappers import (
+    flag_to_entity,
+    laboratorio_to_entity,
+    seccion_to_entity,
+)
+from modules.laboratories.infrastructure.models import (
+    FlagModel,
+    LaboratorioModel,
+    SeccionModel,
+    TemaModel,
+)
 
 
 class LaboratorioRepository:
@@ -72,3 +81,18 @@ class LaboratorioRepository:
             tiene_practica=seccion.tiene_practica,
         )
         return seccion_to_entity(model)
+
+    def get_flag_by_seccion(self, seccion_id: uuid.UUID) -> Flag | None:
+        model = FlagModel.objects.filter(seccion_id=seccion_id).first()
+        return flag_to_entity(model) if model else None
+
+    def save_flag(self, flag: Flag) -> Flag:
+        model, _ = FlagModel.objects.update_or_create(
+            seccion_id=flag.seccion_id,
+            defaults={
+                "hash": flag.hash,
+                "pista_texto": flag.ayuda.pista,
+                "paso_a_paso_texto": flag.ayuda.paso_a_paso,
+            },
+        )
+        return flag_to_entity(model)

@@ -50,3 +50,27 @@ class SeccionTOCItemDTO:
 class TOCDTO:
     laboratorio_id: uuid.UUID
     secciones: list[SeccionTOCItemDTO]
+
+
+@dataclass(frozen=True)
+class DefinirFlagDTO:
+    """
+    api.md §5 `PUT /laboratories/{id}/sections/{section_id}/flag/` —
+    write-only: `valor` nunca se persiste en claro ni se retorna.
+    `actor_id`/`actor_rol` los resuelve la vista desde `request.user`,
+    igual que `instructor_id` en el catálogo (nunca un query param).
+    """
+
+    laboratorio_id: uuid.UUID
+    seccion_id: uuid.UUID
+    valor: str
+    actor_id: uuid.UUID
+    actor_rol: str
+    pista: str | None = None
+    paso_a_paso: str | None = None
+
+
+@dataclass(frozen=True)
+class DefinirFlagResultDTO:
+    id: uuid.UUID
+    seccion_id: uuid.UUID

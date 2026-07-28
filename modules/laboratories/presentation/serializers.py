@@ -14,3 +14,11 @@ class CatalogoFiltroQuerySerializer(serializers.Serializer):
         choices=[nivel.value for nivel in NivelDificultad], required=False
     )
     tema = serializers.CharField(required=False, max_length=100)
+
+
+class DefinirFlagRequestSerializer(serializers.Serializer):
+    """api.md §5 — DTO de entrada de `PUT .../flag/` (write-only)."""
+
+    valor = serializers.CharField(max_length=500, trim_whitespace=False)
+    pista = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    paso_a_paso = serializers.CharField(required=False, allow_null=True, allow_blank=True)

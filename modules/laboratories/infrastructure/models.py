@@ -100,3 +100,19 @@ class SeccionModel(models.Model):
 
     def __str__(self) -> str:
         return f"{self.orden}. {self.titulo}"
+
+
+class FlagModel(models.Model):
+    """base-de-datos.md "laboratories_flag": relación 1:1 con SeccionModel."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    seccion = models.OneToOneField(SeccionModel, on_delete=models.CASCADE, related_name="flag")
+    hash = models.CharField(max_length=255)
+    pista_texto = models.TextField(null=True, blank=True)
+    paso_a_paso_texto = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = "laboratories_flag"
+
+    def __str__(self) -> str:
+        return f"Flag(seccion={self.seccion_id})"

@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from modules.laboratories.domain.value_objects import (
+    AyudaProgresiva,
     EstadoLaboratorio,
     NivelDificultad,
     TipoLaboratorio,
@@ -64,6 +65,28 @@ class Seccion(BaseEntity):
     contenido_teorico: str
     orden: int
     tiene_practica: bool = False
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+
+    def __post_init__(self):
+        BaseEntity.__init__(self, id=self.id)
+
+
+@dataclass(eq=False)
+class Flag(BaseEntity):
+    """
+    Flag de una Sección práctica (dominio.md §1/§3, base-de-datos.md
+    "laboratories_flag"): relación 1:1 con `Seccion`, solo si
+    `tiene_practica`. El valor real nunca se persiste ni se expone en
+    claro — únicamente su `hash` (bcrypt/argon2, misma utilidad que
+    `password_hash` de User), comparado en tiempo constante al validar
+    un intento (seguridad.md §4). Hashear y comparar es responsabilidad
+    de Application (`DefinirFlagUseCase`/`ValidarFlagUseCase`), no de
+    esta entidad.
+    """
+
+    seccion_id: uuid.UUID
+    hash: str
+    ayuda: AyudaProgresiva = field(default_factory=AyudaProgresiva)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):

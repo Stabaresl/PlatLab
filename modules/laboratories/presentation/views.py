@@ -3,11 +3,11 @@ import uuid
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from modules.laboratories.application.dtos import ListarLaboratoriosFiltroDTO
+from modules.laboratories.application.dtos import DefinirFlagDTO, ListarLaboratoriosFiltroDTO
 from modules.laboratories.application.queries.listar_laboratorios import (
     ListarLaboratoriosQuery,
 )
@@ -15,12 +15,18 @@ from modules.laboratories.application.queries.obtener_detalle_laboratorio import
     ObtenerDetalleLaboratorioQuery,
 )
 from modules.laboratories.application.queries.obtener_toc import ObtenerTOCQuery
+from modules.laboratories.application.use_cases.definir_flag import DefinirFlagUseCase
 from modules.laboratories.infrastructure.cached_laboratorio_repository import (
     CachedLaboratorioRepository,
 )
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
-from modules.laboratories.presentation.serializers import CatalogoFiltroQuerySerializer
+from modules.laboratories.presentation.serializers import (
+    CatalogoFiltroQuerySerializer,
+    DefinirFlagRequestSerializer,
+)
 from modules.shared.domain.exceptions import NotFoundError
+from modules.shared.infrastructure.event_dispatcher import EventDispatcher
+from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
 
 _ID_INVALIDO_MSG = "Laboratorio no encontrado."
 
@@ -72,6 +78,11 @@ class LaboratorioViewSet(ViewSet):
     """
 
     permission_classes = [AllowAny]
+
+    def get_permissions(self):
+        if self.action == "definir_flag":
+            return [IsAuthenticated()]
+        return [AllowAny()]
 
     def _repositorio(self):
         return CachedLaboratorioRepository(LaboratorioRepository())
@@ -144,5 +155,30 @@ class LaboratorioViewSet(ViewSet):
                     for s in toc.secciones
                 ],
             },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["put"], url_path=r"sections/(?P<seccion_pk>[^/.]+)/flag")
+    def definir_flag(self, request, pk=None, seccion_pk=None):
+        serializer = DefinirFlagRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = DefinirFlagUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            DefinirFlagDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                seccion_id=_parsear_uuid(seccion_pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                **serializer.validated_data,
+            )
+        )
+
+        return Response(
+            {"id": str(resultado.id), "seccion_id": str(resultado.seccion_id)},
             status=status.HTTP_200_OK,
         )
