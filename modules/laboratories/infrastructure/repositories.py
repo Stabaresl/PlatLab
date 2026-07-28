@@ -100,6 +100,15 @@ class LaboratorioRepository:
         model = SeccionModel.objects.filter(id=seccion_id).first()
         return seccion_to_entity(model) if model else None
 
+    def update_seccion(self, seccion: Seccion) -> Seccion:
+        model = SeccionModel.objects.get(id=seccion.id)
+        model.titulo = seccion.titulo
+        model.contenido_teorico = seccion.contenido_teorico
+        model.orden = seccion.orden
+        model.tiene_practica = seccion.tiene_practica
+        model.save()
+        return seccion_to_entity(model)
+
     def get_flag_by_seccion(self, seccion_id: uuid.UUID) -> Flag | None:
         model = FlagModel.objects.filter(seccion_id=seccion_id).first()
         return flag_to_entity(model) if model else None

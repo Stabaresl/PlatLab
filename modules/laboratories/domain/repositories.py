@@ -34,6 +34,8 @@ class ILaboratorioRepository(Protocol):
 
     def get_secciones(self, laboratorio_id: uuid.UUID) -> list[Seccion]: ...
 
+    def update_seccion(self, seccion: Seccion) -> Seccion: ...
+
     def get_seccion_by_id(self, seccion_id: uuid.UUID) -> Seccion | None:
         """
         Busca una `Seccion` por su propio id, sin conocer su

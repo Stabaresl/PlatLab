@@ -116,3 +116,39 @@ class LaboratorioResultDTO:
     nombre: str
     estado: str
     tipo: str
+
+
+@dataclass(frozen=True)
+class CrearSeccionDTO:
+    """api.md §5 `POST /laboratories/{id}/sections/` (UC-04, paso 2)."""
+
+    laboratorio_id: uuid.UUID
+    titulo: str
+    contenido_teorico: str
+    orden: int
+    actor_id: uuid.UUID
+    actor_rol: str
+    tiene_practica: bool = False
+
+
+@dataclass(frozen=True)
+class EditarSeccionDTO:
+    """api.md §5 `PATCH /laboratories/{id}/sections/{section_id}/`."""
+
+    laboratorio_id: uuid.UUID
+    seccion_id: uuid.UUID
+    actor_id: uuid.UUID
+    actor_rol: str
+    titulo: str | None = None
+    contenido_teorico: str | None = None
+    orden: int | None = None
+    tiene_practica: bool | None = None
+
+
+@dataclass(frozen=True)
+class SeccionResultDTO:
+    id: uuid.UUID
+    laboratorio_id: uuid.UUID
+    orden: int
+    titulo: str
+    tiene_practica: bool
