@@ -131,6 +131,22 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
+# OAuth2 (Google / GitHub) — Authorization Code + PKCE (seguridad.md §3)
+# client_secret siempre vía variable de entorno, nunca en código fuente.
+
+GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', default='')
+GOOGLE_OAUTH_CLIENT_SECRET = env('GOOGLE_OAUTH_CLIENT_SECRET', default='')
+GOOGLE_OAUTH_REDIRECT_URI = env(
+    'GOOGLE_OAUTH_REDIRECT_URI', default='http://localhost:3000/oauth/google/callback'
+)
+
+GITHUB_OAUTH_CLIENT_ID = env('GITHUB_OAUTH_CLIENT_ID', default='')
+GITHUB_OAUTH_CLIENT_SECRET = env('GITHUB_OAUTH_CLIENT_SECRET', default='')
+GITHUB_OAUTH_REDIRECT_URI = env(
+    'GITHUB_OAUTH_REDIRECT_URI', default='http://localhost:3000/oauth/github/callback'
+)
+
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 

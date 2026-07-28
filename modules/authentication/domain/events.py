@@ -45,3 +45,16 @@ class PasswordResetRequested(DomainEvent):
     email: str
     nombre_completo: str
     token: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class OAuthAccountLinked(DomainEvent):
+    """
+    Se dispara cuando un `ProveedorAutenticacion` se vincula a un `User`
+    existente tras la confirmación explícita de UC-01 E4
+    (`VinculadorDeCuenta`) — insumo para auditoría (evento de seguridad,
+    no un login más).
+    """
+
+    user_id: uuid.UUID
+    proveedor: str

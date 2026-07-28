@@ -32,3 +32,13 @@ class ConfirmarRecuperacionRequestSerializer(serializers.Serializer):
     token = serializers.CharField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
     password_confirm = serializers.CharField(write_only=True, trim_whitespace=False)
+
+
+class OAuthCallbackRequestSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    state = serializers.CharField()
+
+
+class OAuthConfirmLinkRequestSerializer(serializers.Serializer):
+    link_token = serializers.CharField()
+    password = serializers.CharField(write_only=True, trim_whitespace=False)

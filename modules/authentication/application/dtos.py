@@ -52,3 +52,43 @@ class TokenPairDTO:
     refresh: str
     expires_in: int
     rol: str
+
+
+@dataclass(frozen=True)
+class OAuthAuthorizeDTO:
+    proveedor: str
+
+
+@dataclass(frozen=True)
+class OAuthAuthorizeResultDTO:
+    authorize_url: str
+    state: str
+
+
+@dataclass(frozen=True)
+class OAuthCallbackDTO:
+    proveedor: str
+    code: str
+    state: str
+
+
+@dataclass(frozen=True)
+class OAuthProfileDTO:
+    """Perfil normalizado que entrega cualquier adapter de OAuth (Google/GitHub)."""
+
+    proveedor: str
+    proveedor_uid: str
+    email: str
+    nombre_completo: str
+    email_verificado: bool
+
+
+@dataclass(frozen=True)
+class OAuthLoginResultDTO:
+    tokens: TokenPairDTO
+
+
+@dataclass(frozen=True)
+class ConfirmarVinculacionDTO:
+    link_token: str
+    password: str
