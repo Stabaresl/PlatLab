@@ -1,0 +1,55 @@
+import uuid
+from typing import Protocol
+
+from modules.progress.domain.entities import (
+    HistorialCompletitud,
+    IntentoFlag,
+    Progreso,
+    ProgresoSeccion,
+)
+
+
+class IProgresoRepository(Protocol):
+    """
+    Puerto de persistencia del agregado Progreso. La implementación real
+    vive en `infrastructure/repositories.py` (PostgreSQL vía
+    `mappers.py`) — Application nunca importa el ORM directamente.
+    Métodos deliberadamente finos: la atomicidad de un intento completo
+    (registrar intento + actualizar secciones + historial) la garantiza
+    `BaseUnitOfWork` alrededor de la secuencia de llamadas, no un único
+    método "save" monolítico (HE-07).
+    """
+
+    def get_by_asignacion(self, asignacion_id: uuid.UUID) -> Progreso | None: ...
+
+    def add(self, progreso: Progreso) -> Progreso: ...
+
+    def tocar_actividad(self, progreso_id: uuid.UUID) -> None:
+        """Actualiza `ultima_actividad` (HE-07, soporta reanudación RNF-03.3)."""
+        ...
+
+    def get_secciones(self, progreso_id: uuid.UUID) -> list[ProgresoSeccion]: ...
+
+    def get_seccion(
+        self, progreso_id: uuid.UUID, seccion_id: uuid.UUID
+    ) -> ProgresoSeccion | None: ...
+
+    def add_secciones(self, secciones: list[ProgresoSeccion]) -> list[ProgresoSeccion]:
+        """Crea el set inicial de `ProgresoSeccion` (una por Sección del laboratorio asignado)."""
+        ...
+
+    def actualizar_seccion(self, seccion: ProgresoSeccion) -> ProgresoSeccion: ...
+
+    def registrar_intento(self, intento: IntentoFlag) -> IntentoFlag: ...
+
+    def contar_fallos(self, progreso_id: uuid.UUID, seccion_id: uuid.UUID) -> int:
+        """
+        HE-06: cuenta los `IntentoFlag` fallidos de esa sección
+        (índice compuesto `(progreso_id, seccion_id, timestamp)`,
+        base-de-datos.md) sin traer todos los intentos a memoria.
+        """
+        ...
+
+    def registrar_historial(self, historial: HistorialCompletitud) -> HistorialCompletitud: ...
+
+    def get_historial(self, progreso_id: uuid.UUID) -> list[HistorialCompletitud]: ...
