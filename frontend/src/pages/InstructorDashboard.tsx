@@ -12,6 +12,8 @@ import {
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import SectionHeading from "../components/SectionHeading"
+import { IconFlask, IconMail, IconTrophy } from "../components/icons"
 
 const ESTADO_COLORS: Record<EstadoAsignacion, string> = {
   pendiente: "#3B82F6",
@@ -126,12 +128,7 @@ export default function InstructorDashboard() {
                 LABORATORIOS CREADOS
                 ══════════════════════════════════ */}
             <section className="mb-8 sm:mb-10">
-              <h2
-                className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-              >
-                Laboratorios Creados
-              </h2>
+              <SectionHeading icon={<IconFlask />} title="Laboratorios Creados" />
 
               <div className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
                 {labs.map((lab, i) => {
@@ -198,12 +195,7 @@ export default function InstructorDashboard() {
                 INVITACIONES
                 ══════════════════════════════════ */}
             <section className="mb-8 sm:mb-10">
-              <h2
-                className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-              >
-                Invitaciones
-              </h2>
+              <SectionHeading icon={<IconMail />} title="Invitaciones" />
 
               {invitaciones.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>Todavía no invitaste estudiantes.</p>
@@ -266,14 +258,7 @@ export default function InstructorDashboard() {
                 ══════════════════════════════════ */}
             <section>
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-0 mb-5">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-semibold" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
-                    Top Estudiantes
-                  </h2>
-                  <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-                    Estudiantes ordenados por mayor avance
-                  </p>
-                </div>
+                <SectionHeading icon={<IconTrophy />} title="Top Estudiantes" subtitle="Estudiantes ordenados por mayor avance" />
 
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   <CarouselButton label="Anterior" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>←</CarouselButton>

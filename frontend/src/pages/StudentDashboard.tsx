@@ -12,6 +12,9 @@ import {
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import SectionHeading from "../components/SectionHeading"
+import ProgressRing from "../components/ProgressRing"
+import { IconGauge, IconFlask, IconClock, IconRocket } from "../components/icons"
 
 type LabStatus = "completado" | "en_progreso" | "pendiente" | "vencida" | "rechazada"
 
@@ -166,43 +169,18 @@ export default function StudentDashboard() {
                 PROGRESO — 3 tarjetas + barra
                 ══════════════════════════════════ */}
             <section className="mb-8 sm:mb-10">
-              <h2
-                className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-              >
-                Mi Progreso
-              </h2>
-
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-5 sm:mb-6">
-                <StatCard label="Completados" value={completed} color="#22C55E" />
-                <StatCard label="En Progreso" value={inProgress} color="#3B82F6" />
-                <StatCard label="Pendientes" value={Math.max(0, pendingCount)} color="#94A3B8" />
-              </div>
+              <SectionHeading icon={<IconGauge />} title="Mi Progreso" subtitle="Tu avance general en la plataforma" />
 
               <div
-                className="p-4 sm:p-5 rounded-lg"
+                className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 p-4 sm:p-6 rounded-lg"
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-default)" }}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-heading)" }}>
-                    Progreso general
-                  </span>
-                  <span className="text-xs sm:text-sm" style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}>
-                    {pct}%
-                  </span>
+                <ProgressRing percent={pct} size={104} label="completado" />
+                <div className="flex-1 w-full grid grid-cols-3 gap-3 sm:gap-4">
+                  <StatCard label="Completados" value={completed} color="#22C55E" icon={<IconRocket />} />
+                  <StatCard label="En Progreso" value={inProgress} color="#3B82F6" icon={<IconFlask />} />
+                  <StatCard label="Pendientes" value={Math.max(0, pendingCount)} color="#94A3B8" icon={<IconClock />} />
                 </div>
-                <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-surface-hover)" }}>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    className="h-full rounded-full"
-                    style={{ background: "linear-gradient(90deg, #3B82F6, #22C55E)" }}
-                  />
-                </div>
-                <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
-                  {completed} de {total} laboratorios completados
-                </p>
               </div>
             </section>
 
@@ -210,12 +188,7 @@ export default function StudentDashboard() {
                 LABORATORIOS ASIGNADOS
                 ══════════════════════════════════ */}
             <section className="mb-8 sm:mb-10">
-              <h2
-                className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-              >
-                Laboratorios Asignados
-              </h2>
+              <SectionHeading icon={<IconFlask />} title="Laboratorios Asignados" />
 
               {rows.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -290,12 +263,7 @@ export default function StudentDashboard() {
                 PRÓXIMOS VENCIMIENTOS
                 ══════════════════════════════════ */}
             <section className="mb-8 sm:mb-10">
-              <h2
-                className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-              >
-                Próximos Vencimientos
-              </h2>
+              <SectionHeading icon={<IconClock />} title="Próximos Vencimientos" />
 
               {proximosVencimientos.length === 0 ? (
                 <div
@@ -337,7 +305,8 @@ export default function StudentDashboard() {
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-secondary)" }}
               >
                 <div className="flex flex-col gap-1" style={{ maxWidth: "600px" }}>
-                  <h2 className="text-base sm:text-lg font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+                  <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+                    <IconRocket style={{ color: "var(--ui-border-gold)" }} />
                     ¿Listo para el siguiente nivel?
                   </h2>
                   <p className="text-xs sm:text-sm m-0 leading-relaxed" style={{ color: "var(--text-muted)" }}>
@@ -374,19 +343,24 @@ export default function StudentDashboard() {
   )
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+function StatCard({ label, value, color, icon }: { label: string; value: number; color: string; icon?: React.ReactNode }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className="flex-1 flex flex-col items-center gap-2 p-4 sm:p-5 rounded-lg"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-default)" }}
+      className="flex-1 flex flex-col items-center gap-1.5 sm:gap-2 p-3 sm:p-5 rounded-lg"
+      style={{ backgroundColor: "var(--bg-canvas)", border: "1px solid var(--ui-border-default)" }}
     >
-      <span className="text-2xl sm:text-3xl font-bold" style={{ color, fontFamily: "'Fira Code', monospace" }}>
+      {icon && (
+        <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-md" style={{ backgroundColor: `${color}18`, color }}>
+          {icon}
+        </div>
+      )}
+      <span className="text-xl sm:text-3xl font-bold" style={{ color, fontFamily: "'Fira Code', monospace" }}>
         {value}
       </span>
-      <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</span>
+      <span className="text-[11px] sm:text-xs font-medium text-center" style={{ color: "var(--text-muted)" }}>{label}</span>
     </motion.div>
   )
 }

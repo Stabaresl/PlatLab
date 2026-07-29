@@ -12,6 +12,9 @@ import {
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import SectionHeading from "../components/SectionHeading"
+import ProgressRing from "../components/ProgressRing"
+import { IconChart, IconUsers, IconTrophy } from "../components/icons"
 
 const ROLE_LABELS: Record<Rol, string> = {
   estudiante: "Estudiante",
@@ -117,22 +120,16 @@ export default function AdminDashboard() {
                 ESTADO GENERAL — /users/dashboard/
                 ══════════════════════════════════ */}
             <section className="mb-8 sm:mb-10">
-              <h2
-                className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-              >
-                Estado General
-              </h2>
+              <SectionHeading icon={<IconChart />} title="Estado General" subtitle="Salud y adopción de la plataforma" />
 
-              <div className="grid gap-3 sm:gap-4 mb-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-                {dashboard && (
-                  <>
+              {dashboard && (
+                <div
+                  className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 p-4 sm:p-6 rounded-lg mb-5"
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-default)" }}
+                >
+                  <ProgressRing percent={Math.round(dashboard.tasa_completitud_promedio * 100)} size={104} color="#22C55E" label="completitud promedio" />
+                  <div className="flex-1 w-full grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
                     <StatCard label="Laboratorios activos" value={dashboard.laboratorios_activos} delay={0} />
-                    <StatCard
-                      label="Tasa de completitud"
-                      value={`${Math.round(dashboard.tasa_completitud_promedio * 100)}%`}
-                      delay={0.05}
-                    />
                     {Object.entries(dashboard.usuarios_por_rol).map(([rol, cantidad], i) => (
                       <StatCard
                         key={rol}
@@ -142,15 +139,20 @@ export default function AdminDashboard() {
                         accent={ROLE_COLORS[rol as Rol]}
                       />
                     ))}
-                  </>
-                )}
-              </div>
+                  </div>
+                </div>
+              )}
 
               {dashboard && dashboard.labs_mas_populares.length > 0 && (
-                <div
-                  className="rounded-lg overflow-hidden"
-                  style={{ border: "1px solid var(--ui-border-default)" }}
-                >
+                <div>
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <IconTrophy style={{ color: "var(--ui-border-gold)" }} />
+                    <span className="text-sm font-semibold" style={{ color: "var(--text-heading)" }}>Laboratorios más populares</span>
+                  </div>
+                  <div
+                    className="rounded-lg overflow-hidden"
+                    style={{ border: "1px solid var(--ui-border-default)" }}
+                  >
                   <dl className="m-0">
                     {dashboard.labs_mas_populares.map((lab, i) => (
                       <div
@@ -170,6 +172,7 @@ export default function AdminDashboard() {
                       </div>
                     ))}
                   </dl>
+                  </div>
                 </div>
               )}
             </section>
@@ -179,17 +182,7 @@ export default function AdminDashboard() {
                 ══════════════════════════════════ */}
             <section>
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-0 mb-5">
-                <div>
-                  <h2
-                    className="text-lg sm:text-xl font-semibold"
-                    style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-                  >
-                    Usuarios
-                  </h2>
-                  <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-                    Total: {users.length} usuarios registrados
-                  </p>
-                </div>
+                <SectionHeading icon={<IconUsers />} title="Usuarios" subtitle={`Total: ${users.length} usuarios registrados`} />
 
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   <CarouselButton label="Anterior" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
