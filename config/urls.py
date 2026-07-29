@@ -40,4 +40,5 @@ urlpatterns = [
     path('api/v1/assignments/', include('modules.assignments.presentation.urls')),
     path('api/v1/users/', include('modules.users.presentation.urls')),
     path('api/v1/reports/', include('modules.reports.presentation.urls')),
+    path('api/v1/notifications/', include('modules.notifications.presentation.urls')),
 ]
