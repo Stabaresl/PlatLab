@@ -4,7 +4,7 @@ from django.contrib.auth.hashers import check_password
 
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.progress.application.dtos import ValidarFlagDTO, ValidarFlagResultDTO
-from modules.progress.domain.entities import IntentoFlag
+from modules.progress.domain.entities import HistorialCompletitud, IntentoFlag
 from modules.progress.domain.events import FlagValidated, LabCompleted, SectionCompleted
 from modules.progress.domain.exceptions import SeccionBloqueadaError
 from modules.progress.domain.repositories import IProgresoRepository
@@ -111,6 +111,7 @@ class ValidarFlagUseCase(BaseUseCase[ValidarFlagDTO, ValidarFlagResultDTO]):
             )
             if self._gestor.laboratorio_completado(secciones):
                 events.append(LabCompleted(progreso_id=self._progreso.id))
+                self._registrar_historial_si_no_hay_examen(input_dto.seccion_id)
 
         result = ValidarFlagResultDTO(
             correcto=correcta,
@@ -128,3 +129,23 @@ class ValidarFlagUseCase(BaseUseCase[ValidarFlagDTO, ValidarFlagResultDTO]):
     def _orden_de(self, seccion_id: uuid.UUID) -> int:
         seccion = self._laboratorio_repository.get_seccion_by_id(seccion_id)
         return seccion.orden if seccion else 0
+
+    def _registrar_historial_si_no_hay_examen(self, seccion_id: uuid.UUID) -> None:
+        """
+        HE-11/RF-13: si el laboratorio no tiene examen (UC-03 A2), la
+        última sección completada ES el cierre del laboratorio — sin
+        este registro, un laboratorio sin examen nunca generaba
+        `HistorialCompletitud` y por lo tanto no podía "repetirse"
+        preservando el intento anterior (si tiene examen, el historial
+        lo registra `EnviarExamenUseCase` al calificar).
+        """
+        seccion = self._laboratorio_repository.get_seccion_by_id(seccion_id)
+        if seccion is None:
+            return
+        if self._laboratorio_repository.get_examen_by_laboratorio(seccion.laboratorio_id):
+            return
+
+        numero_intento = len(self._progreso_repository.get_historial(self._progreso.id)) + 1
+        self._progreso_repository.registrar_historial(
+            HistorialCompletitud(progreso_id=self._progreso.id, numero_intento=numero_intento)
+        )

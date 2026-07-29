@@ -245,3 +245,24 @@ def test_validar_flag_sin_flag_definida_lanza_not_found():
                 estudiante_id=estudiante_id,
             )
         )
+
+
+@pytest.mark.django_db
+def test_validar_flag_ultima_seccion_sin_examen_registra_historial():
+    """HE-11/RF-13: sin examen, completar la última sección cierra el laboratorio."""
+    _, secciones = _crear_lab_con_secciones(1, valor_flag="FLAG{unica}")
+    progreso, estudiante_id = _crear_progreso(secciones)
+
+    _build_use_case().execute(
+        ValidarFlagDTO(
+            asignacion_id=progreso.asignacion_id,
+            seccion_id=secciones[0].id,
+            valor="FLAG{unica}",
+            estudiante_id=estudiante_id,
+        )
+    )
+
+    historial = ProgresoRepository().get_historial(progreso.id)
+    assert len(historial) == 1
+    assert historial[0].numero_intento == 1
+    assert historial[0].puntaje is None
