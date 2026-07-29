@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { getLaboratorio, getToc, ApiError, type LaboratorioDetalle, type NivelDificultad } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import MatrixRain from "../components/MatrixRain"
 import { IconFlask, IconExam, IconLock } from "../components/icons"
 
 const DIFICULTAD_LABEL: Record<NivelDificultad, string> = {
@@ -156,10 +157,11 @@ export default function LabDetailPage() {
               </div>
 
               <div
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-lg"
+                className="relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-lg"
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-gold)" }}
               >
-                <div className="flex items-start gap-3">
+                <MatrixRain opacity={0.05} />
+                <div className="relative z-10 flex items-start gap-3">
                   <IconLock style={{ color: "var(--ui-border-gold)" }} className="mt-0.5 shrink-0" />
                   <p className="text-xs sm:text-sm m-0 leading-relaxed" style={{ color: "var(--text-muted)" }}>
                     {authed
@@ -170,7 +172,7 @@ export default function LabDetailPage() {
                 {authed ? (
                   <Link
                     to="/dashboard"
-                    className="shrink-0 px-5 py-2.5 rounded text-sm font-semibold no-underline transition-opacity hover:opacity-85"
+                    className="relative z-10 shrink-0 px-5 py-2.5 rounded text-sm font-semibold no-underline transition-opacity hover:opacity-85"
                     style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
                   >
                     Ir a mi Dashboard
@@ -178,7 +180,7 @@ export default function LabDetailPage() {
                 ) : (
                   <Link
                     to="/signup"
-                    className="shrink-0 px-5 py-2.5 rounded text-sm font-semibold no-underline transition-opacity hover:opacity-85"
+                    className="relative z-10 shrink-0 px-5 py-2.5 rounded text-sm font-semibold no-underline transition-opacity hover:opacity-85"
                     style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
                   >
                     Crear cuenta gratis

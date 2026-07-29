@@ -125,3 +125,63 @@ def test_toc_borrador_ajeno_lanza_not_found():
 
     with pytest.raises(NotFoundError):
         ObtenerTOCQuery(repo).execute(lab.id)
+
+
+class _FakeInscripcion:
+    """Siempre responde que el par (estudiante, laboratorio) está inscrito."""
+
+    def esta_inscrito(self, estudiante_id, laboratorio_id):
+        return True
+
+
+class _FakeSinInscripcion:
+    def esta_inscrito(self, estudiante_id, laboratorio_id):
+        return False
+
+
+@pytest.mark.django_db
+def test_detalle_personalizado_ajeno_visible_para_estudiante_inscrito():
+    repo = LaboratorioRepository()
+    lab = _crear_lab_con_secciones(
+        repo,
+        estado=EstadoLaboratorio.PUBLICADO,
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+    )
+
+    detalle = ObtenerDetalleLaboratorioQuery(repo, _FakeInscripcion()).execute(
+        lab.id, estudiante_id=uuid.uuid4()
+    )
+
+    assert detalle.id == lab.id
+
+
+@pytest.mark.django_db
+def test_detalle_personalizado_ajeno_sigue_oculto_sin_inscripcion_vigente():
+    repo = LaboratorioRepository()
+    lab = _crear_lab_con_secciones(
+        repo,
+        estado=EstadoLaboratorio.PUBLICADO,
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+    )
+
+    with pytest.raises(NotFoundError):
+        ObtenerDetalleLaboratorioQuery(repo, _FakeSinInscripcion()).execute(
+            lab.id, estudiante_id=uuid.uuid4()
+        )
+
+
+@pytest.mark.django_db
+def test_toc_personalizado_ajeno_visible_para_estudiante_inscrito():
+    repo = LaboratorioRepository()
+    lab = _crear_lab_con_secciones(
+        repo,
+        estado=EstadoLaboratorio.PUBLICADO,
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+    )
+
+    toc = ObtenerTOCQuery(repo, _FakeInscripcion()).execute(lab.id, estudiante_id=uuid.uuid4())
+
+    assert len(toc.secciones) == 2

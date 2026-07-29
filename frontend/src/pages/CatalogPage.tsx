@@ -5,6 +5,7 @@ import { getCatalogo, ApiError, type LaboratorioListItem, type NivelDificultad }
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 import SectionHeading from "../components/SectionHeading"
+import TerminalHeader from "../components/TerminalHeader"
 import { IconFlask, IconSearch, IconArrowRight } from "../components/icons"
 
 // Catálogo público de laboratorios (HV-02 del backend) — antes solo se veían
@@ -50,20 +51,11 @@ export default function CatalogPage() {
       <Navbar />
       <main className="flex-1">
         <div className="mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12" style={{ maxWidth: "1200px" }}>
-          <motion.header
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="mb-6 sm:mb-8"
-          >
-            <h1 className="text-2xl sm:text-3xl font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
-              Catálogo de Laboratorios
-            </h1>
-            <p className="text-xs sm:text-sm mt-1 max-w-2xl" style={{ color: "var(--text-muted)" }}>
-              Este es el roadmap completo de laboratorios de GAIA: no hace falta esperar una invitación
-              para ver qué hay disponible. Iniciá sesión para inscribirte en cualquiera de ellos.
-            </p>
-          </motion.header>
+          <TerminalHeader
+            title="Catálogo de Laboratorios"
+            subtitle="Este es el roadmap completo de laboratorios de GAIA: no hace falta esperar una invitación para ver qué hay disponible. Iniciá sesión para inscribirte en cualquiera de ellos."
+            prompt="ls /laboratorios --publicados"
+          />
 
           {/* Filtros */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6 sm:mb-8">

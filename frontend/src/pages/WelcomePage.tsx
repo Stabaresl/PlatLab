@@ -6,6 +6,7 @@ import ScanlineOverlay from "../components/ScanlineOverlay"
 import TerminalTyper from "../components/TerminalTyper"
 import CountUpStat from "../components/CountUpStat"
 import MatrixRain from "../components/MatrixRain"
+import CyberGrid from "../components/CyberGrid"
 import grimBg from "../assets/grim.png"
 import termBg from "../assets/term.png"
 
@@ -294,19 +295,20 @@ export default function WelcomePage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.4 }}
-          className="mx-auto flex flex-col items-center gap-4 p-8 sm:p-12 rounded-lg text-center"
+          className="relative overflow-hidden mx-auto flex flex-col items-center gap-4 p-8 sm:p-12 rounded-lg text-center"
           style={{ maxWidth: "800px", backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-gold)" }}
         >
-          <h2 className="text-xl sm:text-2xl font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+          <CyberGrid opacity={0.25} />
+          <h2 className="relative z-10 text-xl sm:text-2xl font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
             ¿Listo para poner a prueba tus habilidades?
           </h2>
-          <p className="text-sm m-0" style={{ color: "var(--text-muted)" }}>
+          <p className="relative z-10 text-sm m-0" style={{ color: "var(--text-muted)" }}>
             Creá tu cuenta gratis y empezá a resolver laboratorios reales hoy mismo.
           </p>
           <button
             type="button"
             onClick={() => navigate("/signup")}
-            className="px-6 sm:px-8 py-2.5 sm:py-3 rounded text-sm font-semibold cursor-pointer border-none transition-opacity hover:opacity-85"
+            className="relative z-10 px-6 sm:px-8 py-2.5 sm:py-3 rounded text-sm font-semibold cursor-pointer border-none transition-opacity hover:opacity-85"
             style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
           >
             Crear cuenta gratis

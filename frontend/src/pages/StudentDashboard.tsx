@@ -15,6 +15,7 @@ import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 import SectionHeading from "../components/SectionHeading"
 import ProgressRing from "../components/ProgressRing"
+import TerminalHeader from "../components/TerminalHeader"
 import { IconGauge, IconFlask, IconClock, IconRocket } from "../components/icons"
 
 type LabStatus = "completado" | "en_progreso" | "pendiente" | "vencida" | "rechazada"
@@ -131,22 +132,11 @@ export default function StudentDashboard() {
         {/* ══════════════════════════════════
             HEADER
             ══════════════════════════════════ */}
-        <motion.header
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="mb-8 sm:mb-10"
-        >
-          <h1
-            className="text-2xl sm:text-3xl font-semibold m-0"
-            style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-          >
-            Panel del Estudiante
-          </h1>
-          <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-            Bienvenido de vuelta
-          </p>
-        </motion.header>
+        <TerminalHeader
+          title="Panel del Estudiante"
+          subtitle="Bienvenido de vuelta"
+          prompt="whoami → estudiante"
+        />
 
         <AnimatePresence>
           {error && (

@@ -14,6 +14,7 @@ import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 import SectionHeading from "../components/SectionHeading"
 import ProgressRing from "../components/ProgressRing"
+import TerminalHeader from "../components/TerminalHeader"
 import { IconChart, IconUsers, IconTrophy } from "../components/icons"
 
 const ROLE_LABELS: Record<Rol, string> = {
@@ -81,22 +82,11 @@ export default function AdminDashboard() {
         {/* ══════════════════════════════════
             HEADER
             ══════════════════════════════════ */}
-        <motion.header
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="mb-8 sm:mb-10"
-        >
-          <h1
-            className="text-2xl sm:text-3xl font-semibold m-0"
-            style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-          >
-            Panel del Administrador
-          </h1>
-          <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-            Estado general de la plataforma
-          </p>
-        </motion.header>
+        <TerminalHeader
+          title="Panel del Administrador"
+          subtitle="Estado general de la plataforma"
+          prompt="whoami → administrador"
+        />
 
         <AnimatePresence>
           {error && (

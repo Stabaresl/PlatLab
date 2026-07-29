@@ -13,6 +13,7 @@ import {
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 import SectionHeading from "../components/SectionHeading"
+import TerminalHeader from "../components/TerminalHeader"
 import { IconFlask, IconMail, IconTrophy } from "../components/icons"
 
 const ESTADO_COLORS: Record<EstadoAsignacion, string> = {
@@ -89,22 +90,11 @@ export default function InstructorDashboard() {
         {/* ══════════════════════════════════
             HEADER
             ══════════════════════════════════ */}
-        <motion.header
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="mb-8 sm:mb-10"
-        >
-          <h1
-            className="text-2xl sm:text-3xl font-semibold m-0"
-            style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-          >
-            Panel del Instructor
-          </h1>
-          <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-            Gestioná tus laboratorios y estudiantes
-          </p>
-        </motion.header>
+        <TerminalHeader
+          title="Panel del Instructor"
+          subtitle="Gestioná tus laboratorios y estudiantes"
+          prompt="whoami → instructor"
+        />
 
         <AnimatePresence>
           {error && (

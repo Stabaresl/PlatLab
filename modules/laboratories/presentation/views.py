@@ -43,6 +43,9 @@ from modules.laboratories.application.use_cases.editar_seccion import EditarSecc
 from modules.laboratories.application.use_cases.publicar_laboratorio import (
     PublicarLaboratorioUseCase,
 )
+from modules.laboratories.infrastructure.asignacion_inscripcion_provider import (
+    AsignacionInscripcionProvider,
+)
 from modules.laboratories.infrastructure.cached_laboratorio_repository import (
     CachedLaboratorioRepository,
 )
@@ -140,6 +143,9 @@ class LaboratorioViewSet(ViewSet):
     def _repositorio(self):
         return CachedLaboratorioRepository(LaboratorioRepository())
 
+    def _inscripcion_provider(self):
+        return AsignacionInscripcionProvider()
+
     def list(self, request):
         query_serializer = CatalogoFiltroQuerySerializer(data=request.query_params)
         query_serializer.is_valid(raise_exception=True)
@@ -153,7 +159,9 @@ class LaboratorioViewSet(ViewSet):
             estudiante_id=estudiante_id,
         )
 
-        resultados = ListarLaboratoriosQuery(self._repositorio()).execute(filtro)
+        resultados = ListarLaboratoriosQuery(
+            self._repositorio(), self._inscripcion_provider()
+        ).execute(filtro)
         serializados = [
             {
                 "id": str(item.id),
@@ -172,9 +180,13 @@ class LaboratorioViewSet(ViewSet):
         return paginator.get_paginated_response(pagina)
 
     def retrieve(self, request, pk=None):
-        instructor_id, _ = _resolver_ids(request)
-        detalle = ObtenerDetalleLaboratorioQuery(self._repositorio()).execute(
-            laboratorio_id=_parsear_uuid(pk), instructor_id=instructor_id
+        instructor_id, estudiante_id = _resolver_ids(request)
+        detalle = ObtenerDetalleLaboratorioQuery(
+            self._repositorio(), self._inscripcion_provider()
+        ).execute(
+            laboratorio_id=_parsear_uuid(pk),
+            instructor_id=instructor_id,
+            estudiante_id=estudiante_id,
         )
 
         return Response(
@@ -192,9 +204,11 @@ class LaboratorioViewSet(ViewSet):
 
     @action(detail=True, methods=["get"], url_path="toc")
     def toc(self, request, pk=None):
-        instructor_id, _ = _resolver_ids(request)
-        toc = ObtenerTOCQuery(self._repositorio()).execute(
-            laboratorio_id=_parsear_uuid(pk), instructor_id=instructor_id
+        instructor_id, estudiante_id = _resolver_ids(request)
+        toc = ObtenerTOCQuery(self._repositorio(), self._inscripcion_provider()).execute(
+            laboratorio_id=_parsear_uuid(pk),
+            instructor_id=instructor_id,
+            estudiante_id=estudiante_id,
         )
 
         return Response(

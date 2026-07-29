@@ -1,6 +1,7 @@
 import uuid
 
 from modules.laboratories.application.dtos import LaboratorioDetalleDTO
+from modules.laboratories.domain.ports import IEstadoInscripcionProvider, SinInscripcionProvider
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.shared.domain.exceptions import NotFoundError
 
@@ -18,16 +19,36 @@ class ObtenerDetalleLaboratorioQuery:
     el catálogo, HV-02/HI-01): un borrador ajeno responde 404, nunca 403
     — no se confirma la existencia de laboratorios que el actor no puede
     ver (mismo criterio anti-enumeración que Authentication, UC-01 E1).
+    Además, un estudiante con una asignación vigente para este
+    laboratorio (`estado_inscripcion_provider`) también puede verlo aunque
+    sea `personalizado` de otro instructor — Laboratories no conoce el
+    agregado Asignación directamente (dominio.md §1), por eso esto se
+    resuelve vía puerto, igual que el campo `inscrito` del catálogo.
     """
 
-    def __init__(self, laboratorio_repository: ILaboratorioRepository):
+    def __init__(
+        self,
+        laboratorio_repository: ILaboratorioRepository,
+        estado_inscripcion_provider: IEstadoInscripcionProvider | None = None,
+    ):
         self._repo = laboratorio_repository
+        self._inscripcion = estado_inscripcion_provider or SinInscripcionProvider()
 
     def execute(
-        self, laboratorio_id: uuid.UUID, instructor_id: uuid.UUID | None = None
+        self,
+        laboratorio_id: uuid.UUID,
+        instructor_id: uuid.UUID | None = None,
+        estudiante_id: uuid.UUID | None = None,
     ) -> LaboratorioDetalleDTO:
         laboratorio = self._repo.get_by_id(laboratorio_id)
-        if laboratorio is None or not laboratorio.es_visible_para(instructor_id):
+        visible = laboratorio is not None and (
+            laboratorio.es_visible_para(instructor_id)
+            or (
+                estudiante_id is not None
+                and self._inscripcion.esta_inscrito(estudiante_id, laboratorio_id)
+            )
+        )
+        if not visible:
             raise NotFoundError(_NO_ENCONTRADO_MSG)
 
         secciones = self._repo.get_secciones(laboratorio_id)
