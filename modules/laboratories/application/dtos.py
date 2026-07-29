@@ -152,3 +152,12 @@ class SeccionResultDTO:
     orden: int
     titulo: str
     tiene_practica: bool
+
+
+@dataclass(frozen=True)
+class PublicarLaboratorioDTO:
+    """api.md §5 `POST /laboratories/{id}/publish/` (UC-04, paso 6)."""
+
+    laboratorio_id: uuid.UUID
+    actor_id: uuid.UUID
+    actor_rol: str
