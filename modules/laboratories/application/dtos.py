@@ -171,3 +171,45 @@ class DuplicarLaboratorioDTO:
     laboratorio_id: uuid.UUID
     actor_id: uuid.UUID
     actor_rol: str
+
+
+@dataclass(frozen=True)
+class CrearExamenDTO:
+    """HE-09/HI-08, api.md §5 `POST /laboratories/{id}/exam/`. Examen 1:1 con Laboratorio."""
+
+    laboratorio_id: uuid.UUID
+    actor_id: uuid.UUID
+    actor_rol: str
+
+
+@dataclass(frozen=True)
+class ExamenResultDTO:
+    id: uuid.UUID
+    laboratorio_id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class AgregarPreguntaDTO:
+    """
+    api.md §5 `POST /laboratories/{id}/exam/questions/`. `respuesta` es
+    write-only (nunca se persiste en claro, mismo patrón que
+    `DefinirFlagDTO.valor`): para `opcion_multiple` es el identificador
+    de la opción correcta, para `abierta` el texto esperado.
+    """
+
+    laboratorio_id: uuid.UUID
+    enunciado: str
+    tipo: str
+    respuesta: str
+    actor_id: uuid.UUID
+    actor_rol: str
+    opciones: list[str] | None = None
+
+
+@dataclass(frozen=True)
+class PreguntaResultDTO:
+    id: uuid.UUID
+    examen_id: uuid.UUID
+    enunciado: str
+    tipo: str
+    opciones: list[str] | None

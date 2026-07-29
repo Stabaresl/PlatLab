@@ -1,7 +1,7 @@
 import uuid
 from typing import Protocol
 
-from modules.laboratories.domain.entities import Flag, Laboratorio, Seccion
+from modules.laboratories.domain.entities import Examen, Flag, Laboratorio, Pregunta, Seccion
 
 
 class ILaboratorioRepository(Protocol):
@@ -55,3 +55,15 @@ class ILaboratorioRepository(Protocol):
         ya existía (HE-05, api.md "Definir/actualizar flag").
         """
         ...
+
+    def get_examen_by_laboratorio(self, laboratorio_id: uuid.UUID) -> Examen | None:
+        """HE-09/HI-08: relación 1:1 con Laboratorio, opcional en `personalizado` (UC-03 A2)."""
+        ...
+
+    def add_examen(self, examen: Examen) -> Examen: ...
+
+    def get_examen_by_id(self, examen_id: uuid.UUID) -> Examen | None: ...
+
+    def add_pregunta(self, pregunta: Pregunta) -> Pregunta: ...
+
+    def get_preguntas(self, examen_id: uuid.UUID) -> list[Pregunta]: ...
