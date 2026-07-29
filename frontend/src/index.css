@@ -15,9 +15,10 @@
   --accent-primary: #3B82F6;
   --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.2);
 
-  /* Tipografía: Chakra Petch (títulos, look HUD/sci-fi) + JetBrains Mono
-     (labels, código, terminal) + Fira Sans (cuerpo de texto, legible). */
-  --font-heading: "Chakra Petch", "Fira Sans", sans-serif;
+  /* Tipografía (via ui-ux-pro-max, pairing "Cyberpunk Mobile"): Orbitron
+     (títulos, look HUD/sci-fi agresivo) + JetBrains Mono (labels, código,
+     terminal) + Fira Sans (cuerpo de texto, legible). */
+  --font-heading: "Orbitron", "Fira Sans", sans-serif;
   --font-body: "Fira Sans", "Inter", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
 }
@@ -31,7 +32,8 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  letter-spacing: 0.01em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 @keyframes blink {

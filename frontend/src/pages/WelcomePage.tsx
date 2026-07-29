@@ -122,8 +122,8 @@ export default function WelcomePage() {
               </span>
 
               <h1
-                className="text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
-                style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
+                className="text-3xl sm:text-4xl md:text-5xl font-black uppercase leading-tight"
+                style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)", letterSpacing: "0.03em" }}
               >
                 Aprende seguridad
                 <br />
