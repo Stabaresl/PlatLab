@@ -139,13 +139,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', default='')
 GOOGLE_OAUTH_CLIENT_SECRET = env('GOOGLE_OAUTH_CLIENT_SECRET', default='')
 GOOGLE_OAUTH_REDIRECT_URI = env(
-    'GOOGLE_OAUTH_REDIRECT_URI', default='http://localhost:3000/oauth/google/callback'
+    'GOOGLE_OAUTH_REDIRECT_URI', default='http://localhost:5173/oauth/google/callback'
 )
 
 GITHUB_OAUTH_CLIENT_ID = env('GITHUB_OAUTH_CLIENT_ID', default='')
 GITHUB_OAUTH_CLIENT_SECRET = env('GITHUB_OAUTH_CLIENT_SECRET', default='')
 GITHUB_OAUTH_REDIRECT_URI = env(
-    'GITHUB_OAUTH_REDIRECT_URI', default='http://localhost:3000/oauth/github/callback'
+    'GITHUB_OAUTH_REDIRECT_URI', default='http://localhost:5173/oauth/github/callback'
 )
 
 

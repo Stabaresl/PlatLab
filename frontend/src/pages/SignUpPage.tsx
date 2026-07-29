@@ -1,12 +1,8 @@
 import { useState, type FormEvent } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { api } from "./api"
+import { motion, AnimatePresence } from "framer-motion"
+import { register, login, setTokens, setLocalProfile, ApiError } from "./api"
 import OAuthButtons from "./OAuthButtons"
-
-interface RegisterResponse {
-  token: string
-  user: { id: number; name: string; email: string }
-}
 
 export default function SignUpPage() {
   const navigate = useNavigate()
@@ -22,27 +18,32 @@ export default function SignUpPage() {
     setError("")
 
     if (password !== confirm) {
-      setError("Passwords do not match")
+      setError("Las contraseñas no coinciden.")
       return
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters")
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/\d/.test(password)) {
+      setError("La contraseña debe tener al menos 8 caracteres, una mayúscula y un número.")
       return
     }
 
     setLoading(true)
     try {
-      const data = await api<RegisterResponse>("/register", {
-        method: "POST",
-        body: JSON.stringify({ name, email: email.toLowerCase(), password }),
+      const normalizedEmail = email.toLowerCase()
+      await register({
+        email: normalizedEmail,
+        password,
+        password_confirm: confirm,
+        nombre_completo: name,
       })
-      localStorage.setItem("token", data.token)
-      localStorage.setItem("user", JSON.stringify(data.user))
-      // TODO: Reemplazar 'estudiante' fijo por el rol que devuelva el backend
-      localStorage.setItem("role", "estudiante")
+      // El registro no devuelve tokens (solo confirma la cuenta creada) —
+      // se inicia sesión inmediatamente después con las mismas credenciales.
+      const tokens = await login({ email: normalizedEmail, password })
+      setTokens(tokens.access, tokens.refresh)
+      localStorage.setItem("role", tokens.rol)
+      setLocalProfile({ email: normalizedEmail, nombre_completo: name })
       navigate("/dashboard")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed")
+      setError(err instanceof ApiError ? err.message : "No se pudo crear la cuenta.")
     } finally {
       setLoading(false)
     }
@@ -53,7 +54,10 @@ export default function SignUpPage() {
       className="min-h-screen flex flex-col items-center justify-start sm:justify-center px-4 sm:px-0 pt-6 sm:pt-0"
       style={{ backgroundColor: "var(--bg-canvas)" }}
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
         className="w-full max-w-sm flex flex-col items-center gap-5 sm:gap-6 p-6 sm:p-8 rounded-lg my-6 sm:my-10"
         style={{
           backgroundColor: "var(--bg-surface)",
@@ -62,7 +66,10 @@ export default function SignUpPage() {
         }}
       >
         {/* Icono frío */}
-        <div
+        <motion.div
+          initial={{ scale: 0.7, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.35, delay: 0.1 }}
           className="flex items-center justify-center w-12 sm:w-14 h-12 sm:h-14 rounded-lg"
           style={{ backgroundColor: "var(--bg-surface-hover)" }}
         >
@@ -76,7 +83,7 @@ export default function SignUpPage() {
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
           </svg>
-        </div>
+        </motion.div>
 
         <h1
           className="text-xl sm:text-2xl font-semibold text-center m-0"
@@ -85,11 +92,20 @@ export default function SignUpPage() {
           Create Account
         </h1>
 
-        {error && (
-          <p className="text-sm w-full text-center m-0" style={{ color: "var(--accent-danger)" }}>
-            {error}
-          </p>
-        )}
+        <AnimatePresence>
+          {error && (
+            <motion.p
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: [0, -6, 6, -3, 0] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+              className="text-sm w-full text-center m-0"
+              style={{ color: "var(--accent-danger)" }}
+            >
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
 
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -142,7 +158,7 @@ export default function SignUpPage() {
               type="password"
               placeholder="············"
               required
-              minLength={6}
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2.5 rounded text-sm outline-none border transition-colors"
@@ -177,9 +193,11 @@ export default function SignUpPage() {
             />
           </div>
 
-          <button
+          <motion.button
             type="submit"
             disabled={loading}
+            whileHover={{ scale: loading ? 1 : 1.02 }}
+            whileTap={{ scale: loading ? 1 : 0.97 }}
             className="w-full py-2.5 rounded text-sm font-semibold border-none cursor-pointer transition-opacity hover:opacity-85 disabled:opacity-50"
             style={{
               backgroundColor: "var(--text-heading)",
@@ -188,7 +206,7 @@ export default function SignUpPage() {
             }}
           >
             {loading ? "Creating account…" : "Sign Up"}
-          </button>
+          </motion.button>
         </form>
 
         {/* Divider */}
@@ -212,7 +230,7 @@ export default function SignUpPage() {
             Sign In
           </Link>
         </p>
-      </div>
+      </motion.div>
     </main>
   )
 }

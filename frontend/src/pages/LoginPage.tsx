@@ -1,12 +1,8 @@
 import { useState, type FormEvent } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { api } from "./api"
+import { motion, AnimatePresence } from "framer-motion"
+import { login, setTokens, setLocalProfile, ApiError } from "./api"
 import OAuthButtons from "./OAuthButtons"
-
-interface LoginResponse {
-  token: string
-  user: { id: number; name: string; email: string }
-}
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -21,17 +17,13 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const data = await api<LoginResponse>("/login", {
-        method: "POST",
-        body: JSON.stringify({ email: email.toLowerCase(), password }),
-      })
-      localStorage.setItem("token", data.token)
-      localStorage.setItem("user", JSON.stringify(data.user))
-      // TODO: Reemplazar 'estudiante' fijo por el rol que devuelva el backend
-      localStorage.setItem("role", "estudiante")
+      const data = await login({ email: email.toLowerCase(), password })
+      setTokens(data.access, data.refresh)
+      localStorage.setItem("role", data.rol)
+      setLocalProfile({ email: email.toLowerCase() })
       navigate("/dashboard")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed")
+      setError(err instanceof ApiError ? err.message : "No se pudo iniciar sesión.")
     } finally {
       setLoading(false)
     }
@@ -42,7 +34,10 @@ export default function LoginPage() {
       className="min-h-screen flex flex-col items-center justify-start sm:justify-center px-4 sm:px-0 pt-8 sm:pt-0"
       style={{ backgroundColor: "var(--bg-canvas)" }}
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
         className="w-full max-w-sm flex flex-col items-center gap-5 sm:gap-6 p-6 sm:p-8 rounded-lg"
         style={{
           backgroundColor: "var(--bg-surface)",
@@ -51,7 +46,10 @@ export default function LoginPage() {
         }}
       >
         {/* Icono frío */}
-        <div
+        <motion.div
+          initial={{ scale: 0.7, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.35, delay: 0.1 }}
           className="flex items-center justify-center w-12 sm:w-14 h-12 sm:h-14 rounded-lg"
           style={{ backgroundColor: "var(--bg-surface-hover)" }}
         >
@@ -65,7 +63,7 @@ export default function LoginPage() {
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-        </div>
+        </motion.div>
 
         <h1
           className="text-xl sm:text-2xl font-semibold text-center m-0"
@@ -74,11 +72,20 @@ export default function LoginPage() {
           GAIA
         </h1>
 
-        {error && (
-          <p className="text-sm w-full text-center m-0" style={{ color: "var(--accent-danger)" }}>
-            {error}
-          </p>
-        )}
+        <AnimatePresence>
+          {error && (
+            <motion.p
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: [0, -6, 6, -3, 0] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+              className="text-sm w-full text-center m-0"
+              style={{ color: "var(--accent-danger)" }}
+            >
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
 
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -123,9 +130,11 @@ export default function LoginPage() {
             />
           </div>
 
-          <button
+          <motion.button
             type="submit"
             disabled={loading}
+            whileHover={{ scale: loading ? 1 : 1.02 }}
+            whileTap={{ scale: loading ? 1 : 0.97 }}
             className="w-full py-2.5 rounded text-sm font-semibold border-none cursor-pointer transition-opacity hover:opacity-85 disabled:opacity-50"
             style={{
               backgroundColor: "var(--text-heading)",
@@ -134,7 +143,7 @@ export default function LoginPage() {
             }}
           >
             {loading ? "Signing in…" : "Sign In"}
-          </button>
+          </motion.button>
         </form>
 
         {/* Divider */}
@@ -158,7 +167,7 @@ export default function LoginPage() {
             Sign Up
           </Link>
         </p>
-      </div>
+      </motion.div>
     </main>
   )
 }

@@ -12,6 +12,7 @@ import SignUpPage from "./pages/SignUpPage"
 import WelcomePage from "./pages/WelcomePage"
 import AboutPage from "./pages/AboutPage"
 import DashboardPage from "./pages/DashboardPage"
+import OAuthCallbackPage from "./pages/OAuthCallbackPage"
 
 const token = () => localStorage.getItem("token")
 
@@ -40,6 +41,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/about" element={<AboutPage />} />
         <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><SignUpPage /></PublicRoute>} />
+        <Route path="/oauth/:provider/callback" element={<OAuthCallbackPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
