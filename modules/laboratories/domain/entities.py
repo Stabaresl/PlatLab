@@ -7,8 +7,13 @@ from modules.laboratories.domain.value_objects import (
     EstadoLaboratorio,
     NivelDificultad,
     TipoLaboratorio,
+    TipoPregunta,
 )
 from modules.shared.domain.base_entity import BaseEntity
+from modules.shared.domain.exceptions import ValidationError
+
+_OPCIONES_REQUERIDAS_MSG = "Las preguntas de opción múltiple requieren al menos dos opciones."
+_OPCIONES_NO_PERMITIDAS_MSG = "Las preguntas abiertas no llevan opciones."
 
 
 @dataclass(eq=False)
@@ -91,3 +96,47 @@ class Flag(BaseEntity):
 
     def __post_init__(self):
         BaseEntity.__init__(self, id=self.id)
+
+
+@dataclass(eq=False)
+class Examen(BaseEntity):
+    """
+    HE-09/HI-08, dominio.md §1: agregado interno de `Laboratorio`,
+    relación 1:1 (base-de-datos.md "laboratories_examen"). Opcional en
+    laboratorios `personalizado` (UC-03 A2) — si no existe, el
+    laboratorio se marca completo directamente al terminar las
+    secciones, sin bloquear al estudiante.
+    """
+
+    laboratorio_id: uuid.UUID
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+
+    def __post_init__(self):
+        BaseEntity.__init__(self, id=self.id)
+
+
+@dataclass(eq=False)
+class Pregunta(BaseEntity):
+    """
+    dominio.md §1, base-de-datos.md "laboratories_pregunta". `tipo`
+    determina la estrategia de calificación en `CalificadorDeExamen`
+    (Progress, Strategy). `respuesta_hash` nunca expone la respuesta
+    correcta en claro (mismo patrón que `Flag.hash`) — para `abierta` se
+    hashea el texto normalizado (trim + lower), para `opcion_multiple`
+    se hashea el identificador de la opción correcta.
+    """
+
+    examen_id: uuid.UUID
+    enunciado: str
+    tipo: TipoPregunta
+    respuesta_hash: str
+    opciones: list[str] | None = None
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+
+    def __post_init__(self):
+        BaseEntity.__init__(self, id=self.id)
+        if self.tipo == TipoPregunta.OPCION_MULTIPLE:
+            if not self.opciones or len(self.opciones) < 2:
+                raise ValidationError(_OPCIONES_REQUERIDAS_MSG)
+        elif self.opciones:
+            raise ValidationError(_OPCIONES_NO_PERMITIDAS_MSG)

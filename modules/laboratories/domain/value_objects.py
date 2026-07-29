@@ -18,6 +18,13 @@ class TipoLaboratorio(str, Enum):
     PERSONALIZADO = "personalizado"
 
 
+class TipoPregunta(str, Enum):
+    """dominio.md/base-de-datos.md "laboratories_pregunta": Strategy de calificación (HE-09)."""
+
+    OPCION_MULTIPLE = "opcion_multiple"
+    ABIERTA = "abierta"
+
+
 @dataclass(frozen=True)
 class AyudaProgresiva:
     """
