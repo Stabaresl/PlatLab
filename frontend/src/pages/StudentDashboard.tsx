@@ -6,11 +6,12 @@ import {
   getHistory,
   acceptInvitation,
   rejectInvitation,
-  logout,
   ApiError,
   type Asignacion,
   type LaboratorioDetalle,
 } from "./api"
+import Navbar from "../components/Navbar"
+import Footer from "../components/Footer"
 
 type LabStatus = "completado" | "en_progreso" | "pendiente" | "vencida" | "rechazada"
 
@@ -116,10 +117,9 @@ export default function StudentDashboard() {
   )
 
   return (
-    <main
-      className="min-h-screen"
-      style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}
-    >
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+      <Navbar />
+    <main className="flex-1">
       <div
         className="mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10"
         style={{ maxWidth: "1200px" }}
@@ -131,41 +131,17 @@ export default function StudentDashboard() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-8 sm:mb-10"
+          className="mb-8 sm:mb-10"
         >
-          <div>
-            <h1
-              className="text-2xl sm:text-3xl font-semibold m-0"
-              style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-            >
-              Panel del Estudiante
-            </h1>
-            <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-              Bienvenido de vuelta
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={logout}
-            className="self-start sm:self-auto px-4 sm:px-5 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-semibold cursor-pointer border transition-colors"
-            style={{
-              backgroundColor: "transparent",
-              borderColor: "var(--ui-border-default)",
-              color: "var(--text-muted)",
-              fontFamily: "'Fira Code', monospace",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--accent-danger)"
-              e.currentTarget.style.color = "var(--accent-danger)"
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--ui-border-default)"
-              e.currentTarget.style.color = "var(--text-muted)"
-            }}
+          <h1
+            className="text-2xl sm:text-3xl font-semibold m-0"
+            style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
           >
-            Cerrar Sesión
-          </button>
+            Panel del Estudiante
+          </h1>
+          <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+            Bienvenido de vuelta
+          </p>
         </motion.header>
 
         <AnimatePresence>
@@ -393,6 +369,8 @@ export default function StudentDashboard() {
         )}
       </div>
     </main>
+      <Footer />
+    </div>
   )
 }
 

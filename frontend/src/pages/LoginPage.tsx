@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { login, setTokens, setLocalProfile, ApiError } from "./api"
+import { login, setTokens, setLocalProfile, ApiError, OAUTH_ENABLED } from "./api"
 import OAuthButtons from "./OAuthButtons"
+import Navbar from "../components/Navbar"
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -30,9 +31,10 @@ export default function LoginPage() {
   }
 
   return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-canvas)" }}>
+      <Navbar />
     <main
-      className="min-h-screen flex flex-col items-center justify-start sm:justify-center px-4 sm:px-0 pt-8 sm:pt-0"
-      style={{ backgroundColor: "var(--bg-canvas)" }}
+      className="flex-1 flex flex-col items-center justify-start sm:justify-center px-4 sm:px-0 py-8 sm:py-0"
     >
       <motion.div
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -146,14 +148,18 @@ export default function LoginPage() {
           </motion.button>
         </form>
 
-        {/* Divider */}
-        <div className="w-full flex items-center gap-3 text-xs" style={{ color: "var(--ui-border-default)" }}>
-          <div className="flex-1 h-px" style={{ backgroundColor: "var(--ui-border-default)" }} />
-          <span>or continue with</span>
-          <div className="flex-1 h-px" style={{ backgroundColor: "var(--ui-border-default)" }} />
-        </div>
+        {OAUTH_ENABLED && (
+          <>
+            {/* Divider */}
+            <div className="w-full flex items-center gap-3 text-xs" style={{ color: "var(--ui-border-default)" }}>
+              <div className="flex-1 h-px" style={{ backgroundColor: "var(--ui-border-default)" }} />
+              <span>or continue with</span>
+              <div className="flex-1 h-px" style={{ backgroundColor: "var(--ui-border-default)" }} />
+            </div>
 
-        <OAuthButtons />
+            <OAuthButtons />
+          </>
+        )}
 
         <p className="text-sm m-0" style={{ color: "var(--text-muted)" }}>
           Don&apos;t have an account?{" "}
@@ -169,5 +175,6 @@ export default function LoginPage() {
         </p>
       </motion.div>
     </main>
+    </div>
   )
 }

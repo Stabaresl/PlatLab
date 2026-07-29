@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
+import Navbar from "../components/Navbar"
 import grimBg from "../assets/grim.png"
 
 export default function AboutPage() {
@@ -42,76 +43,7 @@ export default function AboutPage() {
 
       {/* ── Contenido ── */}
       <div className="relative z-10 flex flex-col min-h-screen">
-        {/* ── Header ── */}
-        <header
-          className="flex items-center justify-between w-full
-            px-4 sm:px-6 md:px-8 lg:px-12
-            h-16 sm:h-20 lg:h-[100px]"
-        >
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            className="bg-transparent border-none cursor-pointer p-0"
-          >
-            <span
-              className="text-2xl sm:text-3xl font-semibold select-none"
-              style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-            >
-              GAIA
-            </span>
-          </button>
-
-          <nav className="flex items-center gap-2 sm:gap-3 md:gap-4">
-            <button
-              type="button"
-              onClick={() => navigate("/signup")}
-              className="
-                px-3 sm:px-5 md:px-6
-                py-1.5 sm:py-2 md:py-3
-                rounded text-xs sm:text-sm
-                font-semibold cursor-pointer border
-                transition-all duration-200
-                whitespace-nowrap
-              "
-              style={{
-                backgroundColor: "transparent",
-                borderColor: "transparent",
-                color: "var(--text-heading)",
-                fontFamily: "'Fira Code', monospace",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#EF4444"
-                e.currentTarget.style.borderColor = "#EF4444"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "var(--text-heading)"
-                e.currentTarget.style.borderColor = "transparent"
-              }}
-            >
-              Sign Up
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="
-                px-3 sm:px-5 md:px-6
-                py-1.5 sm:py-2 md:py-3
-                rounded text-xs sm:text-sm
-                font-semibold cursor-pointer border-none
-                transition-opacity hover:opacity-80
-                whitespace-nowrap
-              "
-              style={{
-                backgroundColor: "var(--text-heading)",
-                color: "#0F1117",
-                fontFamily: "'Fira Code', monospace",
-              }}
-            >
-              Get Started
-            </button>
-          </nav>
-        </header>
+        <Navbar />
 
         {/* ══════════════════════════════════════════════
             CONTENIDO PRINCIPAL — scroll

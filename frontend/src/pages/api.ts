@@ -3,6 +3,13 @@
 
 const BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000/api/v1"
 
+// Los botones de Google/GitHub solo tienen sentido si el backend tiene
+// credenciales OAuth reales configuradas (GOOGLE_OAUTH_CLIENT_ID / GITHUB_
+// OAUTH_CLIENT_ID en .env) — sin ellas, el proveedor devuelve un 404/400
+// al recibir `client_id` vacío. Se ocultan por defecto para no dejar al
+// usuario en un callejón sin salida; activar con VITE_OAUTH_ENABLED=true.
+export const OAUTH_ENABLED = (import.meta as any).env?.VITE_OAUTH_ENABLED === "true"
+
 // ---------------------------------------------------------------------------
 // Tokens (SimpleJWT: access de vida corta + refresh rotado, seguridad.md §2)
 // ---------------------------------------------------------------------------

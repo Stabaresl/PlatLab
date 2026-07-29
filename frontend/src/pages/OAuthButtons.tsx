@@ -1,12 +1,16 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { oauthAuthorize, ApiError, type OAuthProvider } from "./api"
+import { oauthAuthorize, ApiError, OAUTH_ENABLED, type OAuthProvider } from "./api"
 
 // Solo Google y GitHub: son los únicos proveedores con adaptador en el
 // backend (`modules.authentication.presentation.views._OAUTH_ADAPTERS`).
+// Ocultos si el backend no tiene credenciales reales configuradas (ver
+// OAUTH_ENABLED en api.ts) — evita el 404 de "client_id vacío".
 export default function OAuthButtons() {
   const [loading, setLoading] = useState<OAuthProvider | null>(null)
   const [error, setError] = useState("")
+
+  if (!OAUTH_ENABLED) return null
 
   const handleOAuth = async (provider: OAuthProvider) => {
     setError("")
