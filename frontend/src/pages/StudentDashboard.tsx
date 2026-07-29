@@ -13,6 +13,7 @@ import {
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
 import ProgressRing from "../components/ProgressRing"
 import TerminalHeader from "../components/TerminalHeader"
@@ -122,7 +123,9 @@ export default function StudentDashboard() {
   )
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+      <HeroBackground image="grim" imageOpacity={0.06} overlayOpacity={0.9} texture="grid" textureOpacity={0.03} />
+      <div className="relative z-10 flex flex-col min-h-screen">
       <Navbar />
     <main className="flex-1">
       <div
@@ -184,7 +187,7 @@ export default function StudentDashboard() {
                 <Link
                   to="/laboratorios"
                   className="text-xs sm:text-sm font-semibold no-underline transition-opacity hover:opacity-80"
-                  style={{ color: "var(--accent-primary)", fontFamily: "'Fira Code', monospace" }}
+                  style={{ color: "var(--accent-primary)", fontFamily: "var(--font-mono)" }}
                 >
                   Ver catálogo completo →
                 </Link>
@@ -236,7 +239,7 @@ export default function StudentDashboard() {
                                 disabled={busyId === row.assignment.id}
                                 onClick={() => handleAccept(row.assignment.id)}
                                 className="px-3 sm:px-4 py-1.5 rounded text-xs font-semibold cursor-pointer border-none transition-opacity hover:opacity-80 disabled:opacity-50"
-                                style={{ backgroundColor: "var(--accent-primary)", color: "#fff", fontFamily: "'Fira Code', monospace" }}
+                                style={{ backgroundColor: "var(--accent-primary)", color: "#fff", fontFamily: "var(--font-mono)" }}
                               >
                                 Aceptar
                               </button>
@@ -255,7 +258,7 @@ export default function StudentDashboard() {
                             <Link
                               to={`/resolver/${row.assignment.id}`}
                               className="px-3 sm:px-4 py-1.5 rounded text-xs font-semibold no-underline transition-opacity hover:opacity-80"
-                              style={{ backgroundColor: "var(--accent-primary)", color: "#fff", fontFamily: "'Fira Code', monospace" }}
+                              style={{ backgroundColor: "var(--accent-primary)", color: "#fff", fontFamily: "var(--font-mono)" }}
                             >
                               {row.status === "completado" ? "Ver" : "Continuar"}
                             </Link>
@@ -314,7 +317,7 @@ export default function StudentDashboard() {
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-secondary)" }}
               >
                 <div className="flex flex-col gap-1" style={{ maxWidth: "600px" }}>
-                  <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+                  <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
                     <IconRocket style={{ color: "var(--ui-border-gold)" }} />
                     ¿Listo para el siguiente nivel?
                   </h2>
@@ -329,7 +332,7 @@ export default function StudentDashboard() {
                   type="button"
                   onClick={() => setShowInstructorModal(true)}
                   className="w-full sm:w-auto px-5 sm:px-6 py-2.5 rounded text-sm font-semibold cursor-pointer border-none transition-opacity hover:opacity-85"
-                  style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+                  style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
                 >
                   Convertirme en Instructor
                 </button>
@@ -348,6 +351,7 @@ export default function StudentDashboard() {
       </div>
     </main>
       <Footer />
+      </div>
     </div>
   )
 }
@@ -366,7 +370,7 @@ function StatCard({ label, value, color, icon }: { label: string; value: number;
           {icon}
         </div>
       )}
-      <span className="text-xl sm:text-3xl font-bold" style={{ color, fontFamily: "'Fira Code', monospace" }}>
+      <span className="text-xl sm:text-3xl font-bold" style={{ color, fontFamily: "var(--font-mono)" }}>
         {value}
       </span>
       <span className="text-[11px] sm:text-xs font-medium text-center" style={{ color: "var(--text-muted)" }}>{label}</span>
@@ -435,7 +439,7 @@ function InstructorRegistrationModal({
         }}
       >
         <div className="flex items-center justify-between mb-5 sm:mb-6">
-          <h2 className="text-lg sm:text-xl font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+          <h2 className="text-lg sm:text-xl font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
             Registro de Instructor
           </h2>
           <button
@@ -461,7 +465,7 @@ function InstructorRegistrationModal({
               type="button"
               onClick={onClose}
               className="px-5 py-2 rounded text-sm font-semibold cursor-pointer border-none transition-opacity hover:opacity-85"
-              style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+              style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
             >
               Entendido
             </button>
@@ -474,14 +478,14 @@ function InstructorRegistrationModal({
             </p>
 
             <div className="mb-4 sm:mb-5">
-              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "'Fira Code', monospace" }}>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}>
                 Tipo de Instructor <span style={{ color: "var(--accent-danger)" }}>*</span>
               </label>
               <select
                 value={form.tipo}
                 onChange={(e) => update("tipo", e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded text-sm appearance-none cursor-pointer transition-colors"
-                style={{ backgroundColor: "var(--bg-surface)", color: form.tipo ? "var(--text-base)" : "var(--text-muted)", border: "1px solid var(--ui-border-default)", fontFamily: "'Fira Sans', sans-serif" }}
+                style={{ backgroundColor: "var(--bg-surface)", color: form.tipo ? "var(--text-base)" : "var(--text-muted)", border: "1px solid var(--ui-border-default)", fontFamily: "var(--font-heading)" }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent-primary)" }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ui-border-default)" }}
               >
@@ -492,7 +496,7 @@ function InstructorRegistrationModal({
             </div>
 
             <div className="mb-4 sm:mb-5">
-              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "'Fira Code', monospace" }}>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}>
                 Institución / Afiliación
               </label>
               <input
@@ -501,14 +505,14 @@ function InstructorRegistrationModal({
                 onChange={(e) => update("institucion", e.target.value)}
                 placeholder="Ej: Universidad Nacional de Colombia"
                 className="w-full px-3.5 py-2.5 rounded text-sm transition-colors"
-                style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-base)", border: "1px solid var(--ui-border-default)", fontFamily: "'Fira Sans', sans-serif" }}
+                style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-base)", border: "1px solid var(--ui-border-default)", fontFamily: "var(--font-heading)" }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent-primary)" }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ui-border-default)" }}
               />
             </div>
 
             <div className="mb-4 sm:mb-5">
-              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "'Fira Code', monospace" }}>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}>
                 Áreas de Especialización
               </label>
               <input
@@ -517,14 +521,14 @@ function InstructorRegistrationModal({
                 onChange={(e) => update("especialidades", e.target.value)}
                 placeholder="Ej: Seguridad Web, Redes, Forense"
                 className="w-full px-3.5 py-2.5 rounded text-sm transition-colors"
-                style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-base)", border: "1px solid var(--ui-border-default)", fontFamily: "'Fira Sans', sans-serif" }}
+                style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-base)", border: "1px solid var(--ui-border-default)", fontFamily: "var(--font-heading)" }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent-primary)" }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ui-border-default)" }}
               />
             </div>
 
             <div className="mb-5 sm:mb-6">
-              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "'Fira Code', monospace" }}>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}>
                 ¿Por qué querés ser instructor?
               </label>
               <textarea
@@ -533,7 +537,7 @@ function InstructorRegistrationModal({
                 placeholder="Contanos qué te motiva a crear laboratorios y guiar a otros estudiantes..."
                 rows={3}
                 className="w-full px-3.5 py-2.5 rounded text-sm resize-none transition-colors"
-                style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-base)", border: "1px solid var(--ui-border-default)", fontFamily: "'Fira Sans', sans-serif" }}
+                style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-base)", border: "1px solid var(--ui-border-default)", fontFamily: "var(--font-heading)" }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent-primary)" }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ui-border-default)" }}
               />
@@ -544,7 +548,7 @@ function InstructorRegistrationModal({
                 type="button"
                 onClick={onClose}
                 className="px-4 py-2 rounded text-sm font-medium cursor-pointer transition-colors"
-                style={{ backgroundColor: "transparent", color: "var(--text-muted)", border: "1px solid var(--ui-border-default)", fontFamily: "'Fira Code', monospace" }}
+                style={{ backgroundColor: "transparent", color: "var(--text-muted)", border: "1px solid var(--ui-border-default)", fontFamily: "var(--font-mono)" }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface-hover)" }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent" }}
               >
@@ -555,7 +559,7 @@ function InstructorRegistrationModal({
                 onClick={() => setSent(true)}
                 disabled={!form.tipo}
                 className="px-5 py-2 rounded text-sm font-semibold cursor-pointer border-none transition-opacity hover:opacity-85 disabled:opacity-50"
-                style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+                style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
               >
                 Registrarme como Instructor
               </button>

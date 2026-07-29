@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { getCatalogo, ApiError, type LaboratorioListItem, type NivelDificultad } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
 import TerminalHeader from "../components/TerminalHeader"
 import { IconFlask, IconSearch, IconArrowRight } from "../components/icons"
@@ -47,7 +48,9 @@ export default function CatalogPage() {
   }, [labs, query])
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+      <HeroBackground image="term" imageOpacity={0.07} overlayOpacity={0.9} texture="grid" textureOpacity={0.04} />
+      <div className="relative z-10 flex flex-col min-h-screen">
       <Navbar />
       <main className="flex-1">
         <div className="mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12" style={{ maxWidth: "1200px" }}>
@@ -69,7 +72,7 @@ export default function CatalogPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar por nombre o tema..."
                 className="flex-1 bg-transparent border-none outline-none text-sm"
-                style={{ color: "var(--text-base)", fontFamily: "'Fira Sans', sans-serif" }}
+                style={{ color: "var(--text-base)", fontFamily: "var(--font-heading)" }}
               />
             </div>
             <div className="flex gap-2">
@@ -83,7 +86,7 @@ export default function CatalogPage() {
                     backgroundColor: dificultad === d ? "var(--accent-primary)" : "var(--bg-surface)",
                     color: dificultad === d ? "#fff" : "var(--text-muted)",
                     border: `1px solid ${dificultad === d ? "var(--accent-primary)" : "var(--ui-border-default)"}`,
-                    fontFamily: "'Fira Code', monospace",
+                    fontFamily: "var(--font-mono)",
                   }}
                 >
                   {d ? DIFICULTAD_LABEL[d] : "Todos"}
@@ -152,7 +155,7 @@ export default function CatalogPage() {
                           {DIFICULTAD_LABEL[lab.nivel_dificultad]}
                         </span>
                       </div>
-                      <h3 className="text-sm sm:text-base font-semibold mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+                      <h3 className="text-sm sm:text-base font-semibold mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
                         {lab.nombre}
                       </h3>
                       <p className="text-xs sm:text-sm leading-relaxed mb-3 flex-1" style={{ color: "var(--text-muted)" }}>
@@ -169,7 +172,7 @@ export default function CatalogPage() {
                       )}
                       <span
                         className="inline-flex items-center gap-1 text-xs font-semibold mt-auto transition-transform group-hover:translate-x-0.5"
-                        style={{ color: "var(--accent-primary)", fontFamily: "'Fira Code', monospace" }}
+                        style={{ color: "var(--accent-primary)", fontFamily: "var(--font-mono)" }}
                       >
                         Ver detalle <IconArrowRight width={14} height={14} />
                       </span>
@@ -182,6 +185,7 @@ export default function CatalogPage() {
         </div>
       </main>
       <Footer />
+      </div>
     </div>
   )
 }

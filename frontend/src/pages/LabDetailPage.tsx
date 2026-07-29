@@ -5,6 +5,7 @@ import { getLaboratorio, getToc, enrollLaboratorio, ApiError, type LaboratorioDe
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 import MatrixRain from "../components/MatrixRain"
+import HeroBackground from "../components/HeroBackground"
 import { IconFlask, IconExam, IconLock } from "../components/icons"
 
 const DIFICULTAD_LABEL: Record<NivelDificultad, string> = {
@@ -73,7 +74,9 @@ export default function LabDetailPage() {
   }, [id])
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+      <HeroBackground image="grim" imageOpacity={0.08} overlayOpacity={0.88} texture="matrix" textureOpacity={0.035} />
+      <div className="relative z-10 flex flex-col min-h-screen">
       <Navbar />
       <main className="flex-1">
         <div className="mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12" style={{ maxWidth: "880px" }}>
@@ -81,7 +84,7 @@ export default function LabDetailPage() {
             type="button"
             onClick={() => navigate("/laboratorios")}
             className="text-xs sm:text-sm mb-6 cursor-pointer border-none bg-transparent px-0"
-            style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}
+            style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
           >
             ← Volver al catálogo
           </button>
@@ -120,7 +123,7 @@ export default function LabDetailPage() {
                 </span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-semibold mb-3" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+              <h1 className="text-2xl sm:text-3xl font-semibold mb-3" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
                 {lab.nombre}
               </h1>
               <p className="text-sm sm:text-base leading-relaxed mb-5" style={{ color: "var(--text-muted)" }}>
@@ -137,7 +140,7 @@ export default function LabDetailPage() {
                 </div>
               )}
 
-              <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold mb-4" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+              <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold mb-4" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
                 <IconFlask /> Contenido del laboratorio
               </h2>
               <div className="flex flex-col gap-2 mb-8">
@@ -149,7 +152,7 @@ export default function LabDetailPage() {
                   >
                     <span
                       className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold shrink-0"
-                      style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--ui-border-gold)", fontFamily: "'Fira Code', monospace" }}
+                      style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--ui-border-gold)", fontFamily: "var(--font-mono)" }}
                     >
                       {s.orden}
                     </span>
@@ -201,7 +204,7 @@ export default function LabDetailPage() {
                       onClick={handleEnroll}
                       disabled={enrolling}
                       className="relative z-10 shrink-0 px-5 py-2.5 rounded text-sm font-semibold cursor-pointer border-none transition-opacity hover:opacity-85 disabled:opacity-50"
-                      style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+                      style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
                     >
                       {enrolling ? "Inscribiendo…" : "Inscribirme ahora"}
                     </button>
@@ -209,7 +212,7 @@ export default function LabDetailPage() {
                     <Link
                       to="/dashboard"
                       className="relative z-10 shrink-0 px-5 py-2.5 rounded text-sm font-semibold no-underline transition-opacity hover:opacity-85"
-                      style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+                      style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
                     >
                       Ir a mi Dashboard
                     </Link>
@@ -218,7 +221,7 @@ export default function LabDetailPage() {
                   <Link
                     to="/signup"
                     className="relative z-10 shrink-0 px-5 py-2.5 rounded text-sm font-semibold no-underline transition-opacity hover:opacity-85"
-                    style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+                    style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
                   >
                     Crear cuenta gratis
                   </Link>
@@ -229,6 +232,7 @@ export default function LabDetailPage() {
         </div>
       </main>
       <Footer />
+      </div>
     </div>
   )
 }

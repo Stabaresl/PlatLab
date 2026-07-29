@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { register, login, setTokens, setLocalProfile, ApiError, OAUTH_ENABLED } from "./api"
 import OAuthButtons from "./OAuthButtons"
 import Navbar from "../components/Navbar"
+import HeroBackground from "../components/HeroBackground"
 
 export default function SignUpPage() {
   const navigate = useNavigate()
@@ -51,10 +52,13 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-canvas)" }}>
-      <Navbar />
+    <div className="relative min-h-screen flex flex-col overflow-hidden" style={{ backgroundColor: "var(--bg-canvas)" }}>
+      <HeroBackground image="term" imageOpacity={0.12} texture="grid" textureOpacity={0.06} />
+      <div className="relative z-10">
+        <Navbar />
+      </div>
     <main
-      className="flex-1 flex flex-col items-center justify-start sm:justify-center px-4 sm:px-0 py-6 sm:py-0"
+      className="relative z-10 flex-1 flex flex-col items-center justify-start sm:justify-center px-4 sm:px-0 py-6 sm:py-0"
     >
       <motion.div
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -89,7 +93,7 @@ export default function SignUpPage() {
 
         <h1
           className="text-xl sm:text-2xl font-semibold text-center m-0"
-          style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+          style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
         >
           Create Account
         </h1>
@@ -204,7 +208,7 @@ export default function SignUpPage() {
             style={{
               backgroundColor: "var(--text-heading)",
               color: "#0F1117",
-              fontFamily: "'Fira Code', monospace",
+              fontFamily: "var(--font-mono)",
             }}
           >
             {loading ? "Creating account…" : "Sign Up"}

@@ -16,7 +16,7 @@ export default function Footer() {
           <div className="col-span-2 sm:col-span-1 flex flex-col gap-2 sm:gap-3">
             <span
               className="text-lg sm:text-xl font-semibold"
-              style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+              style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
             >
               GAIA
             </span>

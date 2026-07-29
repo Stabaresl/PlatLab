@@ -41,7 +41,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
         <Link
           to="/"
           className="text-xl sm:text-2xl font-semibold no-underline select-none"
-          style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+          style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
         >
           GAIA
         </Link>
@@ -79,7 +79,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
               <Link
                 to="/dashboard"
                 className="text-sm font-semibold no-underline px-3 sm:px-4 py-1.5 sm:py-2 rounded transition-opacity hover:opacity-85"
-                style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+                style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
               >
                 Dashboard
               </Link>
@@ -87,7 +87,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
                 type="button"
                 onClick={logout}
                 className="text-xs sm:text-sm font-semibold cursor-pointer border px-3 sm:px-4 py-1.5 sm:py-2 rounded transition-colors"
-                style={{ backgroundColor: "transparent", borderColor: "var(--ui-border-default)", color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}
+                style={{ backgroundColor: "transparent", borderColor: "var(--ui-border-default)", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent-danger)"; e.currentTarget.style.color = "var(--accent-danger)" }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--ui-border-default)"; e.currentTarget.style.color = "var(--text-muted)" }}
               >
@@ -100,7 +100,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
                 type="button"
                 onClick={() => navigate("/login")}
                 className="text-xs sm:text-sm font-semibold cursor-pointer border-none bg-transparent px-2 sm:px-3 py-1.5 transition-colors"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Code', monospace" }}
+                style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}
               >
                 Iniciar sesión
               </button>
@@ -108,7 +108,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
                 type="button"
                 onClick={() => navigate("/signup")}
                 className="text-xs sm:text-sm font-semibold cursor-pointer border-none px-3 sm:px-5 py-1.5 sm:py-2 rounded transition-opacity hover:opacity-85"
-                style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+                style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
               >
                 Comenzar
               </button>

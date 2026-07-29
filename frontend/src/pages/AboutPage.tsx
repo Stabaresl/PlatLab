@@ -22,7 +22,7 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative" style={{ color: "var(--text-base)" }}>
-      {/* ── Fondo grim.png con blur ── */}
+      {/* ── Fondo grim.png con blur + Ken Burns lento ── */}
       <div
         className="absolute inset-0"
         style={{
@@ -30,6 +30,8 @@ export default function AboutPage() {
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
+          animation: "hero-kenburns 28s ease-in-out infinite",
+          willChange: "transform",
         }}
       />
       <div
@@ -54,7 +56,7 @@ export default function AboutPage() {
             <section className="mb-12 sm:mb-20">
               <h1
                 className="text-3xl sm:text-4xl md:text-5xl font-semibold mb-3 sm:mb-4"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+                style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
               >
                 ¿Qué es PlatLAB?
               </h1>
@@ -76,7 +78,7 @@ export default function AboutPage() {
                   style={{
                     backgroundColor: "var(--text-heading)",
                     color: "#0F1117",
-                    fontFamily: "'Fira Code', monospace",
+                    fontFamily: "var(--font-mono)",
                   }}
                 >
                   <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -92,7 +94,7 @@ export default function AboutPage() {
                     backgroundColor: "transparent",
                     borderColor: "var(--ui-border-default)",
                     color: "var(--text-muted)",
-                    fontFamily: "'Fira Code', monospace",
+                    fontFamily: "var(--font-mono)",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = "var(--text-base)"
@@ -114,7 +116,7 @@ export default function AboutPage() {
             <section className="mb-12 sm:mb-20">
               <h2
                 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+                style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
               >
                 Características principales
               </h2>
@@ -183,7 +185,7 @@ export default function AboutPage() {
             <section className="mb-12 sm:mb-20">
               <h2
                 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+                style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
               >
                 Stack tecnológico
               </h2>
@@ -233,7 +235,7 @@ export default function AboutPage() {
             <section className="mb-12 sm:mb-20">
               <h2
                 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+                style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
               >
                 Documentación del proyecto
               </h2>
@@ -291,7 +293,7 @@ export default function AboutPage() {
               >
                 <h2
                   className="text-xl sm:text-2xl font-semibold mb-3"
-                  style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+                  style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
                 >
                   Repositorio
                 </h2>
@@ -306,7 +308,7 @@ export default function AboutPage() {
                   style={{
                     backgroundColor: "var(--text-heading)",
                     color: "#0F1117",
-                    fontFamily: "'Fira Code', monospace",
+                    fontFamily: "var(--font-mono)",
                   }}
                 >
                   <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -329,7 +331,7 @@ export default function AboutPage() {
                   backgroundColor: "transparent",
                   borderColor: "var(--ui-border-default)",
                   color: "var(--text-muted)",
-                  fontFamily: "'Fira Code', monospace",
+                  fontFamily: "var(--font-mono)",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "var(--text-base)"
@@ -460,7 +462,7 @@ function FeatureCard({
       </div>
       <h3
         className="text-sm sm:text-base font-medium mb-1.5"
-        style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+        style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
       >
         {title}
       </h3>
@@ -483,7 +485,7 @@ function TechStackGroup({
     <div className="flex flex-col gap-2 sm:gap-3">
       <h4
         className="text-xs sm:text-sm font-semibold m-0"
-        style={{ color: "var(--text-heading)", fontFamily: "'Fira Code', monospace" }}
+        style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}
       >
         {title}
       </h4>

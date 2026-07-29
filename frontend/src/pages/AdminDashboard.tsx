@@ -12,6 +12,7 @@ import {
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
 import ProgressRing from "../components/ProgressRing"
 import TerminalHeader from "../components/TerminalHeader"
@@ -72,7 +73,9 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+      <HeroBackground image="grim" imageOpacity={0.05} overlayOpacity={0.92} texture="none" />
+      <div className="relative z-10 flex flex-col min-h-screen">
       <Navbar />
     <main className="flex-1">
       <div
@@ -178,7 +181,7 @@ export default function AdminDashboard() {
                   <CarouselButton label="Anterior" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
                     ←
                   </CarouselButton>
-                  <span className="text-xs" style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}>
+                  <span className="text-xs" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
                     {page + 1}/{totalPages}
                   </span>
                   <CarouselButton label="Siguiente" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>
@@ -209,7 +212,7 @@ export default function AdminDashboard() {
                           style={{
                             backgroundColor: "var(--bg-surface-hover)",
                             color: ROLE_COLORS[user.rol] || "var(--text-muted)",
-                            fontFamily: "'Fira Code', monospace",
+                            fontFamily: "var(--font-mono)",
                           }}
                         >
                           {user.nombre_completo.charAt(0).toUpperCase()}
@@ -259,6 +262,7 @@ export default function AdminDashboard() {
       </div>
     </main>
       <Footer />
+      </div>
     </div>
   )
 }
@@ -274,7 +278,7 @@ function StatCard({ label, value, delay, accent }: { label: string; value: strin
     >
       <div
         className="text-2xl font-bold"
-        style={{ color: accent || "var(--text-heading)", fontFamily: "'Fira Code', monospace" }}
+        style={{ color: accent || "var(--text-heading)", fontFamily: "var(--font-mono)" }}
       >
         {value}
       </div>

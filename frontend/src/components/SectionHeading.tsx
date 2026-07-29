@@ -22,7 +22,7 @@ export default function SectionHeading({
       <div>
         <h2
           className="text-lg sm:text-xl font-semibold m-0"
-          style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+          style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
         >
           {title}
         </h2>

@@ -115,7 +115,7 @@ export default function WelcomePage() {
                   backgroundColor: "rgba(59,130,246,0.12)",
                   color: "var(--accent-primary)",
                   border: "1px solid rgba(59,130,246,0.3)",
-                  fontFamily: "'Fira Code', monospace",
+                  fontFamily: "var(--font-mono)",
                 }}
               >
                 <TerminalTyper />
@@ -123,7 +123,7 @@ export default function WelcomePage() {
 
               <h1
                 className="text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight"
-                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+                style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
               >
                 Aprende seguridad
                 <br />
@@ -142,7 +142,7 @@ export default function WelcomePage() {
                   type="button"
                   onClick={() => navigate("/login")}
                   className="px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 rounded text-xs sm:text-sm font-semibold cursor-pointer border-none transition-opacity hover:opacity-80"
-                  style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+                  style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
                 >
                   Sign In
                 </button>
@@ -151,7 +151,7 @@ export default function WelcomePage() {
                   type="button"
                   onClick={() => navigate("/about")}
                   className="px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 rounded text-xs sm:text-sm font-semibold cursor-pointer border transition-colors"
-                  style={{ backgroundColor: "transparent", borderColor: "var(--ui-border-default)", color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}
+                  style={{ backgroundColor: "transparent", borderColor: "var(--ui-border-default)", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--text-base)"; e.currentTarget.style.color = "var(--text-base)" }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--ui-border-default)"; e.currentTarget.style.color = "var(--text-muted)" }}
                 >
@@ -182,7 +182,7 @@ export default function WelcomePage() {
                 <div className="relative z-10 flex items-center justify-center w-full h-full px-6 sm:px-8">
                   <p
                     className="text-sm sm:text-base md:text-lg font-medium text-center"
-                    style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+                    style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
                   >
                     Explora, aprende y domina
                     <br />
@@ -214,7 +214,7 @@ export default function WelcomePage() {
         <div className="mx-auto" style={{ maxWidth: "1100px" }}>
           <h2
             className="text-2xl sm:text-3xl font-semibold mb-8 sm:mb-12 text-center"
-            style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+            style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
           >
             Cómo funciona
           </h2>
@@ -229,10 +229,10 @@ export default function WelcomePage() {
                 className="flex flex-col gap-2 p-5 rounded-lg"
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-default)" }}
               >
-                <span className="text-xs font-bold" style={{ color: "var(--ui-border-gold)", fontFamily: "'Fira Code', monospace" }}>
+                <span className="text-xs font-bold" style={{ color: "var(--ui-border-gold)", fontFamily: "var(--font-mono)" }}>
                   {step.n}
                 </span>
-                <h3 className="text-base font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+                <h3 className="text-base font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
                   {step.title}
                 </h3>
                 <p className="text-xs sm:text-sm leading-relaxed m-0" style={{ color: "var(--text-muted)" }}>
@@ -251,7 +251,7 @@ export default function WelcomePage() {
         <div className="mx-auto" style={{ maxWidth: "1100px" }}>
           <h2
             className="text-2xl sm:text-3xl font-semibold mb-8 sm:mb-12 text-center"
-            style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+            style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
           >
             Por qué GAIA
           </h2>
@@ -274,7 +274,7 @@ export default function WelcomePage() {
                     {f.icon}
                   </svg>
                 </div>
-                <h3 className="text-sm sm:text-base font-medium mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+                <h3 className="text-sm sm:text-base font-medium mb-1.5" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
                   {f.title}
                 </h3>
                 <p className="text-xs sm:text-sm leading-relaxed m-0" style={{ color: "var(--text-muted)" }}>
@@ -299,7 +299,7 @@ export default function WelcomePage() {
           style={{ maxWidth: "800px", backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-gold)" }}
         >
           <CyberGrid opacity={0.25} />
-          <h2 className="relative z-10 text-xl sm:text-2xl font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+          <h2 className="relative z-10 text-xl sm:text-2xl font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
             ¿Listo para poner a prueba tus habilidades?
           </h2>
           <p className="relative z-10 text-sm m-0" style={{ color: "var(--text-muted)" }}>
@@ -309,7 +309,7 @@ export default function WelcomePage() {
             type="button"
             onClick={() => navigate("/signup")}
             className="relative z-10 px-6 sm:px-8 py-2.5 sm:py-3 rounded text-sm font-semibold cursor-pointer border-none transition-opacity hover:opacity-85"
-            style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+            style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
           >
             Crear cuenta gratis
           </button>

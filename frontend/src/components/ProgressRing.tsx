@@ -75,7 +75,7 @@ export default function ProgressRing({
           y="50%"
           textAnchor="middle"
           dominantBaseline="middle"
-          style={{ fill: "var(--text-heading)", fontSize: size * 0.2, fontFamily: "'Fira Code', monospace", fontWeight: 700 }}
+          style={{ fill: "var(--text-heading)", fontSize: size * 0.2, fontFamily: "var(--font-mono)", fontWeight: 700 }}
         >
           0%
         </text>

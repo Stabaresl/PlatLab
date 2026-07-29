@@ -9,7 +9,7 @@ function App() {
   return (
     <main
       className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: "var(--bg-canvas)", fontFamily: "'Fira Sans', 'Noto Sans', sans-serif" }}
+      style={{ backgroundColor: "var(--bg-canvas)", fontFamily: "var(--font-heading)" }}
     >
       {/* Card */}
       <div
@@ -48,7 +48,7 @@ function App() {
                 backgroundColor: "var(--bg-canvas)",
                 borderColor: "var(--ui-border-default)",
                 color: "var(--text-heading)",
-                fontFamily: "'Fira Sans', 'Noto Sans', sans-serif",
+                fontFamily: "var(--font-heading)",
               }}
               onFocus={(e) => (e.target.style.borderColor = "var(--text-base)")}
               onBlur={(e) => (e.target.style.borderColor = "var(--ui-border-default)")}
@@ -69,7 +69,7 @@ function App() {
                 backgroundColor: "var(--bg-canvas)",
                 borderColor: "var(--ui-border-default)",
                 color: "var(--text-heading)",
-                fontFamily: "'Fira Sans', 'Noto Sans', sans-serif",
+                fontFamily: "var(--font-heading)",
               }}
               onFocus={(e) => (e.target.style.borderColor = "var(--text-base)")}
               onBlur={(e) => (e.target.style.borderColor = "var(--ui-border-default)")}
@@ -82,7 +82,7 @@ function App() {
             className="w-full py-2.5 rounded text-sm font-semibold text-white border-none cursor-pointer transition-opacity hover:opacity-90"
             style={{
               backgroundColor: "var(--accent-danger)",
-              fontFamily: "'Fira Code', monospace",
+              fontFamily: "var(--font-mono)",
             }}
           >
             Sign In

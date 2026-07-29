@@ -37,7 +37,7 @@ export default function CountUpStat({
       <span
         ref={ref}
         className="text-3xl sm:text-4xl font-bold"
-        style={{ color: "var(--accent-primary)", fontFamily: "'Fira Code', monospace" }}
+        style={{ color: "var(--accent-primary)", fontFamily: "var(--font-mono)" }}
       >
         0{suffix}
       </span>

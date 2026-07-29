@@ -39,7 +39,7 @@ export default function TerminalHeader({
         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#22C55E" }} />
         <span
           className="ml-2 text-[10px] sm:text-xs truncate"
-          style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}
+          style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
         >
           gaia@platlab:~$ {prompt}
         </span>
@@ -51,7 +51,7 @@ export default function TerminalHeader({
             as="h1"
             className="text-2xl sm:text-3xl font-semibold m-0"
           >
-            <span style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+            <span style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
               {title}
             </span>
           </GlitchText>

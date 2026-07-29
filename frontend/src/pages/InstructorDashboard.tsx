@@ -12,6 +12,7 @@ import {
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
 import TerminalHeader from "../components/TerminalHeader"
 import { IconFlask, IconMail, IconTrophy } from "../components/icons"
@@ -80,7 +81,9 @@ export default function InstructorDashboard() {
   const visible = topEstudiantes.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+      <HeroBackground image="term" imageOpacity={0.06} overlayOpacity={0.9} texture="grid" textureOpacity={0.03} />
+      <div className="relative z-10 flex flex-col min-h-screen">
       <Navbar />
     <main className="flex-1">
       <div
@@ -173,7 +176,7 @@ export default function InstructorDashboard() {
                 >
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-lg font-medium">+</span>
-                    <span className="text-xs font-medium" style={{ fontFamily: "'Fira Code', monospace" }}>
+                    <span className="text-xs font-medium" style={{ fontFamily: "var(--font-mono)" }}>
                       Nuevo Laboratorio
                     </span>
                   </div>
@@ -198,7 +201,7 @@ export default function InstructorDashboard() {
                           <th
                             key={col}
                             className="text-left text-xs font-semibold px-3 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap"
-                            style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--ui-border-default)", fontFamily: "'Fira Code', monospace" }}
+                            style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--ui-border-default)", fontFamily: "var(--font-mono)" }}
                           >
                             {col}
                           </th>
@@ -232,7 +235,7 @@ export default function InstructorDashboard() {
                               {ESTADO_LABELS[inv.estado]}
                             </span>
                           </td>
-                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm whitespace-nowrap" style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}>
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm whitespace-nowrap" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
                             {new Date(inv.fecha_invitacion).toLocaleDateString()}
                           </td>
                         </tr>
@@ -252,7 +255,7 @@ export default function InstructorDashboard() {
 
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   <CarouselButton label="Anterior" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>←</CarouselButton>
-                  <span className="text-xs" style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}>
+                  <span className="text-xs" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
                     {page + 1}/{totalPages}
                   </span>
                   <CarouselButton label="Siguiente" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>→</CarouselButton>
@@ -277,7 +280,7 @@ export default function InstructorDashboard() {
                       >
                         <div
                           className="flex items-center justify-center w-10 h-10 rounded-full mb-3 text-sm font-bold shrink-0"
-                          style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}
+                          style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
                         >
                           {s.nombre_completo.charAt(0).toUpperCase()}
                         </div>
@@ -293,7 +296,7 @@ export default function InstructorDashboard() {
                           <span className="text-xs" style={{ color: "var(--text-muted)" }}>Progreso</span>
                           <span
                             className="text-xs font-medium"
-                            style={{ color: s.porcentaje_completitud >= 70 ? "#22C55E" : s.porcentaje_completitud >= 40 ? "#3B82F6" : "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}
+                            style={{ color: s.porcentaje_completitud >= 70 ? "#22C55E" : s.porcentaje_completitud >= 40 ? "#3B82F6" : "var(--text-muted)", fontFamily: "var(--font-mono)" }}
                           >
                             {Math.round(s.porcentaje_completitud)}%
                           </span>
@@ -318,6 +321,7 @@ export default function InstructorDashboard() {
       </div>
     </main>
       <Footer />
+      </div>
     </div>
   )
 }

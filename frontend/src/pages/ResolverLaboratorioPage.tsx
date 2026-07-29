@@ -15,6 +15,7 @@ import {
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import HeroBackground from "../components/HeroBackground"
 import { IconFlask, IconExam, IconLock } from "../components/icons"
 
 type Vista = { tipo: "seccion"; id: string } | { tipo: "examen" }
@@ -60,7 +61,7 @@ export default function ResolverLaboratorioPage() {
       <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-canvas)" }}>
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
-          <p className="text-sm" style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}>
+          <p className="text-sm" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
             cargando laboratorio...
           </p>
         </main>
@@ -85,7 +86,9 @@ export default function ResolverLaboratorioPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+      <HeroBackground image="grim" imageOpacity={0.04} overlayOpacity={0.94} texture="none" />
+      <div className="relative z-10 flex flex-col min-h-screen">
       <Navbar />
       <main className="flex-1">
         <div className="mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8" style={{ maxWidth: "1200px" }}>
@@ -93,12 +96,12 @@ export default function ResolverLaboratorioPage() {
             type="button"
             onClick={() => navigate("/dashboard")}
             className="text-xs sm:text-sm mb-4 cursor-pointer border-none bg-transparent px-0"
-            style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}
+            style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
           >
             ← Volver a mi Dashboard
           </button>
 
-          <h1 className="text-xl sm:text-2xl font-semibold mb-6" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+          <h1 className="text-xl sm:text-2xl font-semibold mb-6" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
             {overview.laboratorio_nombre}
           </h1>
 
@@ -118,7 +121,7 @@ export default function ResolverLaboratorioPage() {
                       color: s.estado === "completada" ? "#22C55E" : "var(--text-base)",
                     }}
                   >
-                    <span style={{ fontFamily: "'Fira Code', monospace" }}>{ESTADO_ICON[s.estado]}</span>
+                    <span style={{ fontFamily: "var(--font-mono)" }}>{ESTADO_ICON[s.estado]}</span>
                     <span className="flex-1 truncate">{s.orden}. {s.titulo}</span>
                   </button>
                 ))}
@@ -162,6 +165,7 @@ export default function ResolverLaboratorioPage() {
         </div>
       </main>
       <Footer />
+      </div>
     </div>
   )
 }
@@ -240,7 +244,7 @@ function SeccionPanel({
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="rounded-lg p-5 sm:p-6" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-default)" }}>
       <div className="flex items-center gap-2 mb-4">
         <IconFlask style={{ color: "var(--accent-primary)" }} />
-        <h2 className="text-lg font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+        <h2 className="text-lg font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
           {seccionMeta?.orden}. {contenido.titulo}
         </h2>
         {completada && (
@@ -258,7 +262,7 @@ function SeccionPanel({
 
       {contenido.tiene_practica && !completada && (
         <form onSubmit={handleSubmitFlag} className="flex flex-col gap-3 pt-4" style={{ borderTop: "1px solid var(--ui-border-default)" }}>
-          <label className="text-xs font-semibold" style={{ color: "var(--text-heading)", fontFamily: "'Fira Code', monospace" }}>
+          <label className="text-xs font-semibold" style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}>
             FLAG{"{...}"}
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -267,13 +271,13 @@ function SeccionPanel({
               onChange={(e) => setFlagValor(e.target.value)}
               placeholder="Ingresá la flag capturada"
               className="flex-1 px-3.5 py-2.5 rounded text-sm"
-              style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)", border: "1px solid var(--ui-border-default)", fontFamily: "'Fira Code', monospace" }}
+              style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)", border: "1px solid var(--ui-border-default)", fontFamily: "var(--font-mono)" }}
             />
             <button
               type="submit"
               disabled={busy || !flagValor}
               className="px-5 py-2.5 rounded text-sm font-semibold cursor-pointer border-none disabled:opacity-50"
-              style={{ backgroundColor: "var(--accent-primary)", color: "#fff", fontFamily: "'Fira Code', monospace" }}
+              style={{ backgroundColor: "var(--accent-primary)", color: "#fff", fontFamily: "var(--font-mono)" }}
             >
               Enviar
             </button>
@@ -335,7 +339,7 @@ function ExamenPanel({ assignmentId, onDone }: { assignmentId: string; onDone: (
   if (resultado) {
     return (
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-lg p-6 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-gold)" }}>
-        <h2 className="text-xl font-semibold mb-2" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+        <h2 className="text-xl font-semibold mb-2" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
           {Math.round(resultado.puntaje)}%
         </h2>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -345,7 +349,7 @@ function ExamenPanel({ assignmentId, onDone }: { assignmentId: string; onDone: (
           type="button"
           onClick={() => { setResultado(null); setRespuestas({}) }}
           className="mt-4 px-5 py-2 rounded text-sm font-semibold cursor-pointer border-none"
-          style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+          style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
         >
           Reintentar examen
         </button>
@@ -357,7 +361,7 @@ function ExamenPanel({ assignmentId, onDone }: { assignmentId: string; onDone: (
     <form onSubmit={handleSubmit} className="rounded-lg p-5 sm:p-6 flex flex-col gap-6" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-gold)" }}>
       <div className="flex items-center gap-2">
         <IconLock style={{ color: "var(--ui-border-gold)" }} />
-        <h2 className="text-lg font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>Examen final</h2>
+        <h2 className="text-lg font-semibold m-0" style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>Examen final</h2>
       </div>
       {(preguntas || []).map((p, i) => (
         <div key={p.id} className="flex flex-col gap-2">
@@ -391,7 +395,7 @@ function ExamenPanel({ assignmentId, onDone }: { assignmentId: string; onDone: (
         type="submit"
         disabled={busy}
         className="self-start px-6 py-2.5 rounded text-sm font-semibold cursor-pointer border-none disabled:opacity-50"
-        style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+        style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
       >
         Enviar examen
       </button>

@@ -52,7 +52,7 @@ export default function MatrixRain({
       ctx.fillStyle = "rgba(15, 17, 23, 0.12)"
       ctx.fillRect(0, 0, width, height)
 
-      ctx.font = `${fontSize}px 'Fira Code', monospace`
+      ctx.font = `${fontSize}px "JetBrains Mono", "Fira Code", monospace`
       for (let i = 0; i < columns; i++) {
         const char = CHARS[Math.floor(Math.random() * CHARS.length)]
         const y = drops[i] * fontSize
