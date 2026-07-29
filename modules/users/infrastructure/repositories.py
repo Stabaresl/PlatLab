@@ -25,6 +25,23 @@ class UserRepository:
         model = UserModel.objects.filter(id=user_id).first()
         return user_to_entity(model) if model else None
 
+    def find_all(
+        self,
+        nombre: str | None = None,
+        rol: str | None = None,
+        activo: bool | None = None,
+    ) -> list[User]:
+        queryset = UserModel.objects.all()
+        if nombre:
+            queryset = queryset.filter(nombre_completo__icontains=nombre)
+        if rol:
+            queryset = queryset.filter(rol=rol)
+        if activo is not None:
+            queryset = queryset.filter(is_active=activo)
+
+        queryset = queryset.order_by("nombre_completo")
+        return [user_to_entity(m) for m in queryset]
+
     def get_by_email(self, email: str) -> User | None:
         model = UserModel.objects.filter(email=email).first()
         return user_to_entity(model) if model else None

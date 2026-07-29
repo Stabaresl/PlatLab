@@ -17,6 +17,15 @@ class IUserRepository(Protocol):
 
     def get_by_id(self, user_id: uuid.UUID) -> User | None: ...
 
+    def find_all(
+        self,
+        nombre: str | None = None,
+        rol: str | None = None,
+        activo: bool | None = None,
+    ) -> list[User]:
+        """HA-01, api.md §4 `GET /users/?nombre=&rol=&activo=`."""
+        ...
+
     def get_by_email(self, email: str) -> User | None: ...
 
     def get_by_username(self, username: str) -> User | None: ...
