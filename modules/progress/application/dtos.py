@@ -77,3 +77,24 @@ class HistorialItemDTO:
     numero_intento: int
     fecha_completado: datetime
     puntaje: float | None
+
+
+@dataclass(frozen=True)
+class EnviarExamenDTO:
+    """
+    HE-09/HI-08, api.md §7 `POST /progress/{assignment_id}/exam/` (UC-03).
+    `respuestas` es `{pregunta_id: respuesta}` — validado contra las
+    `Pregunta` reales del examen antes de calificar (seguridad.md §4).
+    """
+
+    asignacion_id: uuid.UUID
+    estudiante_id: uuid.UUID
+    respuestas: dict[str, str]
+
+
+@dataclass(frozen=True)
+class EnviarExamenResultDTO:
+    puntaje: float
+    correctas: int
+    total: int
+    numero_intento: int
