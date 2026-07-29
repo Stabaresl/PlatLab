@@ -1,37 +1,79 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  getInstructorDashboard,
+  listStudents,
+  listAssignments,
+  logout,
+  ApiError,
+  type InstructorDashboardItem,
+  type EstudianteFiltrado,
+  type Asignacion,
+  type EstadoAsignacion,
+} from "./api"
+
+const ESTADO_COLORS: Record<EstadoAsignacion, string> = {
+  pendiente: "#3B82F6",
+  aceptada: "#22C55E",
+  rechazada: "#EF4444",
+  activa: "#22C55E",
+  vencida: "#EF4444",
+}
+
+const ESTADO_LABELS: Record<EstadoAsignacion, string> = {
+  pendiente: "Pendiente",
+  aceptada: "Aceptada",
+  rechazada: "Rechazada",
+  activa: "Activa",
+  vencida: "Vencida",
+}
 
 export default function InstructorDashboard() {
-  const labs = [
-    { id: 1, name: "SQL Injection Avanzado", difficulty: "Media", status: "publicado", students: 12 },
-    { id: 2, name: "XSS en Aplicaciones Modernas", difficulty: "Difícil", status: "publicado", students: 8 },
-    { id: 3, name: "Autenticación con JWT", difficulty: "Fácil", status: "borrador", students: 0 },
-    { id: 4, name: "Server Side Template Injection", difficulty: "Difícil", status: "borrador", students: 0 },
-  ]
-
-  const invitations = [
-    { id: 1, student: "Carlos García", lab: "SQL Injection Avanzado", status: "pendiente", date: "2026-07-20" },
-    { id: 2, student: "María López", lab: "SQL Injection Avanzado", status: "aceptada", date: "2026-07-18" },
-    { id: 3, student: "Ana Martínez", lab: "XSS en Aplicaciones Modernas", status: "pendiente", date: "2026-07-22" },
-    { id: 4, student: "Pedro Ramírez", lab: "SQL Injection Avanzado", status: "vencida", date: "2026-07-15" },
-  ]
-
-  const students = [
-    { id: 1, name: "María López", email: "maria@example.com", progress: 85 },
-    { id: 2, name: "Carlos García", email: "carlos@example.com", progress: 72 },
-    { id: 3, name: "Ana Martínez", email: "ana@example.com", progress: 68 },
-    { id: 4, name: "Pedro Ramírez", email: "pedro@example.com", progress: 55 },
-    { id: 5, name: "Lucía Fernández", email: "lucia@example.com", progress: 50 },
-    { id: 6, name: "Diego Torres", email: "diego@example.com", progress: 42 },
-    { id: 7, name: "Valentina Ríos", email: "valentina@example.com", progress: 38 },
-    { id: 8, name: "Santiago Vega", email: "santiago@example.com", progress: 30 },
-    { id: 9, name: "Camila Ortiz", email: "camila@example.com", progress: 25 },
-    { id: 10, name: "Felipe Muñoz", email: "felipe@example.com", progress: 15 },
-  ]
+  const [labs, setLabs] = useState<InstructorDashboardItem[]>([])
+  const [students, setStudents] = useState<EstudianteFiltrado[]>([])
+  const [assignments, setAssignments] = useState<Asignacion[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   const PAGE_SIZE = 4
-  const totalPages = Math.ceil(students.length / PAGE_SIZE)
   const [page, setPage] = useState(0)
-  const visible = students.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([getInstructorDashboard(), listStudents(), listAssignments()])
+      .then(([labsData, studentsData, assignmentsData]) => {
+        if (cancelled) return
+        setLabs(labsData)
+        setStudents(studentsData)
+        setAssignments(assignmentsData)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setError(err instanceof ApiError ? err.message : "No se pudo cargar el panel.")
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  const labName = (id: string) => labs.find((l) => l.laboratorio_id === id)?.nombre || `Lab ${id.slice(0, 8)}`
+  const studentName = (estudianteId: string, laboratorioId: string) =>
+    students.find((s) => s.estudiante_id === estudianteId && s.laboratorio_id === laboratorioId)?.nombre_completo
+    || students.find((s) => s.estudiante_id === estudianteId)?.nombre_completo
+    || `Estudiante ${estudianteId.slice(0, 8)}`
+
+  const invitaciones = useMemo(
+    () => [...assignments].sort((a, b) => b.fecha_invitacion.localeCompare(a.fecha_invitacion)),
+    [assignments],
+  )
+
+  const topEstudiantes = useMemo(
+    () => [...students].sort((a, b) => b.porcentaje_completitud - a.porcentaje_completitud),
+    [students],
+  )
+  const totalPages = Math.max(1, Math.ceil(topEstudiantes.length / PAGE_SIZE))
+  const visible = topEstudiantes.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   return (
     <main
@@ -45,7 +87,12 @@ export default function InstructorDashboard() {
         {/* ══════════════════════════════════
             HEADER
             ══════════════════════════════════ */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-8 sm:mb-10">
+        <motion.header
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-8 sm:mb-10"
+        >
           <div>
             <h1
               className="text-2xl sm:text-3xl font-semibold m-0"
@@ -60,16 +107,8 @@ export default function InstructorDashboard() {
 
           <button
             type="button"
-            onClick={() => {
-              localStorage.clear()
-              window.location.href = "/login"
-            }}
-            className="
-              self-start sm:self-auto
-              px-4 sm:px-5 py-1.5 sm:py-2
-              rounded text-xs sm:text-sm
-              font-semibold cursor-pointer border transition-colors
-            "
+            onClick={logout}
+            className="self-start sm:self-auto px-4 sm:px-5 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-semibold cursor-pointer border transition-colors"
             style={{
               backgroundColor: "transparent",
               borderColor: "var(--ui-border-default)",
@@ -87,295 +126,262 @@ export default function InstructorDashboard() {
           >
             Cerrar Sesión
           </button>
-        </header>
+        </motion.header>
 
-        {/* ══════════════════════════════════
-            LABORATORIOS CREADOS — card-based
-            ══════════════════════════════════ */}
-        <section className="mb-8 sm:mb-10">
-          <h2
-            className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5"
-            style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-          >
-            Laboratorios Creados
-          </h2>
-
-          <div className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
-            {labs.map((lab) => {
-              const isPublished = lab.status === "publicado"
-              return (
-                <div
-                  key={lab.id}
-                  className="flex flex-col p-4 sm:p-5 rounded-lg transition-colors"
-                  style={{
-                    backgroundColor: "var(--bg-surface)",
-                    border: `1px solid ${isPublished ? "var(--ui-border-secondary)" : "var(--ui-border-default)"}`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--bg-surface-hover)"
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--bg-surface)"
-                  }}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <span
-                      className="text-sm sm:text-base font-medium leading-snug"
-                      style={{ color: "var(--text-heading)" }}
-                    >
-                      {lab.name}
-                    </span>
-                    <span
-                      className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ml-3"
-                      style={{
-                        backgroundColor: isPublished ? "rgba(34,197,94,0.12)" : "rgba(148,163,184,0.15)",
-                        color: isPublished ? "#22C55E" : "var(--text-muted)",
-                        border: `1px solid ${isPublished ? "rgba(34,197,94,0.3)" : "transparent"}`,
-                      }}
-                    >
-                      {isPublished ? "Publicado" : "Borrador"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4 mt-auto text-xs" style={{ color: "var(--text-muted)" }}>
-                    <span>
-                      Dificultad:{" "}
-                      <span style={{ color: "var(--text-base)" }}>{lab.difficulty}</span>
-                    </span>
-                    {isPublished && (
-                      <span>
-                        Estudiantes:{" "}
-                        <span style={{ color: "var(--text-base)" }}>{lab.students}</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-
-            {/* Card para crear nuevo */}
-            <button
-              type="button"
-              className="flex items-center justify-center p-4 sm:p-5 rounded-lg border-2 border-dashed cursor-pointer transition-colors"
-              style={{
-                backgroundColor: "transparent",
-                borderColor: "var(--ui-border-default)",
-                color: "var(--text-muted)",
-                minHeight: "120px",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--accent-primary)"
-                e.currentTarget.style.color = "var(--accent-primary)"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--ui-border-default)"
-                e.currentTarget.style.color = "var(--text-muted)"
-              }}
+        <AnimatePresence>
+          {error && (
+            <motion.p
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-sm mb-6"
+              style={{ color: "var(--accent-danger)" }}
             >
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-lg font-medium">+</span>
-                <span className="text-xs font-medium" style={{ fontFamily: "'Fira Code', monospace" }}>
-                  Nuevo Laboratorio
-                </span>
-              </div>
-            </button>
-          </div>
-        </section>
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
 
-        {/* ══════════════════════════════════
-            INVITACIONES — tabla con scroll horizontal en mobile
-            ══════════════════════════════════ */}
-        <section className="mb-8 sm:mb-10">
-          <h2
-            className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5"
-            style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
-          >
-            Invitaciones
-          </h2>
-
-          <div
-            className="rounded-lg overflow-x-auto"
-            style={{ border: "1px solid var(--ui-border-default)" }}
-          >
-            <table className="w-full border-collapse">
-              <thead>
-                <tr style={{ backgroundColor: "var(--bg-surface)" }}>
-                  {["Estudiante", "Laboratorio", "Estado", "Fecha"].map((col) => (
-                    <th
-                      key={col}
-                      className="text-left text-xs font-semibold px-3 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap"
-                      style={{
-                        color: "var(--text-muted)",
-                        borderBottom: "1px solid var(--ui-border-default)",
-                        fontFamily: "'Fira Code', monospace",
-                      }}
-                    >
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {invitations.map((inv) => {
-                  const invColors: Record<string, string> = {
-                    pendiente: "#3B82F6",
-                    aceptada: "#22C55E",
-                    vencida: "#EF4444",
-                  }
-                  const invLabels: Record<string, string> = {
-                    pendiente: "Pendiente",
-                    aceptada: "Aceptada",
-                    vencida: "Vencida",
-                  }
-                  return (
-                    <tr
-                      key={inv.id}
-                      style={{
-                        borderBottom: "1px solid var(--ui-border-default)",
-                        backgroundColor: "var(--bg-canvas)",
-                      }}
-                      className="transition-colors"
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "var(--bg-surface-hover)"
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "var(--bg-canvas)"
-                      }}
-                    >
-                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm whitespace-nowrap" style={{ color: "var(--text-heading)" }}>
-                        {inv.student}
-                      </td>
-                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm whitespace-nowrap" style={{ color: "var(--text-base)" }}>
-                        {inv.lab}
-                      </td>
-                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap">
-                        <span
-                          className="text-xs font-medium px-2 py-0.5 rounded-full"
-                          style={{
-                            backgroundColor: `${invColors[inv.status]}18`,
-                            color: invColors[inv.status],
-                            border: `1px solid ${invColors[inv.status]}40`,
-                          }}
-                        >
-                          {invLabels[inv.status]}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm whitespace-nowrap" style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}>
-                        {inv.date}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════
-            TOP ESTUDIANTES — carrusel funcional
-            ══════════════════════════════════ */}
-        <section>
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-0 mb-5">
-            <div>
+        {loading ? (
+          <SkeletonBlock />
+        ) : (
+          <>
+            {/* ══════════════════════════════════
+                LABORATORIOS CREADOS
+                ══════════════════════════════════ */}
+            <section className="mb-8 sm:mb-10">
               <h2
-                className="text-lg sm:text-xl font-semibold"
+                className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5"
                 style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
               >
-                Top Estudiantes
+                Laboratorios Creados
               </h2>
-              <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-                Estudiantes ordenados por mayor avance
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              <CarouselButton
-                label="Anterior"
-                disabled={page === 0}
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-              >
-                ←
-              </CarouselButton>
-              <span className="text-xs" style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}>
-                {page + 1}/{totalPages}
-              </span>
-              <CarouselButton
-                label="Siguiente"
-                disabled={page >= totalPages - 1}
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              >
-                →
-              </CarouselButton>
-            </div>
-          </div>
+              <div className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+                {labs.map((lab, i) => {
+                  const isPublished = lab.estado === "publicado"
+                  return (
+                    <motion.div
+                      key={lab.laboratorio_id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: i * 0.05 }}
+                      className="flex flex-col p-4 sm:p-5 rounded-lg transition-colors"
+                      style={{
+                        backgroundColor: "var(--bg-surface)",
+                        border: `1px solid ${isPublished ? "var(--ui-border-secondary)" : "var(--ui-border-default)"}`,
+                      }}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <span className="text-sm sm:text-base font-medium leading-snug" style={{ color: "var(--text-heading)" }}>
+                          {lab.nombre}
+                        </span>
+                        <span
+                          className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ml-3"
+                          style={{
+                            backgroundColor: isPublished ? "rgba(34,197,94,0.12)" : "rgba(148,163,184,0.15)",
+                            color: isPublished ? "#22C55E" : "var(--text-muted)",
+                            border: `1px solid ${isPublished ? "rgba(34,197,94,0.3)" : "transparent"}`,
+                          }}
+                        >
+                          {isPublished ? "Publicado" : "Borrador"}
+                        </span>
+                      </div>
 
-          <div className="grid gap-3 sm:gap-4 mb-5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
-            {visible.map((student) => (
-              <div
-                key={student.id}
-                className="flex flex-col p-4 sm:p-5 rounded-lg"
-                style={{
-                  backgroundColor: "var(--bg-surface)",
-                  border: "1px solid var(--ui-border-default)",
-                }}
-              >
-                <div
-                  className="flex items-center justify-center w-10 h-10 rounded-full mb-3 text-sm font-bold shrink-0"
-                  style={{
-                    backgroundColor: "var(--bg-surface-hover)",
-                    color: "var(--text-muted)",
-                    fontFamily: "'Fira Code', monospace",
-                  }}
+                      <div className="flex items-center gap-4 mt-auto text-xs" style={{ color: "var(--text-muted)" }}>
+                        <span>
+                          Estudiantes: <span style={{ color: "var(--text-base)" }}>{lab.estudiantes_inscritos}</span>
+                        </span>
+                        <span>
+                          Completitud:{" "}
+                          <span style={{ color: "var(--text-base)" }}>{Math.round(lab.porcentaje_completitud_promedio)}%</span>
+                        </span>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+
+                {/* Card para crear nuevo (próximamente) */}
+                <button
+                  type="button"
+                  title="Próximamente"
+                  className="flex items-center justify-center p-4 sm:p-5 rounded-lg border-2 border-dashed cursor-not-allowed transition-colors opacity-60"
+                  style={{ backgroundColor: "transparent", borderColor: "var(--ui-border-default)", color: "var(--text-muted)", minHeight: "120px" }}
                 >
-                  {student.name.charAt(0)}
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-lg font-medium">+</span>
+                    <span className="text-xs font-medium" style={{ fontFamily: "'Fira Code', monospace" }}>
+                      Nuevo Laboratorio
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </section>
+
+            {/* ══════════════════════════════════
+                INVITACIONES
+                ══════════════════════════════════ */}
+            <section className="mb-8 sm:mb-10">
+              <h2
+                className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5"
+                style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}
+              >
+                Invitaciones
+              </h2>
+
+              {invitaciones.length === 0 ? (
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>Todavía no invitaste estudiantes.</p>
+              ) : (
+                <div className="rounded-lg overflow-x-auto" style={{ border: "1px solid var(--ui-border-default)" }}>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr style={{ backgroundColor: "var(--bg-surface)" }}>
+                        {["Estudiante", "Laboratorio", "Estado", "Fecha"].map((col) => (
+                          <th
+                            key={col}
+                            className="text-left text-xs font-semibold px-3 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap"
+                            style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--ui-border-default)", fontFamily: "'Fira Code', monospace" }}
+                          >
+                            {col}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invitaciones.slice(0, 12).map((inv) => (
+                        <tr
+                          key={inv.id}
+                          style={{ borderBottom: "1px solid var(--ui-border-default)", backgroundColor: "var(--bg-canvas)" }}
+                          className="transition-colors"
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface-hover)" }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-canvas)" }}
+                        >
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm whitespace-nowrap" style={{ color: "var(--text-heading)" }}>
+                            {studentName(inv.estudiante_id, inv.laboratorio_id)}
+                          </td>
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm whitespace-nowrap" style={{ color: "var(--text-base)" }}>
+                            {labName(inv.laboratorio_id)}
+                          </td>
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap">
+                            <span
+                              className="text-xs font-medium px-2 py-0.5 rounded-full"
+                              style={{
+                                backgroundColor: `${ESTADO_COLORS[inv.estado]}18`,
+                                color: ESTADO_COLORS[inv.estado],
+                                border: `1px solid ${ESTADO_COLORS[inv.estado]}40`,
+                              }}
+                            >
+                              {ESTADO_LABELS[inv.estado]}
+                            </span>
+                          </td>
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm whitespace-nowrap" style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}>
+                            {new Date(inv.fecha_invitacion).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            {/* ══════════════════════════════════
+                TOP ESTUDIANTES — carrusel funcional
+                ══════════════════════════════════ */}
+            <section>
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-0 mb-5">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold" style={{ color: "var(--text-heading)", fontFamily: "'Fira Sans', sans-serif" }}>
+                    Top Estudiantes
+                  </h2>
+                  <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+                    Estudiantes ordenados por mayor avance
+                  </p>
                 </div>
 
-                <span className="text-sm sm:text-base font-medium" style={{ color: "var(--text-heading)" }}>
-                  {student.name}
-                </span>
-                <span className="text-xs mb-3 truncate" style={{ color: "var(--text-muted)" }}>
-                  {student.email}
-                </span>
-
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    Progreso
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <CarouselButton label="Anterior" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>←</CarouselButton>
+                  <span className="text-xs" style={{ color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}>
+                    {page + 1}/{totalPages}
                   </span>
-                  <span
-                    className="text-xs font-medium"
-                    style={{ color: student.progress >= 70 ? "#22C55E" : student.progress >= 40 ? "#3B82F6" : "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}
-                  >
-                    {student.progress}%
-                  </span>
-                </div>
-                <div
-                  className="w-full h-1.5 rounded-full overflow-hidden"
-                  style={{ backgroundColor: "var(--bg-surface-hover)" }}
-                >
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${student.progress}%`,
-                      backgroundColor: student.progress >= 70 ? "#22C55E" : student.progress >= 40 ? "#3B82F6" : "var(--text-muted)",
-                    }}
-                  />
+                  <CarouselButton label="Siguiente" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>→</CarouselButton>
                 </div>
               </div>
-            ))}
-          </div>
 
-          <button
-            type="button"
-            className="text-sm font-medium cursor-pointer border-none bg-transparent transition-colors hover:underline"
-            style={{ color: "var(--text-muted)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
-          >
-            Ver todos los estudiantes →
-          </button>
-        </section>
+              {topEstudiantes.length === 0 ? (
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>Todavía no hay estudiantes inscritos.</p>
+              ) : (
+                <div className="grid gap-3 sm:gap-4 mb-5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
+                  <AnimatePresence mode="popLayout">
+                    {visible.map((s) => (
+                      <motion.div
+                        key={`${s.estudiante_id}-${s.laboratorio_id}`}
+                        layout
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.25 }}
+                        className="flex flex-col p-4 sm:p-5 rounded-lg"
+                        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-default)" }}
+                      >
+                        <div
+                          className="flex items-center justify-center w-10 h-10 rounded-full mb-3 text-sm font-bold shrink-0"
+                          style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}
+                        >
+                          {s.nombre_completo.charAt(0).toUpperCase()}
+                        </div>
+
+                        <span className="text-sm sm:text-base font-medium" style={{ color: "var(--text-heading)" }}>
+                          {s.nombre_completo}
+                        </span>
+                        <span className="text-xs mb-3 truncate" style={{ color: "var(--text-muted)" }}>
+                          {labName(s.laboratorio_id)}
+                        </span>
+
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Progreso</span>
+                          <span
+                            className="text-xs font-medium"
+                            style={{ color: s.porcentaje_completitud >= 70 ? "#22C55E" : s.porcentaje_completitud >= 40 ? "#3B82F6" : "var(--text-muted)", fontFamily: "'Fira Code', monospace" }}
+                          >
+                            {Math.round(s.porcentaje_completitud)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-surface-hover)" }}>
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${s.porcentaje_completitud}%` }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
+                            className="h-full rounded-full"
+                            style={{ backgroundColor: s.porcentaje_completitud >= 70 ? "#22C55E" : s.porcentaje_completitud >= 40 ? "#3B82F6" : "var(--text-muted)" }}
+                          />
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              )}
+            </section>
+          </>
+        )}
       </div>
     </main>
+  )
+}
+
+function SkeletonBlock() {
+  return (
+    <div className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{ opacity: [0.4, 0.8, 0.4] }}
+          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
+          className="h-28 rounded-lg"
+          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-default)" }}
+        />
+      ))}
+    </div>
   )
 }
 
@@ -398,11 +404,7 @@ function CarouselButton({
       disabled={disabled}
       onClick={onClick}
       className="flex items-center justify-center w-8 h-8 rounded text-sm cursor-pointer border transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-      style={{
-        backgroundColor: "transparent",
-        borderColor: "var(--ui-border-default)",
-        color: "var(--text-base)",
-      }}
+      style={{ backgroundColor: "transparent", borderColor: "var(--ui-border-default)", color: "var(--text-base)" }}
       onMouseEnter={(e) => {
         if (!disabled) {
           e.currentTarget.style.borderColor = "var(--ui-border-secondary)"

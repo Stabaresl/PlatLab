@@ -3,26 +3,15 @@ import InstructorDashboard from "./InstructorDashboard"
 import AdminDashboard from "./AdminDashboard"
 
 export default function DashboardPage() {
-  /*
-   * TODO: Obtener el rol desde el backend cuando esté disponible.
-   *
-   * Actualmente el rol se guarda en localStorage al iniciar sesión
-   * con un valor fijo (ver LoginPage.tsx y SignUpPage.tsx).
-   *
-   * Cuando el backend devuelva el rol en el endpoint /api/me,
-   * reemplazar esto por:
-   *
-   *   const user = JSON.parse(localStorage.getItem("user") || "{}")
-   *   const role = user.role || "estudiante"
-   *
-   * El backend debe devolver { user: { id, name, email, role } }
-   */
+  // El rol real (`estudiante` | `instructor` | `administrador`, VO `Rol` del
+  // backend) viene del claim `rol` del JWT y se guarda en localStorage al
+  // iniciar sesión (ver LoginPage/SignUpPage/OAuthCallbackPage).
   const role = localStorage.getItem("role") || "estudiante"
 
   switch (role) {
     case "instructor":
       return <InstructorDashboard />
-    case "admin":
+    case "administrador":
       return <AdminDashboard />
     default:
       return <StudentDashboard />
