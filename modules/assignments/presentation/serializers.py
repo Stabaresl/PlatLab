@@ -16,3 +16,9 @@ class FiltrarEstudiantesQuerySerializer(serializers.Serializer):
 
     nombre = serializers.CharField(required=False, max_length=200)
     laboratorio_id = serializers.UUIDField(required=False)
+
+
+class InscribirseLaboratorioRequestSerializer(serializers.Serializer):
+    """DTO de entrada `POST /assignments/enroll/` — autoinscripción del estudiante."""
+
+    laboratorio_id = serializers.UUIDField()

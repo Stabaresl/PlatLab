@@ -9,6 +9,7 @@ from rest_framework.viewsets import ViewSet
 from modules.assignments.application.dtos import (
     AceptarInvitacionDTO,
     FiltrarEstudiantesDTO,
+    InscribirseLaboratorioDTO,
     InvitarEstudiantesDTO,
     ListarAsignacionesDTO,
     ObtenerDashboardDTO,
@@ -18,6 +19,9 @@ from modules.assignments.application.queries.filtrar_estudiantes import FiltrarE
 from modules.assignments.application.queries.listar_asignaciones import ListarAsignacionesQuery
 from modules.assignments.application.queries.obtener_dashboard import ObtenerDashboardQuery
 from modules.assignments.application.use_cases.aceptar_invitacion import AceptarInvitacionUseCase
+from modules.assignments.application.use_cases.inscribirse_laboratorio import (
+    InscribirseLaboratorioUseCase,
+)
 from modules.assignments.application.use_cases.invitar_estudiantes import (
     InvitarEstudiantesUseCase,
 )
@@ -27,6 +31,7 @@ from modules.assignments.application.use_cases.rechazar_invitacion import (
 from modules.assignments.infrastructure.repositories import AsignacionRepository
 from modules.assignments.presentation.serializers import (
     FiltrarEstudiantesQuerySerializer,
+    InscribirseLaboratorioRequestSerializer,
     InvitarEstudiantesRequestSerializer,
 )
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
@@ -146,6 +151,27 @@ class AssignmentViewSet(ViewSet):
             ],
             status=status.HTTP_200_OK,
         )
+
+    @action(detail=False, methods=["post"], url_path="enroll")
+    def enroll(self, request):
+        serializer = InscribirseLaboratorioRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = InscribirseLaboratorioUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            asignacion_repository=AsignacionRepository(),
+            laboratorio_repository=LaboratorioRepository(),
+            progreso_repository=ProgresoRepository(),
+        )
+        resultado = use_case.execute(
+            InscribirseLaboratorioDTO(
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                **serializer.validated_data,
+            )
+        )
+        return Response(_serializar_asignacion(resultado), status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=["get"], url_path="students")
     def students(self, request):

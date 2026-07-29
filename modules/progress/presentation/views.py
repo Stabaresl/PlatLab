@@ -9,15 +9,19 @@ from modules.laboratories.infrastructure.repositories import LaboratorioReposito
 from modules.progress.application.dtos import (
     EnviarExamenDTO,
     ObtenerContenidoSeccionDTO,
+    ObtenerExamenDTO,
     ObtenerHistorialDTO,
     ObtenerPistaDTO,
+    ObtenerProgresoDTO,
     ValidarFlagDTO,
 )
 from modules.progress.application.queries.obtener_contenido_seccion import (
     ObtenerContenidoSeccionQuery,
 )
+from modules.progress.application.queries.obtener_examen import ObtenerExamenQuery
 from modules.progress.application.queries.obtener_historial import ObtenerHistorialQuery
 from modules.progress.application.queries.obtener_pista import ObtenerPistaQuery
+from modules.progress.application.queries.obtener_progreso import ObtenerProgresoQuery
 from modules.progress.application.use_cases.enviar_examen import EnviarExamenUseCase
 from modules.progress.application.use_cases.validar_flag import ValidarFlagUseCase
 from modules.progress.infrastructure.rate_limiter import FlagRateLimiter
@@ -38,6 +42,48 @@ def _parsear_uuid(valor: str) -> uuid.UUID:
         return uuid.UUID(valor)
     except (ValueError, TypeError, AttributeError) as exc:
         raise NotFoundError(_ID_INVALIDO_MSG) from exc
+
+
+class ProgresoOverviewView(APIView):
+    """
+    `GET /progress/{assignment_id}/` — resumen de secciones (con id, a
+    diferencia del TOC público) + estado del examen, para la vista de
+    "resolver laboratorio" del frontend.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, assignment_id):
+        resultado = ObtenerProgresoQuery(
+            progreso_repository=ProgresoRepository(),
+            laboratorio_repository=LaboratorioRepository(),
+        ).execute(
+            ObtenerProgresoDTO(
+                asignacion_id=_parsear_uuid(assignment_id), estudiante_id=request.user.id
+            )
+        )
+
+        return Response(
+            {
+                "asignacion_id": str(resultado.asignacion_id),
+                "laboratorio_id": str(resultado.laboratorio_id),
+                "laboratorio_nombre": resultado.laboratorio_nombre,
+                "secciones_completas": resultado.secciones_completas,
+                "examen_disponible": resultado.examen_disponible,
+                "intentos_examen": resultado.intentos_examen,
+                "secciones": [
+                    {
+                        "id": str(s.id),
+                        "orden": s.orden,
+                        "titulo": s.titulo,
+                        "tiene_practica": s.tiene_practica,
+                        "estado": s.estado,
+                    }
+                    for s in resultado.secciones
+                ],
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class ContenidoSeccionView(APIView):
@@ -154,9 +200,39 @@ class HintView(APIView):
 
 
 class ExamSubmissionView(APIView):
-    """`POST /progress/{assignment_id}/exam/` — HE-09/HI-08, UC-03."""
+    """
+    `/progress/{assignment_id}/exam/` — HE-09/HI-08, UC-03. `GET` expone
+    las preguntas para responder (nunca la respuesta correcta); `POST`
+    califica el envío.
+    """
 
     permission_classes = [IsAuthenticated]
+
+    def get(self, request, assignment_id):
+        resultado = ObtenerExamenQuery(
+            progreso_repository=ProgresoRepository(),
+            laboratorio_repository=LaboratorioRepository(),
+        ).execute(
+            ObtenerExamenDTO(
+                asignacion_id=_parsear_uuid(assignment_id), estudiante_id=request.user.id
+            )
+        )
+
+        return Response(
+            {
+                "examen_id": str(resultado.examen_id),
+                "preguntas": [
+                    {
+                        "id": str(p.id),
+                        "enunciado": p.enunciado,
+                        "tipo": p.tipo,
+                        "opciones": p.opciones,
+                    }
+                    for p in resultado.preguntas
+                ],
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def post(self, request, assignment_id):
         serializer = EnviarExamenRequestSerializer(data=request.data)

@@ -404,6 +404,16 @@ export function rejectInvitation(id: string) {
   return api<Asignacion>(`/assignments/invitations/${id}/reject/`, { method: "POST" })
 }
 
+// Autoinscripción directa desde el catálogo (sin invitación de instructor) —
+// solo válida para laboratorios predeterminado+publicado; el backend bloquea
+// con 422 si el estudiante ya tiene otro laboratorio vigente sin terminar.
+export function enrollLaboratorio(laboratorioId: string) {
+  return api<{ id: string; laboratorio_id: string; estado: EstadoAsignacion }>(
+    "/assignments/enroll/",
+    { method: "POST", body: JSON.stringify({ laboratorio_id: laboratorioId }) },
+  )
+}
+
 export interface EstudianteFiltrado {
   estudiante_id: string
   nombre_completo: string
@@ -476,6 +486,28 @@ export function getAdminDashboard() {
 // ---------------------------------------------------------------------------
 // Progress — /api/v1/progress
 // ---------------------------------------------------------------------------
+
+export interface SeccionProgreso {
+  id: string
+  orden: number
+  titulo: string
+  tiene_practica: boolean
+  estado: "bloqueada" | "en_progreso" | "completada"
+}
+
+export interface ProgresoOverview {
+  asignacion_id: string
+  laboratorio_id: string
+  laboratorio_nombre: string
+  secciones_completas: boolean
+  examen_disponible: boolean
+  intentos_examen: number
+  secciones: SeccionProgreso[]
+}
+
+export function getProgresoOverview(assignmentId: string) {
+  return api<ProgresoOverview>(`/progress/${assignmentId}/`)
+}
 
 export function getSectionContent(assignmentId: string, sectionId: string) {
   return api<{ seccion_id: string; titulo: string; contenido_teorico: string; tiene_practica: boolean; estado: string }>(

@@ -98,3 +98,53 @@ class EnviarExamenResultDTO:
     correctas: int
     total: int
     numero_intento: int
+
+
+@dataclass(frozen=True)
+class ObtenerExamenDTO:
+    """`GET /progress/{assignment_id}/exam/` — preguntas para responder (nunca la respuesta)."""
+
+    asignacion_id: uuid.UUID
+    estudiante_id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class PreguntaExamenItemDTO:
+    id: uuid.UUID
+    enunciado: str
+    tipo: str
+    opciones: list[str] | None
+
+
+@dataclass(frozen=True)
+class ExamenParaResolverDTO:
+    examen_id: uuid.UUID
+    preguntas: list[PreguntaExamenItemDTO]
+
+
+@dataclass(frozen=True)
+class ObtenerProgresoDTO:
+    """`GET /progress/{assignment_id}/` — resumen para poder resolver el laboratorio."""
+
+    asignacion_id: uuid.UUID
+    estudiante_id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class SeccionProgresoItemDTO:
+    id: uuid.UUID
+    orden: int
+    titulo: str
+    tiene_practica: bool
+    estado: str
+
+
+@dataclass(frozen=True)
+class ProgresoOverviewDTO:
+    asignacion_id: uuid.UUID
+    laboratorio_id: uuid.UUID
+    laboratorio_nombre: str
+    secciones: list[SeccionProgresoItemDTO]
+    secciones_completas: bool
+    examen_disponible: bool
+    intentos_examen: int

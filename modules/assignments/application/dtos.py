@@ -33,6 +33,15 @@ class InvitarEstudiantesResultDTO:
 
 
 @dataclass(frozen=True)
+class InscribirseLaboratorioDTO:
+    """Autoinscripción del estudiante a un laboratorio del catálogo público (sin invitación)."""
+
+    laboratorio_id: uuid.UUID
+    actor_id: uuid.UUID
+    actor_rol: str
+
+
+@dataclass(frozen=True)
 class AceptarInvitacionDTO:
     asignacion_id: uuid.UUID
     estudiante_id: uuid.UUID

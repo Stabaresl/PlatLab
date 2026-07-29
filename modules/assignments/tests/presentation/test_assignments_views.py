@@ -146,3 +146,45 @@ def test_students_endpoint_instructor_exitoso():
 
     assert response.status_code == 200
     assert response.data == []
+
+
+@pytest.mark.django_db
+def test_enroll_endpoint_requiere_autenticacion():
+    response = APIClient().post(
+        "/api/v1/assignments/enroll/", {"laboratorio_id": str(uuid.uuid4())}, format="json"
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_enroll_endpoint_estudiante_exitoso_en_predeterminado():
+    lab = LaboratorioRepository().add(
+        Laboratorio(
+            nombre=f"Lab Catalogo Vista {uuid.uuid4()}",
+            descripcion="desc",
+            nivel_dificultad=NivelDificultad.BASICO,
+            estado=EstadoLaboratorio.PUBLICADO,
+            tipo=TipoLaboratorio.PREDETERMINADO,
+        )
+    )
+    client = _client_autenticado(uuid.uuid4(), "estudiante")
+
+    response = client.post(
+        "/api/v1/assignments/enroll/", {"laboratorio_id": str(lab.id)}, format="json"
+    )
+
+    assert response.status_code == 201
+    assert response.data["estado"] == "activa"
+
+
+@pytest.mark.django_db
+def test_enroll_endpoint_personalizado_devuelve_404():
+    lab = _crear_lab_publicado(uuid.uuid4())
+    client = _client_autenticado(uuid.uuid4(), "estudiante")
+
+    response = client.post(
+        "/api/v1/assignments/enroll/", {"laboratorio_id": str(lab.id)}, format="json"
+    )
+
+    assert response.status_code == 404

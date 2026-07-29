@@ -6,6 +6,7 @@ from modules.progress.presentation.views import (
     FlagValidationView,
     HintView,
     HistoryView,
+    ProgresoOverviewView,
 )
 
 urlpatterns = [
@@ -26,4 +27,5 @@ urlpatterns = [
     ),
     path("<str:assignment_id>/exam/", ExamSubmissionView.as_view(), name="progress-exam"),
     path("<str:assignment_id>/history/", HistoryView.as_view(), name="progress-history"),
+    path("<str:assignment_id>/", ProgresoOverviewView.as_view(), name="progress-overview"),
 ]
