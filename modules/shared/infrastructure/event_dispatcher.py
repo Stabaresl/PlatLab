@@ -24,10 +24,20 @@ class EventDispatcher:
     Un único listener puede fallar sin frenar el despacho a los demás
     listeners del mismo evento (falla aislada, se recolectan y se re-lanzan
     al final para no ocultar el error).
+
+    Singleton por proceso (mismo patrón que `RedisClient._client`): el
+    registro de listeners es de clase, no de instancia, para que un
+    `listener.py` que se suscribe en `AppConfig.ready()` y un
+    `EventDispatcher()` instanciado más tarde en una vista compartan el
+    mismo registro.
     """
 
+    _listeners: dict[type[DomainEvent], list[Listener]] | None = None
+
     def __init__(self):
-        self._listeners: dict[type[DomainEvent], list[Listener]] = defaultdict(list)
+        if EventDispatcher._listeners is None:
+            EventDispatcher._listeners = defaultdict(list)
+        self._listeners = EventDispatcher._listeners
 
     def subscribe(self, event_type: type[DomainEvent], listener: Listener) -> None:
         self._listeners[event_type].append(listener)
