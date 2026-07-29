@@ -3,7 +3,10 @@ from modules.assignments.domain.entities import Asignacion
 from modules.assignments.domain.repositories import IAsignacionRepository
 from modules.progress.domain.repositories import IProgresoRepository
 from modules.progress.domain.value_objects import EstadoProgresoSeccion
+from modules.shared.domain.exceptions import ForbiddenError
 from modules.users.domain.repositories import IUserRepository
+
+_SIN_PERMISO_MSG = "Solo un instructor puede filtrar sus estudiantes."
 
 
 class FiltrarEstudiantesQuery:
@@ -25,6 +28,9 @@ class FiltrarEstudiantesQuery:
         self._progreso_repository = progreso_repository
 
     def execute(self, input_dto: FiltrarEstudiantesDTO) -> list[EstudianteFiltradoDTO]:
+        if input_dto.actor_rol != "instructor":
+            raise ForbiddenError(_SIN_PERMISO_MSG)
+
         asignaciones = self._asignacion_repository.find_por_instructor(input_dto.instructor_id)
         if input_dto.laboratorio_id is not None:
             asignaciones = [

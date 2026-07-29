@@ -74,6 +74,7 @@ class FiltrarEstudiantesDTO:
     """HI-04: filtros combinables, solo estudiantes con labs asignados por ese instructor."""
 
     instructor_id: uuid.UUID
+    actor_rol: str
     nombre: str | None = None
     laboratorio_id: uuid.UUID | None = None
 
