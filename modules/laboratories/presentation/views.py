@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from modules.laboratories.application.dtos import (
+    AgregarPreguntaDTO,
+    CrearExamenDTO,
     CrearLaboratorioDTO,
     CrearSeccionDTO,
     DefinirFlagDTO,
@@ -24,6 +26,8 @@ from modules.laboratories.application.queries.obtener_detalle_laboratorio import
     ObtenerDetalleLaboratorioQuery,
 )
 from modules.laboratories.application.queries.obtener_toc import ObtenerTOCQuery
+from modules.laboratories.application.use_cases.agregar_pregunta import AgregarPreguntaUseCase
+from modules.laboratories.application.use_cases.crear_examen import CrearExamenUseCase
 from modules.laboratories.application.use_cases.crear_laboratorio import (
     CrearLaboratorioUseCase,
 )
@@ -44,6 +48,7 @@ from modules.laboratories.infrastructure.cached_laboratorio_repository import (
 )
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.laboratories.presentation.serializers import (
+    AgregarPreguntaRequestSerializer,
     CatalogoFiltroQuerySerializer,
     CrearLaboratorioRequestSerializer,
     CrearSeccionRequestSerializer,
@@ -351,3 +356,51 @@ class LaboratorioViewSet(ViewSet):
         )
 
         return Response(_serializar_resultado_seccion(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="exam")
+    def crear_examen(self, request, pk=None):
+        use_case = CrearExamenUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            CrearExamenDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+            )
+        )
+        return Response(
+            {"id": str(resultado.id), "laboratorio_id": str(resultado.laboratorio_id)},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["post"], url_path="exam/questions")
+    def agregar_pregunta(self, request, pk=None):
+        serializer = AgregarPreguntaRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = AgregarPreguntaUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            AgregarPreguntaDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                **serializer.validated_data,
+            )
+        )
+        return Response(
+            {
+                "id": str(resultado.id),
+                "examen_id": str(resultado.examen_id),
+                "enunciado": resultado.enunciado,
+                "tipo": resultado.tipo,
+                "opciones": resultado.opciones,
+            },
+            status=status.HTTP_201_CREATED,
+        )

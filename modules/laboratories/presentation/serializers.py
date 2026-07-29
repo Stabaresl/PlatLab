@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from modules.laboratories.domain.value_objects import NivelDificultad
+from modules.laboratories.domain.value_objects import NivelDificultad, TipoPregunta
 
 
 class CatalogoFiltroQuerySerializer(serializers.Serializer):
@@ -64,3 +64,14 @@ class EditarSeccionRequestSerializer(serializers.Serializer):
     contenido_teorico = serializers.CharField(required=False)
     orden = serializers.IntegerField(min_value=1, required=False)
     tiene_practica = serializers.BooleanField(required=False)
+
+
+class AgregarPreguntaRequestSerializer(serializers.Serializer):
+    """api.md §5 `POST /laboratories/{id}/exam/questions/` (HE-09/HI-08)."""
+
+    enunciado = serializers.CharField()
+    tipo = serializers.ChoiceField(choices=[tipo.value for tipo in TipoPregunta])
+    respuesta = serializers.CharField(max_length=500, trim_whitespace=False)
+    opciones = serializers.ListField(
+        child=serializers.CharField(max_length=200), required=False, allow_null=True
+    )
