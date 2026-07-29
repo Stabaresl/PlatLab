@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from modules.progress.domain.entities import ProgresoSeccion
 from modules.progress.domain.exceptions import SeccionNoPerteneceAProgresoError
-from modules.progress.domain.value_objects import ContadorFallos, EstadoProgresoSeccion
+from modules.progress.domain.value_objects import ContadorFallos, EstadoProgresoSeccion, Puntaje
 
 
 class GestorDeSecuencia:
@@ -79,3 +79,20 @@ class ValidadorDeFlag:
             pista_desbloqueada=contador.debe_mostrar_pista,
             paso_a_paso_desbloqueado=contador.debe_mostrar_paso_a_paso,
         )
+
+
+class CalificadorDeExamen:
+    """
+    HE-09/HI-08, dominio.md §5: agrega en un `Puntaje` los resultados
+    booleanos (correcta/incorrecta) de cada pregunta del examen. La
+    comparación real contra `Pregunta.respuesta_hash` -distinta por tipo
+    de pregunta, Strategy- vive en Application (`EnviarExamenUseCase`,
+    mismo patrón que `ValidarFlagUseCase` con `Flag.hash`): este servicio
+    es agnóstico de Django/hashing y del módulo Laboratories, cruzando
+    ambos agregados solo a través de esta lista de booleanos ya
+    evaluados.
+    """
+
+    def calificar(self, resultados: list[bool]) -> Puntaje:
+        correctas = sum(1 for r in resultados if r)
+        return Puntaje(correctas=correctas, total=len(resultados))

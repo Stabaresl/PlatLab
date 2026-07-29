@@ -35,3 +35,12 @@ class LabCompleted(DomainEvent):
     """
 
     progreso_id: uuid.UUID
+
+
+@dataclass(frozen=True, kw_only=True)
+class ExamGraded(DomainEvent):
+    """Se dispara al calificar un envío de examen (HE-09/HI-08, UC-03) — insumo de auditoría."""
+
+    progreso_id: uuid.UUID
+    examen_id: uuid.UUID
+    puntaje: float

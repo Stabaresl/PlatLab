@@ -82,6 +82,28 @@ class IntentoFlag(BaseEntity):
 
 
 @dataclass(eq=False)
+class ResultadoExamen(BaseEntity):
+    """
+    HE-09/HI-08, base-de-datos.md "progress_resultadoexamen". Cardinalidad
+    Progreso 1:N (un examen es reintentable — cada envío crea una fila
+    nueva, nunca sobrescribe una anterior). `examen_id` es id suelto a
+    `laboratories_examen` (Arquitectura §8). `respuestas` guarda
+    `{pregunta_id: respuesta}` tal como las envió el estudiante, ya
+    validadas contra las `Pregunta` reales del examen (seguridad.md §4).
+    """
+
+    progreso_id: uuid.UUID
+    examen_id: uuid.UUID
+    respuestas: dict
+    puntaje: float
+    fecha: datetime = field(default_factory=datetime.utcnow)
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+
+    def __post_init__(self):
+        BaseEntity.__init__(self, id=self.id)
+
+
+@dataclass(eq=False)
 class HistorialCompletitud(BaseEntity):
     """
     Registro append-only de cada completitud del laboratorio (dominio.md

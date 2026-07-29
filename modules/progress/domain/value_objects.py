@@ -2,6 +2,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import ClassVar
 
+from modules.shared.domain.exceptions import ValidationError
+
+_ESCALA_INVALIDA_MSG = "La escala máxima de un puntaje debe ser mayor a cero."
+_VALOR_FUERA_DE_RANGO_MSG = "El valor obtenido no puede ser negativo ni superar la escala máxima."
+
 
 class EstadoProgresoSeccion(str, Enum):
     BLOQUEADA = "bloqueada"
@@ -34,3 +39,26 @@ class ContadorFallos:
     @property
     def debe_mostrar_paso_a_paso(self) -> bool:
         return self.total >= self.UMBRAL_PASO_A_PASO
+
+
+@dataclass(frozen=True)
+class Puntaje:
+    """
+    HE-09/HI-08, dominio.md §2: valor obtenido + escala máxima, usado en
+    `ResultadoExamen` e `HistorialCompletitud`. Se persiste como el
+    porcentaje resultante (numeric(5,2), base-de-datos.md) — este VO
+    solo existe para el cálculo, no se embebe en la entidad.
+    """
+
+    correctas: int
+    total: int
+
+    def __post_init__(self):
+        if self.total <= 0:
+            raise ValidationError(_ESCALA_INVALIDA_MSG)
+        if self.correctas < 0 or self.correctas > self.total:
+            raise ValidationError(_VALOR_FUERA_DE_RANGO_MSG)
+
+    @property
+    def porcentaje(self) -> float:
+        return round(self.correctas / self.total * 100, 2)

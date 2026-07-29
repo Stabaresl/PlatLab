@@ -6,6 +6,7 @@ from modules.progress.domain.entities import (
     IntentoFlag,
     Progreso,
     ProgresoSeccion,
+    ResultadoExamen,
 )
 
 
@@ -53,3 +54,9 @@ class IProgresoRepository(Protocol):
     def registrar_historial(self, historial: HistorialCompletitud) -> HistorialCompletitud: ...
 
     def get_historial(self, progreso_id: uuid.UUID) -> list[HistorialCompletitud]: ...
+
+    def registrar_resultado_examen(self, resultado: ResultadoExamen) -> ResultadoExamen:
+        """HE-09/HI-08: examen reintentable — cada envío crea una fila nueva, nunca sobrescribe."""
+        ...
+
+    def get_resultados_examen(self, progreso_id: uuid.UUID) -> list[ResultadoExamen]: ...
