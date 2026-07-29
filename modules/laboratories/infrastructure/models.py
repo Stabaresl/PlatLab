@@ -67,11 +67,11 @@ class LaboratorioModel(models.Model):
             models.CheckConstraint(
                 condition=models.Q(tipo="predeterminado", instructor_id__isnull=True)
                 | ~models.Q(tipo="predeterminado"),
-                name="ck_lab_predeterminado_sin_instructor",
+                name="ck_lab_predet_sin_instructor",
             ),
             models.CheckConstraint(
                 condition=models.Q(tipo="personalizado") | models.Q(origen__isnull=True),
-                name="ck_lab_origen_solo_si_personalizado",
+                name="ck_lab_origen_si_personalizado",
             ),
         ]
 

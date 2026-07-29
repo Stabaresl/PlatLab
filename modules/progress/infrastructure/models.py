@@ -45,12 +45,12 @@ class ProgresoSeccionModel(models.Model):
         db_table = "progress_progresoseccion"
         constraints = [
             models.UniqueConstraint(
-                fields=["progreso", "seccion_id"], name="uq_progresoseccion_progreso_seccion"
+                fields=["progreso", "seccion_id"], name="uq_progsec_progreso_seccion"
             ),
         ]
         indexes = [
             models.Index(
-                fields=["progreso", "estado"], name="idx_progresoseccion_progreso_estado"
+                fields=["progreso", "estado"], name="idx_progsec_progreso_estado"
             ),
         ]
 

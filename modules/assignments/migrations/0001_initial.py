@@ -63,7 +63,7 @@ class Migration(migrations.Migration):
             constraint=models.UniqueConstraint(
                 condition=models.Q(("estado__in", ["pendiente", "activa"])),
                 fields=("estudiante_id", "laboratorio_id"),
-                name="uq_asig_estudiante_laboratorio_vigente",
+                name="uq_asig_est_lab_vigente",
             ),
         ),
     ]

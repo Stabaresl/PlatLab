@@ -46,7 +46,7 @@ class AsignacionModel(models.Model):
             models.UniqueConstraint(
                 fields=["estudiante_id", "laboratorio_id"],
                 condition=models.Q(estado__in=["pendiente", "activa"]),
-                name="uq_asig_estudiante_laboratorio_vigente",
+                name="uq_asig_est_lab_vigente",
             ),
         ]
 

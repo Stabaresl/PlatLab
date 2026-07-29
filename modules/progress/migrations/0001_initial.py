@@ -125,13 +125,13 @@ class Migration(migrations.Migration):
         migrations.AddIndex(
             model_name="progresoseccionmodel",
             index=models.Index(
-                fields=["progreso", "estado"], name="idx_progresoseccion_progreso_estado"
+                fields=["progreso", "estado"], name="idx_progsec_progreso_estado"
             ),
         ),
         migrations.AddConstraint(
             model_name="progresoseccionmodel",
             constraint=models.UniqueConstraint(
-                fields=("progreso", "seccion_id"), name="uq_progresoseccion_progreso_seccion"
+                fields=("progreso", "seccion_id"), name="uq_progsec_progreso_seccion"
             ),
         ),
         migrations.AddIndex(

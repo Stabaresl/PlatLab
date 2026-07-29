@@ -140,7 +140,7 @@ class Migration(migrations.Migration):
                     models.Q(("tipo", "predeterminado"), _negated=True),
                     _connector="OR",
                 ),
-                name="ck_lab_predeterminado_sin_instructor",
+                name="ck_lab_predet_sin_instructor",
             ),
         ),
         migrations.AddConstraint(
@@ -148,7 +148,7 @@ class Migration(migrations.Migration):
             constraint=models.CheckConstraint(
                 condition=models.Q(("tipo", "personalizado"))
                 | models.Q(("origen__isnull", True)),
-                name="ck_lab_origen_solo_si_personalizado",
+                name="ck_lab_origen_si_personalizado",
             ),
         ),
         migrations.AddConstraint(
