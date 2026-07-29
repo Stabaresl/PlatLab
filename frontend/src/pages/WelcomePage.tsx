@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom"
+import { motion } from "framer-motion"
 import grimBg from "../assets/grim.png"
 import termBg from "../assets/term.png"
 
@@ -108,7 +109,10 @@ export default function WelcomePage() {
           "
         >
           {/* Columna izquierda: texto */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="
               flex flex-col items-center lg:items-start
               w-full lg:w-1/2
@@ -192,11 +196,15 @@ export default function WelcomePage() {
                 know more
               </button>
             </div>
-          </div>
+          </motion.div>
 
           {/* Columna derecha: card con term.png + borde dorado */}
           <div className="flex-1 flex items-center justify-center w-full lg:w-auto">
-            <div
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.55, ease: "easeOut", delay: 0.15 }}
+              whileHover={{ scale: 1.015 }}
               className="
                 relative overflow-hidden
                 w-full max-w-[650px]
@@ -243,7 +251,7 @@ export default function WelcomePage() {
                   la ciberseguridad
                 </p>
               </div>
-            </div>
+            </motion.div>
           </div>
         </section>
 
