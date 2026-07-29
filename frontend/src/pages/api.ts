@@ -540,6 +540,17 @@ export function getHint(assignmentId: string, sectionId: string) {
   }>(`/progress/${assignmentId}/sections/${sectionId}/hint/`)
 }
 
+export interface PreguntaExamen {
+  id: string
+  enunciado: string
+  tipo: "opcion_multiple" | "abierta"
+  opciones: string[] | null
+}
+
+export function getExamen(assignmentId: string) {
+  return api<{ examen_id: string; preguntas: PreguntaExamen[] }>(`/progress/${assignmentId}/exam/`)
+}
+
 export function submitExam(assignmentId: string, respuestas: Record<string, string>) {
   return api<{ puntaje: number; correctas: number; total: number; numero_intento: number }>(
     `/progress/${assignmentId}/exam/`,

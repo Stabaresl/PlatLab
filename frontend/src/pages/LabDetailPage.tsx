@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import { getLaboratorio, getToc, ApiError, type LaboratorioDetalle, type NivelDificultad } from "./api"
+import { getLaboratorio, getToc, enrollLaboratorio, ApiError, type LaboratorioDetalle, type NivelDificultad } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 import MatrixRain from "../components/MatrixRain"
@@ -26,8 +26,9 @@ interface TocSeccion {
 
 // Detalle público de un laboratorio (HV-03): tabla de contenidos visible sin
 // invitación previa, para que cualquiera entienda el "roadmap" del lab antes
-// de pedir/recibir acceso. La inscripción real sigue siendo por invitación
-// del instructor (no hay endpoint de auto-inscripción en el backend).
+// de inscribirse. Los estudiantes autenticados pueden autoinscribirse directo
+// desde acá (POST /assignments/enroll/); solo pueden tener un laboratorio
+// personalizado activo a la vez (lo valida el backend).
 export default function LabDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -35,7 +36,29 @@ export default function LabDetailPage() {
   const [toc, setToc] = useState<TocSeccion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [enrolling, setEnrolling] = useState(false)
+  const [enrollError, setEnrollError] = useState("")
   const authed = !!localStorage.getItem("token")
+  const role = localStorage.getItem("role")
+
+  const handleEnroll = async () => {
+    if (!lab) return
+    setEnrolling(true)
+    setEnrollError("")
+    try {
+      const asignacion = await enrollLaboratorio(lab.id)
+      navigate(`/resolver/${asignacion.id}`)
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setEnrollError("Ya estás inscrito en este laboratorio. Revisá tu Dashboard para continuarlo.")
+      } else if (err instanceof ApiError) {
+        setEnrollError(err.message)
+      } else {
+        setEnrollError("No se pudo completar la inscripción.")
+      }
+      setEnrolling(false)
+    }
+  }
 
   useEffect(() => {
     if (!id) return
@@ -165,18 +188,32 @@ export default function LabDetailPage() {
                   <IconLock style={{ color: "var(--ui-border-gold)" }} className="mt-0.5 shrink-0" />
                   <p className="text-xs sm:text-sm m-0 leading-relaxed" style={{ color: "var(--text-muted)" }}>
                     {authed
-                      ? "El acceso a resolver este laboratorio depende de una invitación de tu instructor. Si ya te la enviaron, la vas a ver en tu Dashboard."
-                      : "Para inscribirte necesitás una cuenta e invitación de un instructor. Iniciá sesión o creá tu cuenta para empezar."}
+                      ? role === "estudiante"
+                        ? enrollError || "Inscribite para empezar a resolver este laboratorio ahora mismo. Solo podés tener un laboratorio activo a la vez."
+                        : "Este laboratorio está disponible en el catálogo. Consultá tu Dashboard para gestionar tus laboratorios."
+                      : "Creá tu cuenta gratis para inscribirte y empezar a resolver este laboratorio ahora mismo."}
                   </p>
                 </div>
                 {authed ? (
-                  <Link
-                    to="/dashboard"
-                    className="relative z-10 shrink-0 px-5 py-2.5 rounded text-sm font-semibold no-underline transition-opacity hover:opacity-85"
-                    style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
-                  >
-                    Ir a mi Dashboard
-                  </Link>
+                  role === "estudiante" ? (
+                    <button
+                      type="button"
+                      onClick={handleEnroll}
+                      disabled={enrolling}
+                      className="relative z-10 shrink-0 px-5 py-2.5 rounded text-sm font-semibold cursor-pointer border-none transition-opacity hover:opacity-85 disabled:opacity-50"
+                      style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+                    >
+                      {enrolling ? "Inscribiendo…" : "Inscribirme ahora"}
+                    </button>
+                  ) : (
+                    <Link
+                      to="/dashboard"
+                      className="relative z-10 shrink-0 px-5 py-2.5 rounded text-sm font-semibold no-underline transition-opacity hover:opacity-85"
+                      style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "'Fira Code', monospace" }}
+                    >
+                      Ir a mi Dashboard
+                    </Link>
+                  )
                 ) : (
                   <Link
                     to="/signup"

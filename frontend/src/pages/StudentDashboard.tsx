@@ -251,6 +251,15 @@ export default function StudentDashboard() {
                               </button>
                             </>
                           )}
+                          {(row.status === "en_progreso" || row.status === "completado") && (
+                            <Link
+                              to={`/resolver/${row.assignment.id}`}
+                              className="px-3 sm:px-4 py-1.5 rounded text-xs font-semibold no-underline transition-opacity hover:opacity-80"
+                              style={{ backgroundColor: "var(--accent-primary)", color: "#fff", fontFamily: "'Fira Code', monospace" }}
+                            >
+                              {row.status === "completado" ? "Ver" : "Continuar"}
+                            </Link>
+                          )}
                         </div>
                       </motion.div>
                     ))}
