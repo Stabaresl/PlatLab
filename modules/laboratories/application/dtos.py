@@ -161,3 +161,12 @@ class PublicarLaboratorioDTO:
     laboratorio_id: uuid.UUID
     actor_id: uuid.UUID
     actor_rol: str
+
+
+@dataclass(frozen=True)
+class DuplicarLaboratorioDTO:
+    """api.md §5 `POST /laboratories/{id}/duplicate/` (UC-05) — solo Instructor."""
+
+    laboratorio_id: uuid.UUID
+    actor_id: uuid.UUID
+    actor_rol: str
