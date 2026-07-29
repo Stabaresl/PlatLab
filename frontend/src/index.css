@@ -22,3 +22,7 @@ body {
   background-color: var(--bg-canvas);
   color: var(--text-base);
 }
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
