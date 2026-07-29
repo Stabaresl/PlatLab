@@ -62,3 +62,7 @@ class AsignacionRepository:
             estado=EstadoAsignacion.ACTIVA.value, fecha_vencimiento__isnull=False
         )
         return [asignacion_to_entity(m) for m in modelos]
+
+    def find_todas_activas(self) -> list[Asignacion]:
+        modelos = AsignacionModel.objects.filter(estado=EstadoAsignacion.ACTIVA.value)
+        return [asignacion_to_entity(m) for m in modelos]

@@ -157,3 +157,9 @@ class LaboratorioRepository:
     def get_preguntas(self, examen_id: uuid.UUID) -> list[Pregunta]:
         modelos = PreguntaModel.objects.filter(examen_id=examen_id)
         return [pregunta_to_entity(m) for m in modelos]
+
+    def find_publicados(self) -> list[Laboratorio]:
+        modelos = LaboratorioModel.objects.filter(
+            estado=LaboratorioModel.Estado.PUBLICADO
+        ).prefetch_related("temas")
+        return [laboratorio_to_entity(m) for m in modelos]

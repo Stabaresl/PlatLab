@@ -6,6 +6,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from modules.assignments.infrastructure.repositories import AsignacionRepository
+from modules.laboratories.infrastructure.repositories import LaboratorioRepository
+from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
@@ -14,8 +17,10 @@ from modules.users.application.dtos import (
     DeshabilitarUsuarioDTO,
     HabilitarUsuarioDTO,
     ListarUsuariosDTO,
+    ObtenerDashboardAdminDTO,
 )
 from modules.users.application.queries.listar_usuarios import ListarUsuariosQuery
+from modules.users.application.queries.obtener_dashboard_admin import ObtenerDashboardAdminQuery
 from modules.users.application.queries.obtener_usuario import ObtenerUsuarioQuery
 from modules.users.application.use_cases.actualizar_usuario import ActualizarUsuarioUseCase
 from modules.users.application.use_cases.deshabilitar_usuario import DeshabilitarUsuarioUseCase
@@ -118,3 +123,29 @@ class UserViewSet(ViewSet):
             )
         )
         return Response(_serializar_usuario(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"], url_path="dashboard")
+    def dashboard(self, request):
+        resultado = ObtenerDashboardAdminQuery(
+            user_repository=UserRepository(),
+            laboratorio_repository=LaboratorioRepository(),
+            asignacion_repository=AsignacionRepository(),
+            progreso_repository=ProgresoRepository(),
+        ).execute(ObtenerDashboardAdminDTO(actor_rol=request.user.rol))
+
+        return Response(
+            {
+                "usuarios_por_rol": resultado.usuarios_por_rol,
+                "laboratorios_activos": resultado.laboratorios_activos,
+                "labs_mas_populares": [
+                    {
+                        "laboratorio_id": str(item.laboratorio_id),
+                        "nombre": item.nombre,
+                        "estudiantes_inscritos": item.estudiantes_inscritos,
+                    }
+                    for item in resultado.labs_mas_populares
+                ],
+                "tasa_completitud_promedio": resultado.tasa_completitud_promedio,
+            },
+            status=status.HTTP_200_OK,
+        )

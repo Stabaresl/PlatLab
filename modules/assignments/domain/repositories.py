@@ -28,3 +28,7 @@ class IAsignacionRepository(Protocol):
     def find_activas_con_vencimiento(self) -> list[Asignacion]:
         """RF-32: candidatas a evaluar por `GestorDeVencimientos` (activa, con fecha límite)."""
         ...
+
+    def find_todas_activas(self) -> list[Asignacion]:
+        """HA-03/RF-28: todas las asignaciones activas de la plataforma, para el dashboard admin."""
+        ...

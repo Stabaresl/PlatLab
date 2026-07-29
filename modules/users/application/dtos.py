@@ -54,3 +54,25 @@ class HabilitarUsuarioDTO:
     usuario_id: uuid.UUID
     actor_id: uuid.UUID
     actor_rol: str
+
+
+@dataclass(frozen=True)
+class ObtenerDashboardAdminDTO:
+    """HA-03, api.md §4 `GET /users/dashboard/` — solo Admin."""
+
+    actor_rol: str
+
+
+@dataclass(frozen=True)
+class LabPopularDTO:
+    laboratorio_id: uuid.UUID
+    nombre: str
+    estudiantes_inscritos: int
+
+
+@dataclass(frozen=True)
+class DashboardAdminResultDTO:
+    usuarios_por_rol: dict[str, int]
+    laboratorios_activos: int
+    labs_mas_populares: list[LabPopularDTO]
+    tasa_completitud_promedio: float

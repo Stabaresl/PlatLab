@@ -67,3 +67,12 @@ class ILaboratorioRepository(Protocol):
     def add_pregunta(self, pregunta: Pregunta) -> Pregunta: ...
 
     def get_preguntas(self, examen_id: uuid.UUID) -> list[Pregunta]: ...
+
+    def find_publicados(self) -> list[Laboratorio]:
+        """
+        HA-03/RF-28: todos los laboratorios publicados de la plataforma
+        (predeterminados + personalizados de cualquier instructor), para
+        el dashboard admin — a diferencia de `find_catalogo()`, no
+        filtra por visibilidad de un actor puntual.
+        """
+        ...
