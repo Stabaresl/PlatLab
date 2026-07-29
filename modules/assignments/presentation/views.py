@@ -11,10 +11,12 @@ from modules.assignments.application.dtos import (
     FiltrarEstudiantesDTO,
     InvitarEstudiantesDTO,
     ListarAsignacionesDTO,
+    ObtenerDashboardDTO,
     RechazarInvitacionDTO,
 )
 from modules.assignments.application.queries.filtrar_estudiantes import FiltrarEstudiantesQuery
 from modules.assignments.application.queries.listar_asignaciones import ListarAsignacionesQuery
+from modules.assignments.application.queries.obtener_dashboard import ObtenerDashboardQuery
 from modules.assignments.application.use_cases.aceptar_invitacion import AceptarInvitacionUseCase
 from modules.assignments.application.use_cases.invitar_estudiantes import (
     InvitarEstudiantesUseCase,
@@ -170,6 +172,30 @@ class AssignmentViewSet(ViewSet):
                     "laboratorio_id": str(item.laboratorio_id),
                     "estado_asignacion": item.estado_asignacion,
                     "porcentaje_completitud": item.porcentaje_completitud,
+                }
+                for item in resultado
+            ],
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["get"], url_path="dashboard")
+    def dashboard(self, request):
+        resultado = ObtenerDashboardQuery(
+            laboratorio_repository=LaboratorioRepository(),
+            asignacion_repository=AsignacionRepository(),
+            progreso_repository=ProgresoRepository(),
+        ).execute(
+            ObtenerDashboardDTO(instructor_id=request.user.id, actor_rol=request.user.rol)
+        )
+
+        return Response(
+            [
+                {
+                    "laboratorio_id": str(item.laboratorio_id),
+                    "nombre": item.nombre,
+                    "estado": item.estado,
+                    "estudiantes_inscritos": item.estudiantes_inscritos,
+                    "porcentaje_completitud_promedio": item.porcentaje_completitud_promedio,
                 }
                 for item in resultado
             ],

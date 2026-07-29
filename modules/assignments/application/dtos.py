@@ -86,3 +86,20 @@ class EstudianteFiltradoDTO:
     laboratorio_id: uuid.UUID
     estado_asignacion: str
     porcentaje_completitud: float
+
+
+@dataclass(frozen=True)
+class ObtenerDashboardDTO:
+    """HI-06: panel principal del instructor."""
+
+    instructor_id: uuid.UUID
+    actor_rol: str
+
+
+@dataclass(frozen=True)
+class LaboratorioDashboardItemDTO:
+    laboratorio_id: uuid.UUID
+    nombre: str
+    estado: str
+    estudiantes_inscritos: int
+    porcentaje_completitud_promedio: float
