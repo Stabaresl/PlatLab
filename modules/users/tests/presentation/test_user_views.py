@@ -48,6 +48,34 @@ def test_list_endpoint_admin_exitoso():
 
 
 @pytest.mark.django_db
+def test_list_endpoint_sin_filtro_activo_no_oculta_usuarios_activos():
+    """
+    Regresion: BooleanField de DRF trata un query param ausente como
+    `False` (comportamiento HTML-input) salvo que se declare
+    `allow_null=True` — sin eso, `GET /users/` sin `?activo=` filtraba
+    por error solo deshabilitados, ocultando todos los activos.
+    """
+    usuario = _crear_usuario(f"vista_sin_filtro_{uuid.uuid4()}@uni.edu")
+    client = _client_autenticado(uuid.uuid4(), "administrador")
+
+    response = client.get("/api/v1/users/")
+
+    ids = [item["id"] for item in response.data]
+    assert str(usuario.id) in ids
+
+
+@pytest.mark.django_db
+def test_list_endpoint_filtro_activo_false_excluye_activos():
+    usuario_activo = _crear_usuario(f"vista_activo_{uuid.uuid4()}@uni.edu")
+    client = _client_autenticado(uuid.uuid4(), "administrador")
+
+    response = client.get("/api/v1/users/?activo=false")
+
+    ids = [item["id"] for item in response.data]
+    assert str(usuario_activo.id) not in ids
+
+
+@pytest.mark.django_db
 def test_retrieve_endpoint_admin_exitoso():
     usuario = _crear_usuario(f"vista_detalle_{uuid.uuid4()}@uni.edu")
     client = _client_autenticado(uuid.uuid4(), "administrador")

@@ -10,7 +10,11 @@ class ListarUsuariosQuerySerializer(serializers.Serializer):
 
     nombre = serializers.CharField(required=False, max_length=200)
     rol = serializers.ChoiceField(choices=_ROL_CHOICES, required=False)
-    activo = serializers.BooleanField(required=False)
+    # `allow_null=True` es necesario: sin él, DRF trata un query param
+    # ausente como `False` (comportamiento HTML-input de BooleanField),
+    # filtrando por defecto solo usuarios deshabilitados en vez de no
+    # filtrar por `activo` en absoluto.
+    activo = serializers.BooleanField(required=False, allow_null=True)
 
 
 class ActualizarUsuarioRequestSerializer(serializers.Serializer):
