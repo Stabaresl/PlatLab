@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from modules.assignments.application.dtos import (
     InvitacionResultDTO,
     InvitarEstudiantesDTO,
@@ -9,6 +7,7 @@ from modules.assignments.domain.entities import Asignacion
 from modules.assignments.domain.events import AssignmentInvited
 from modules.assignments.domain.exceptions import InvalidExpirationError
 from modules.assignments.domain.repositories import IAsignacionRepository
+from modules.assignments.domain.value_objects import VentanaVencimiento
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.laboratories.domain.value_objects import EstadoLaboratorio
 from modules.shared.application.base_use_case import BaseUseCase
@@ -62,11 +61,10 @@ class InvitarEstudiantesUseCase(
         if laboratorio.estado != EstadoLaboratorio.PUBLICADO:
             raise BusinessRuleViolationError(_LAB_NO_PUBLICADO_MSG)
 
-        if (
-            input_dto.fecha_vencimiento is not None
-            and input_dto.fecha_vencimiento <= datetime.now(timezone.utc)
-        ):
-            raise InvalidExpirationError(_VENCIMIENTO_INVALIDO_MSG)
+        if input_dto.fecha_vencimiento is not None:
+            ventana = VentanaVencimiento(fecha=input_dto.fecha_vencimiento)
+            if ventana.ya_vencio():
+                raise InvalidExpirationError(_VENCIMIENTO_INVALIDO_MSG)
 
     def _execute_domain_logic(
         self, input_dto: InvitarEstudiantesDTO
