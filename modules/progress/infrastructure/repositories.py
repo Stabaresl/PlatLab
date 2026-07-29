@@ -37,6 +37,10 @@ class ProgresoRepository:
         model = ProgresoModel.objects.filter(asignacion_id=asignacion_id).first()
         return progreso_to_entity(model) if model else None
 
+    def get_by_id(self, progreso_id: uuid.UUID) -> Progreso | None:
+        model = ProgresoModel.objects.filter(id=progreso_id).first()
+        return progreso_to_entity(model) if model else None
+
     def add(self, progreso: Progreso) -> Progreso:
         model = ProgresoModel.objects.create(
             id=progreso.id,

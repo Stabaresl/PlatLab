@@ -23,6 +23,10 @@ class IProgresoRepository(Protocol):
 
     def get_by_asignacion(self, asignacion_id: uuid.UUID) -> Progreso | None: ...
 
+    def get_by_id(self, progreso_id: uuid.UUID) -> Progreso | None:
+        """UC-12: resuelve `estudiante_id` a partir de `progreso_id` (ej. para auditoría)."""
+        ...
+
     def add(self, progreso: Progreso) -> Progreso: ...
 
     def tocar_actividad(self, progreso_id: uuid.UUID) -> None:
