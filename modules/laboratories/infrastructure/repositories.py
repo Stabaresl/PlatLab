@@ -2,15 +2,19 @@ import uuid
 
 from django.db.models import Q
 
-from modules.laboratories.domain.entities import Flag, Laboratorio, Seccion
+from modules.laboratories.domain.entities import Examen, Flag, Laboratorio, Pregunta, Seccion
 from modules.laboratories.infrastructure.mappers import (
+    examen_to_entity,
     flag_to_entity,
     laboratorio_to_entity,
+    pregunta_to_entity,
     seccion_to_entity,
 )
 from modules.laboratories.infrastructure.models import (
+    ExamenModel,
     FlagModel,
     LaboratorioModel,
+    PreguntaModel,
     SeccionModel,
     TemaModel,
 )
@@ -126,3 +130,30 @@ class LaboratorioRepository:
             },
         )
         return flag_to_entity(model)
+
+    def get_examen_by_laboratorio(self, laboratorio_id: uuid.UUID) -> Examen | None:
+        model = ExamenModel.objects.filter(laboratorio_id=laboratorio_id).first()
+        return examen_to_entity(model) if model else None
+
+    def add_examen(self, examen: Examen) -> Examen:
+        model = ExamenModel.objects.create(id=examen.id, laboratorio_id=examen.laboratorio_id)
+        return examen_to_entity(model)
+
+    def get_examen_by_id(self, examen_id: uuid.UUID) -> Examen | None:
+        model = ExamenModel.objects.filter(id=examen_id).first()
+        return examen_to_entity(model) if model else None
+
+    def add_pregunta(self, pregunta: Pregunta) -> Pregunta:
+        model = PreguntaModel.objects.create(
+            id=pregunta.id,
+            examen_id=pregunta.examen_id,
+            enunciado=pregunta.enunciado,
+            tipo=pregunta.tipo.value,
+            opciones=pregunta.opciones,
+            respuesta_hash=pregunta.respuesta_hash,
+        )
+        return pregunta_to_entity(model)
+
+    def get_preguntas(self, examen_id: uuid.UUID) -> list[Pregunta]:
+        modelos = PreguntaModel.objects.filter(examen_id=examen_id)
+        return [pregunta_to_entity(m) for m in modelos]

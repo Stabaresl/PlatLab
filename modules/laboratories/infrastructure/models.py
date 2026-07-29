@@ -116,3 +116,43 @@ class FlagModel(models.Model):
 
     def __str__(self) -> str:
         return f"Flag(seccion={self.seccion_id})"
+
+
+class ExamenModel(models.Model):
+    """
+    HE-09/HI-08, base-de-datos.md "laboratories_examen": 1:1 con
+    Laboratorio, opcional en `personalizado` (UC-03 A2).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    laboratorio = models.OneToOneField(
+        LaboratorioModel, on_delete=models.CASCADE, related_name="examen"
+    )
+
+    class Meta:
+        db_table = "laboratories_examen"
+
+    def __str__(self) -> str:
+        return f"Examen(laboratorio={self.laboratorio_id})"
+
+
+class PreguntaModel(models.Model):
+    """base-de-datos.md "laboratories_pregunta"."""
+
+    class Tipo(models.TextChoices):
+        OPCION_MULTIPLE = "opcion_multiple", "Opción múltiple"
+        ABIERTA = "abierta", "Abierta"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    examen = models.ForeignKey(ExamenModel, on_delete=models.CASCADE, related_name="preguntas")
+    enunciado = models.TextField()
+    tipo = models.CharField(max_length=20, choices=Tipo.choices)
+    # opciones: solo si tipo=opcion_multiple (validado en el dominio, Pregunta.__post_init__).
+    opciones = models.JSONField(null=True, blank=True)
+    respuesta_hash = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = "laboratories_pregunta"
+
+    def __str__(self) -> str:
+        return f"Pregunta(examen={self.examen_id}, tipo={self.tipo})"

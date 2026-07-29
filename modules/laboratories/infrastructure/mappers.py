@@ -1,11 +1,18 @@
-from modules.laboratories.domain.entities import Flag, Laboratorio, Seccion
+from modules.laboratories.domain.entities import Examen, Flag, Laboratorio, Pregunta, Seccion
 from modules.laboratories.domain.value_objects import (
     AyudaProgresiva,
     EstadoLaboratorio,
     NivelDificultad,
     TipoLaboratorio,
+    TipoPregunta,
 )
-from modules.laboratories.infrastructure.models import FlagModel, LaboratorioModel, SeccionModel
+from modules.laboratories.infrastructure.models import (
+    ExamenModel,
+    FlagModel,
+    LaboratorioModel,
+    PreguntaModel,
+    SeccionModel,
+)
 
 
 def laboratorio_to_entity(model: LaboratorioModel) -> Laboratorio:
@@ -41,4 +48,19 @@ def flag_to_entity(model: FlagModel) -> Flag:
         seccion_id=model.seccion_id,
         hash=model.hash,
         ayuda=AyudaProgresiva(pista=model.pista_texto, paso_a_paso=model.paso_a_paso_texto),
+    )
+
+
+def examen_to_entity(model: ExamenModel) -> Examen:
+    return Examen(id=model.id, laboratorio_id=model.laboratorio_id)
+
+
+def pregunta_to_entity(model: PreguntaModel) -> Pregunta:
+    return Pregunta(
+        id=model.id,
+        examen_id=model.examen_id,
+        enunciado=model.enunciado,
+        tipo=TipoPregunta(model.tipo),
+        respuesta_hash=model.respuesta_hash,
+        opciones=model.opciones,
     )
