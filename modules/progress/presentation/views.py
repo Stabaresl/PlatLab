@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.progress.application.dtos import (
+    EnviarExamenDTO,
     ObtenerContenidoSeccionDTO,
     ObtenerHistorialDTO,
     ObtenerPistaDTO,
@@ -17,10 +18,14 @@ from modules.progress.application.queries.obtener_contenido_seccion import (
 )
 from modules.progress.application.queries.obtener_historial import ObtenerHistorialQuery
 from modules.progress.application.queries.obtener_pista import ObtenerPistaQuery
+from modules.progress.application.use_cases.enviar_examen import EnviarExamenUseCase
 from modules.progress.application.use_cases.validar_flag import ValidarFlagUseCase
 from modules.progress.infrastructure.rate_limiter import FlagRateLimiter
 from modules.progress.infrastructure.repositories import ProgresoRepository
-from modules.progress.presentation.serializers import ValidarFlagRequestSerializer
+from modules.progress.presentation.serializers import (
+    EnviarExamenRequestSerializer,
+    ValidarFlagRequestSerializer,
+)
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
@@ -146,6 +151,39 @@ class HintView(APIView):
             data["paso_a_paso"] = resultado.paso_a_paso
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class ExamSubmissionView(APIView):
+    """`POST /progress/{assignment_id}/exam/` — HE-09/HI-08, UC-03."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, assignment_id):
+        serializer = EnviarExamenRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        resultado = EnviarExamenUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            progreso_repository=ProgresoRepository(),
+            laboratorio_repository=LaboratorioRepository(),
+        ).execute(
+            EnviarExamenDTO(
+                asignacion_id=_parsear_uuid(assignment_id),
+                estudiante_id=request.user.id,
+                respuestas=serializer.validated_data["respuestas"],
+            )
+        )
+
+        return Response(
+            {
+                "puntaje": resultado.puntaje,
+                "correctas": resultado.correctas,
+                "total": resultado.total,
+                "numero_intento": resultado.numero_intento,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class HistoryView(APIView):
