@@ -16,13 +16,15 @@ class ILaboratorioRepository(Protocol):
         instructor_id: uuid.UUID | None = None,
         nivel_dificultad: str | None = None,
         tema: str | None = None,
+        nombre: str | None = None,
     ) -> list[Laboratorio]:
         """
         Visibilidad ya resuelta a nivel de query (índices `(estado,
         nivel_dificultad)` / `(tipo, instructor_id)`, base-de-datos.md
         §7): predeterminado+publicado siempre; + personalizado propio si
-        se pasa `instructor_id` (HI-01). `nivel_dificultad`/`tema` filtran
-        además sobre ese conjunto ya visible.
+        se pasa `instructor_id` (HI-01). `nivel_dificultad`/`tema`/
+        `nombre` (HI-05, coincidencia parcial) filtran además sobre ese
+        conjunto ya visible.
         """
         ...
 

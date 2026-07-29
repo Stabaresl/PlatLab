@@ -7,7 +7,16 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from modules.laboratories.application.dtos import DefinirFlagDTO, ListarLaboratoriosFiltroDTO
+from modules.laboratories.application.dtos import (
+    CrearLaboratorioDTO,
+    CrearSeccionDTO,
+    DefinirFlagDTO,
+    DuplicarLaboratorioDTO,
+    EditarLaboratorioDTO,
+    EditarSeccionDTO,
+    ListarLaboratoriosFiltroDTO,
+    PublicarLaboratorioDTO,
+)
 from modules.laboratories.application.queries.listar_laboratorios import (
     ListarLaboratoriosQuery,
 )
@@ -15,14 +24,32 @@ from modules.laboratories.application.queries.obtener_detalle_laboratorio import
     ObtenerDetalleLaboratorioQuery,
 )
 from modules.laboratories.application.queries.obtener_toc import ObtenerTOCQuery
+from modules.laboratories.application.use_cases.crear_laboratorio import (
+    CrearLaboratorioUseCase,
+)
+from modules.laboratories.application.use_cases.crear_seccion import CrearSeccionUseCase
 from modules.laboratories.application.use_cases.definir_flag import DefinirFlagUseCase
+from modules.laboratories.application.use_cases.duplicar_laboratorio import (
+    DuplicarLaboratorioUseCase,
+)
+from modules.laboratories.application.use_cases.editar_laboratorio import (
+    EditarLaboratorioUseCase,
+)
+from modules.laboratories.application.use_cases.editar_seccion import EditarSeccionUseCase
+from modules.laboratories.application.use_cases.publicar_laboratorio import (
+    PublicarLaboratorioUseCase,
+)
 from modules.laboratories.infrastructure.cached_laboratorio_repository import (
     CachedLaboratorioRepository,
 )
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.laboratories.presentation.serializers import (
     CatalogoFiltroQuerySerializer,
+    CrearLaboratorioRequestSerializer,
+    CrearSeccionRequestSerializer,
     DefinirFlagRequestSerializer,
+    EditarLaboratorioRequestSerializer,
+    EditarSeccionRequestSerializer,
 )
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
@@ -36,6 +63,25 @@ def _parsear_uuid(valor: str) -> uuid.UUID:
         return uuid.UUID(valor)
     except (ValueError, TypeError, AttributeError) as exc:
         raise NotFoundError(_ID_INVALIDO_MSG) from exc
+
+
+def _serializar_resultado_laboratorio(resultado) -> dict:
+    return {
+        "id": str(resultado.id),
+        "nombre": resultado.nombre,
+        "estado": resultado.estado,
+        "tipo": resultado.tipo,
+    }
+
+
+def _serializar_resultado_seccion(resultado) -> dict:
+    return {
+        "id": str(resultado.id),
+        "laboratorio_id": str(resultado.laboratorio_id),
+        "orden": resultado.orden,
+        "titulo": resultado.titulo,
+        "tiene_practica": resultado.tiene_practica,
+    }
 
 
 def _resolver_ids(request) -> tuple[uuid.UUID | None, uuid.UUID | None]:
@@ -79,10 +125,12 @@ class LaboratorioViewSet(ViewSet):
 
     permission_classes = [AllowAny]
 
+    _ACCIONES_PUBLICAS = {"list", "retrieve", "toc"}
+
     def get_permissions(self):
-        if self.action == "definir_flag":
-            return [IsAuthenticated()]
-        return [AllowAny()]
+        if self.action in self._ACCIONES_PUBLICAS:
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def _repositorio(self):
         return CachedLaboratorioRepository(LaboratorioRepository())
@@ -95,6 +143,7 @@ class LaboratorioViewSet(ViewSet):
         filtro = ListarLaboratoriosFiltroDTO(
             dificultad=query_serializer.validated_data.get("dificultad"),
             tema=query_serializer.validated_data.get("tema"),
+            nombre=query_serializer.validated_data.get("nombre"),
             instructor_id=instructor_id,
             estudiante_id=estudiante_id,
         )
@@ -182,3 +231,123 @@ class LaboratorioViewSet(ViewSet):
             {"id": str(resultado.id), "seccion_id": str(resultado.seccion_id)},
             status=status.HTTP_200_OK,
         )
+
+    def create(self, request):
+        serializer = CrearLaboratorioRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = CrearLaboratorioUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            CrearLaboratorioDTO(
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                **serializer.validated_data,
+            )
+        )
+
+        return Response(
+            _serializar_resultado_laboratorio(resultado), status=status.HTTP_201_CREATED
+        )
+
+    def partial_update(self, request, pk=None):
+        serializer = EditarLaboratorioRequestSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = EditarLaboratorioUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            EditarLaboratorioDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                **serializer.validated_data,
+            )
+        )
+
+        return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="publish")
+    def publicar(self, request, pk=None):
+        use_case = PublicarLaboratorioUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            PublicarLaboratorioDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+            )
+        )
+
+        return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="duplicate")
+    def duplicar(self, request, pk=None):
+        use_case = DuplicarLaboratorioUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            DuplicarLaboratorioDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+            )
+        )
+
+        return Response(
+            _serializar_resultado_laboratorio(resultado), status=status.HTTP_201_CREATED
+        )
+
+    @action(detail=True, methods=["post"], url_path="sections")
+    def crear_seccion(self, request, pk=None):
+        serializer = CrearSeccionRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = CrearSeccionUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            CrearSeccionDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                **serializer.validated_data,
+            )
+        )
+
+        return Response(_serializar_resultado_seccion(resultado), status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["patch"], url_path=r"sections/(?P<seccion_pk>[^/.]+)")
+    def editar_seccion(self, request, pk=None, seccion_pk=None):
+        serializer = EditarSeccionRequestSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = EditarSeccionUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            EditarSeccionDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                seccion_id=_parsear_uuid(seccion_pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                **serializer.validated_data,
+            )
+        )
+
+        return Response(_serializar_resultado_seccion(resultado), status=status.HTTP_200_OK)

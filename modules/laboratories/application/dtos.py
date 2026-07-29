@@ -13,6 +13,7 @@ class ListarLaboratoriosFiltroDTO:
 
     dificultad: str | None = None
     tema: str | None = None
+    nombre: str | None = None
     instructor_id: uuid.UUID | None = None
     estudiante_id: uuid.UUID | None = None
 

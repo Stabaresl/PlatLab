@@ -29,6 +29,7 @@ class LaboratorioRepository:
         instructor_id: uuid.UUID | None = None,
         nivel_dificultad: str | None = None,
         tema: str | None = None,
+        nombre: str | None = None,
     ) -> list[Laboratorio]:
         visibilidad = Q(
             estado=LaboratorioModel.Estado.PUBLICADO, tipo=LaboratorioModel.Tipo.PREDETERMINADO
@@ -41,6 +42,8 @@ class LaboratorioRepository:
             queryset = queryset.filter(nivel_dificultad=nivel_dificultad)
         if tema is not None:
             queryset = queryset.filter(temas__nombre__iexact=tema)
+        if nombre is not None:
+            queryset = queryset.filter(nombre__icontains=nombre)
 
         queryset = queryset.distinct().order_by("nombre").prefetch_related("temas")
         return [laboratorio_to_entity(m) for m in queryset]

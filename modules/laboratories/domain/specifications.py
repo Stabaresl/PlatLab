@@ -48,3 +48,14 @@ class PorTema(Specification):
     def aplicar(self, filtros: dict) -> dict:
         filtros["tema"] = self._tema
         return filtros
+
+
+class PorNombre(Specification):
+    """Filtra por coincidencia parcial de nombre (HI-05, "mis laboratorios")."""
+
+    def __init__(self, nombre: str):
+        self._nombre = nombre
+
+    def aplicar(self, filtros: dict) -> dict:
+        filtros["nombre"] = self._nombre
+        return filtros

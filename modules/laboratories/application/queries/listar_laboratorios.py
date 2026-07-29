@@ -7,7 +7,12 @@ from modules.laboratories.application.dtos import (
 from modules.laboratories.domain.entities import Laboratorio
 from modules.laboratories.domain.ports import IEstadoInscripcionProvider, SinInscripcionProvider
 from modules.laboratories.domain.repositories import ILaboratorioRepository
-from modules.laboratories.domain.specifications import PorDificultad, PorTema, Specification
+from modules.laboratories.domain.specifications import (
+    PorDificultad,
+    PorNombre,
+    PorTema,
+    Specification,
+)
 
 
 class ListarLaboratoriosQuery:
@@ -45,6 +50,9 @@ class ListarLaboratoriosQuery:
         if filtro.tema:
             tema_spec = PorTema(filtro.tema)
             especificacion = especificacion & tema_spec if especificacion else tema_spec
+        if filtro.nombre:
+            nombre_spec = PorNombre(filtro.nombre)
+            especificacion = especificacion & nombre_spec if especificacion else nombre_spec
         return especificacion
 
     def _a_list_item(
