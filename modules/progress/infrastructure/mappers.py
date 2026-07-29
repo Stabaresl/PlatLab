@@ -3,6 +3,7 @@ from modules.progress.domain.entities import (
     IntentoFlag,
     Progreso,
     ProgresoSeccion,
+    ResultadoExamen,
 )
 from modules.progress.domain.value_objects import EstadoProgresoSeccion
 from modules.progress.infrastructure.models import (
@@ -10,6 +11,7 @@ from modules.progress.infrastructure.models import (
     IntentoFlagModel,
     ProgresoModel,
     ProgresoSeccionModel,
+    ResultadoExamenModel,
 )
 
 
@@ -40,6 +42,17 @@ def intento_flag_to_entity(model: IntentoFlagModel) -> IntentoFlag:
         seccion_id=model.seccion_id,
         resultado=model.resultado,
         timestamp=model.timestamp,
+    )
+
+
+def resultado_examen_to_entity(model: ResultadoExamenModel) -> ResultadoExamen:
+    return ResultadoExamen(
+        id=model.id,
+        progreso_id=model.progreso_id,
+        examen_id=model.examen_id,
+        respuestas=model.respuestas,
+        puntaje=float(model.puntaje),
+        fecha=model.fecha,
     )
 
 

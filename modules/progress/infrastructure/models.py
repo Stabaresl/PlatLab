@@ -77,6 +77,33 @@ class IntentoFlagModel(models.Model):
         return f"IntentoFlag(seccion={self.seccion_id}, resultado={self.resultado})"
 
 
+class ResultadoExamenModel(models.Model):
+    """
+    HE-09/HI-08, base-de-datos.md "progress_resultadoexamen". Examen
+    reintentable (Progreso 1:N ResultadoExamen) — sin UniqueConstraint
+    entre progreso/examen, a diferencia de `ProgresoSeccionModel`.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    progreso = models.ForeignKey(
+        ProgresoModel, on_delete=models.CASCADE, related_name="resultados_examen"
+    )
+    # examen_id: id suelto a laboratories_examen (Arquitectura §8).
+    examen_id = models.UUIDField()
+    respuestas = models.JSONField()
+    puntaje = models.DecimalField(max_digits=5, decimal_places=2)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "progress_resultadoexamen"
+        indexes = [
+            models.Index(fields=["progreso", "fecha"], name="idx_resex_progreso_fecha"),
+        ]
+
+    def __str__(self) -> str:
+        return f"ResultadoExamen(progreso={self.progreso_id}, puntaje={self.puntaje})"
+
+
 class HistorialCompletitudModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     progreso = models.ForeignKey(ProgresoModel, on_delete=models.CASCADE, related_name="historial")

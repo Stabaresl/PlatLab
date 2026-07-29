@@ -7,18 +7,21 @@ from modules.progress.domain.entities import (
     IntentoFlag,
     Progreso,
     ProgresoSeccion,
+    ResultadoExamen,
 )
 from modules.progress.infrastructure.mappers import (
     historial_to_entity,
     intento_flag_to_entity,
     progreso_seccion_to_entity,
     progreso_to_entity,
+    resultado_examen_to_entity,
 )
 from modules.progress.infrastructure.models import (
     HistorialCompletitudModel,
     IntentoFlagModel,
     ProgresoModel,
     ProgresoSeccionModel,
+    ResultadoExamenModel,
 )
 
 
@@ -107,3 +110,17 @@ class ProgresoRepository:
             progreso_id=progreso_id
         ).order_by("numero_intento")
         return [historial_to_entity(m) for m in modelos]
+
+    def registrar_resultado_examen(self, resultado: ResultadoExamen) -> ResultadoExamen:
+        model = ResultadoExamenModel.objects.create(
+            id=resultado.id,
+            progreso_id=resultado.progreso_id,
+            examen_id=resultado.examen_id,
+            respuestas=resultado.respuestas,
+            puntaje=resultado.puntaje,
+        )
+        return resultado_examen_to_entity(model)
+
+    def get_resultados_examen(self, progreso_id: uuid.UUID) -> list[ResultadoExamen]:
+        modelos = ResultadoExamenModel.objects.filter(progreso_id=progreso_id).order_by("fecha")
+        return [resultado_examen_to_entity(m) for m in modelos]
