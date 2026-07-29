@@ -46,6 +46,10 @@ class Asignacion(BaseEntity):
         self.estado = EstadoAsignacion.RECHAZADA
         self.fecha_respuesta = datetime.utcnow()
 
+    def vencer(self) -> None:
+        """RF-32, UC-07: revoca el acceso al llegar la `VentanaVencimiento`."""
+        self.estado = EstadoAsignacion.VENCIDA
+
     def esta_vigente(self) -> bool:
         """UC-06 E2: usado para detectar duplicados — pendiente o activa cuentan como vigente."""
         return self.estado in (EstadoAsignacion.PENDIENTE, EstadoAsignacion.ACTIVA)
