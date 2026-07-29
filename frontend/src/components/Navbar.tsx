@@ -48,6 +48,15 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
 
         <nav className="flex items-center gap-2 sm:gap-3">
           <Link
+            to="/laboratorios"
+            className="hidden sm:inline text-sm no-underline transition-colors px-2 py-1"
+            style={{ color: "var(--text-muted)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
+          >
+            Laboratorios
+          </Link>
+          <Link
             to="/about"
             className="hidden sm:inline text-sm no-underline transition-colors px-2 py-1"
             style={{ color: "var(--text-muted)" }}

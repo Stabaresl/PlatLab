@@ -43,3 +43,12 @@ export const IconRocket = (props: SVGProps<SVGSVGElement>) => (
 export const IconGauge = (props: SVGProps<SVGSVGElement>) => (
   <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zm0-4l3-6" /></Base>
 )
+export const IconSearch = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M18 10.5a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" /></Base>
+)
+export const IconArrowRight = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></Base>
+)
+export const IconLock = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-12v3H8V7a4 4 0 118 0z" /></Base>
+)

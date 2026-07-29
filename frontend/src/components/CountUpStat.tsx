@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import anime from "animejs"
+import { animate } from "animejs"
 
 // Contador animado (anime.js tween sobre un objeto plano, no sobre el DOM
 // directamente) — se usa en la franja "En números" de la landing.
@@ -18,18 +18,18 @@ export default function CountUpStat({
 
   useEffect(() => {
     const counter = { val: 0 }
-    const animation = anime({
-      targets: counter,
+    const animation = animate(counter, {
       val: value,
-      round: 1,
       duration: 1400,
       delay,
-      easing: "easeOutExpo",
-      update: () => {
-        if (ref.current) ref.current.textContent = `${counter.val}${suffix}`
+      ease: "outExpo",
+      onUpdate: () => {
+        if (ref.current) ref.current.textContent = `${Math.round(counter.val)}${suffix}`
       },
     })
-    return () => animation.pause()
+    return () => {
+      animation.pause()
+    }
   }, [value, suffix, delay])
 
   return (

@@ -13,6 +13,8 @@ import WelcomePage from "./pages/WelcomePage"
 import AboutPage from "./pages/AboutPage"
 import DashboardPage from "./pages/DashboardPage"
 import OAuthCallbackPage from "./pages/OAuthCallbackPage"
+import CatalogPage from "./pages/CatalogPage"
+import LabDetailPage from "./pages/LabDetailPage"
 
 const token = () => localStorage.getItem("token")
 
@@ -39,6 +41,8 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<PublicRoute><WelcomePage /></PublicRoute>} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/laboratorios" element={<CatalogPage />} />
+        <Route path="/laboratorios/:id" element={<LabDetailPage />} />
         <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><SignUpPage /></PublicRoute>} />
         <Route path="/oauth/:provider/callback" element={<OAuthCallbackPage />} />

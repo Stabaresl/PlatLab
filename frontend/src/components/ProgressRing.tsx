@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import anime from "animejs"
+import { animate } from "animejs"
 
 // Anillo de progreso SVG animado con anime.js (stroke-dashoffset) — usado
 // en los dashboards para reemplazar números planos por algo más visual.
@@ -26,23 +26,22 @@ export default function ProgressRing({
     if (!circleRef.current) return
     const target = circumference * (1 - clamped / 100)
     const counter = { val: 0 }
-    const animation = anime({
-      targets: counter,
+    const animation = animate(counter, {
       val: clamped,
-      round: 1,
       duration: 1200,
-      easing: "easeOutExpo",
-      update: () => {
-        if (textRef.current) textRef.current.textContent = `${counter.val}%`
+      ease: "outExpo",
+      onUpdate: () => {
+        if (textRef.current) textRef.current.textContent = `${Math.round(counter.val)}%`
       },
     })
-    anime({
-      targets: circleRef.current,
+    animate(circleRef.current, {
       strokeDashoffset: [circumference, target],
       duration: 1200,
-      easing: "easeOutExpo",
+      ease: "outExpo",
     })
-    return () => animation.pause()
+    return () => {
+      animation.pause()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clamped, circumference])
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   listAssignments,
@@ -188,7 +189,16 @@ export default function StudentDashboard() {
                 LABORATORIOS ASIGNADOS
                 ══════════════════════════════════ */}
             <section className="mb-8 sm:mb-10">
-              <SectionHeading icon={<IconFlask />} title="Laboratorios Asignados" />
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <SectionHeading icon={<IconFlask />} title="Laboratorios Asignados" />
+                <Link
+                  to="/laboratorios"
+                  className="text-xs sm:text-sm font-semibold no-underline transition-opacity hover:opacity-80"
+                  style={{ color: "var(--accent-primary)", fontFamily: "'Fira Code', monospace" }}
+                >
+                  Ver catálogo completo →
+                </Link>
+              </div>
 
               {rows.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>

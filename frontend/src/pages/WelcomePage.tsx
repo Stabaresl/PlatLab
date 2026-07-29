@@ -5,6 +5,7 @@ import Footer from "../components/Footer"
 import ScanlineOverlay from "../components/ScanlineOverlay"
 import TerminalTyper from "../components/TerminalTyper"
 import CountUpStat from "../components/CountUpStat"
+import MatrixRain from "../components/MatrixRain"
 import grimBg from "../assets/grim.png"
 import termBg from "../assets/term.png"
 
@@ -78,6 +79,7 @@ export default function WelcomePage() {
             backgroundRepeat: "no-repeat",
           }}
         />
+        <MatrixRain opacity={0.1} />
         <div
           className="absolute inset-0"
           style={{
