@@ -1,3 +1,4 @@
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -23,6 +24,10 @@ def _build_use_case():
 
 @pytest.mark.django_db
 def test_cierra_asignaciones_vencidas_y_no_toca_las_vigentes():
+    # `fecha_invitacion` es `auto_now_add` (siempre "ahora" al insertar,
+    # ck_asig_vencimiento_posterior exige vencimiento > invitación) — para
+    # simular una asignación ya vencida sin violar ese constraint, se crea
+    # con vencimiento apenas en el futuro y se espera a que quede atrás.
     repo = AsignacionRepository()
     ahora = datetime.now(timezone.utc)
 
@@ -31,7 +36,7 @@ def test_cierra_asignaciones_vencidas_y_no_toca_las_vigentes():
             estudiante_id=uuid.uuid4(),
             laboratorio_id=uuid.uuid4(),
             estado=EstadoAsignacion.ACTIVA,
-            fecha_vencimiento=ahora - timedelta(minutes=5),
+            fecha_vencimiento=ahora + timedelta(milliseconds=200),
         )
     )
     vigente = repo.add(
@@ -42,6 +47,7 @@ def test_cierra_asignaciones_vencidas_y_no_toca_las_vigentes():
             fecha_vencimiento=ahora + timedelta(days=1),
         )
     )
+    time.sleep(0.3)
 
     cantidad = _build_use_case().execute()
 
