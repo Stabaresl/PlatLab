@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react"
 import { animate } from "animejs"
+import useReducedMotion from "../hooks/useReducedMotion"
 
-// Contador animado (anime.js tween sobre un objeto plano, no sobre el DOM
-// directamente) — se usa en la franja "En números" de la landing.
 export default function CountUpStat({
   value,
   suffix = "",
@@ -15,8 +14,14 @@ export default function CountUpStat({
   delay?: number
 }) {
   const ref = useRef<HTMLSpanElement>(null)
+  const reduced = useReducedMotion()
 
   useEffect(() => {
+    if (!ref.current) return
+    if (reduced) {
+      ref.current.textContent = `${value}${suffix}`
+      return
+    }
     const counter = { val: 0 }
     const animation = animate(counter, {
       val: value,
@@ -30,18 +35,18 @@ export default function CountUpStat({
     return () => {
       animation.pause()
     }
-  }, [value, suffix, delay])
+  }, [value, suffix, delay, reduced])
 
   return (
     <div className="flex flex-col items-center gap-1 text-center">
       <span
         ref={ref}
-        className="text-3xl sm:text-4xl font-bold"
-        style={{ color: "var(--accent-primary)", fontFamily: "var(--font-mono)" }}
+        className="text-3xl sm:text-4xl font-bold text-display"
+        style={{ color: "var(--signal-amber)" }}
       >
         0{suffix}
       </span>
-      <span className="text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
+      <span className="text-[11px] sm:text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
         {label}
       </span>
     </div>

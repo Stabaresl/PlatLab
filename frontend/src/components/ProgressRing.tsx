@@ -1,13 +1,15 @@
 import { useEffect, useRef } from "react"
 import { animate } from "animejs"
+import useReducedMotion from "../hooks/useReducedMotion"
 
-// Anillo de progreso SVG animado con anime.js (stroke-dashoffset) — usado
-// en los dashboards para reemplazar números planos por algo más visual.
+// Anillo de progreso SVG — esquinas cuadradas (strokeLinecap butt en vez de
+// round) para calzar con el lenguaje "instrumento de panel" en vez de un
+// donut chart genérico.
 export default function ProgressRing({
   percent,
   size = 88,
-  stroke = 8,
-  color = "var(--accent-primary)",
+  stroke = 6,
+  color = "var(--signal-amber)",
   label,
 }: {
   percent: number
@@ -21,10 +23,18 @@ export default function ProgressRing({
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
   const clamped = Math.max(0, Math.min(100, percent))
+  const reduced = useReducedMotion()
 
   useEffect(() => {
     if (!circleRef.current) return
     const target = circumference * (1 - clamped / 100)
+
+    if (reduced) {
+      circleRef.current.style.strokeDashoffset = String(target)
+      if (textRef.current) textRef.current.textContent = `${Math.round(clamped)}%`
+      return
+    }
+
     const counter = { val: 0 }
     const animation = animate(counter, {
       val: clamped,
@@ -43,7 +53,7 @@ export default function ProgressRing({
       animation.pause()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clamped, circumference])
+  }, [clamped, circumference, reduced])
 
   return (
     <div className="flex flex-col items-center gap-1.5" style={{ width: size }}>
@@ -53,7 +63,7 @@ export default function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="var(--bg-surface-hover)"
+          stroke="var(--surface-hover)"
           strokeWidth={stroke}
         />
         <circle
@@ -64,7 +74,7 @@ export default function ProgressRing({
           fill="none"
           stroke={color}
           strokeWidth={stroke}
-          strokeLinecap="round"
+          strokeLinecap="butt"
           strokeDasharray={circumference}
           strokeDashoffset={circumference}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
@@ -75,13 +85,13 @@ export default function ProgressRing({
           y="50%"
           textAnchor="middle"
           dominantBaseline="middle"
-          style={{ fill: "var(--text-heading)", fontSize: size * 0.2, fontFamily: "var(--font-mono)", fontWeight: 700 }}
+          style={{ fill: "var(--text-heading)", fontSize: size * 0.19, fontFamily: "var(--font-mono)", fontWeight: 700 }}
         >
           0%
         </text>
       </svg>
       {label && (
-        <span className="text-xs text-center" style={{ color: "var(--text-muted)" }}>
+        <span className="text-[11px] uppercase tracking-wider text-center" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
           {label}
         </span>
       )}

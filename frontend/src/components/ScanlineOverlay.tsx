@@ -1,17 +1,20 @@
 import { useEffect, useRef } from "react"
 import { animate } from "animejs"
+import useReducedMotion from "../hooks/useReducedMotion"
 
-// Barrido tipo "escaneo de terminal" — anime.js (v4: animate(targets, params))
-// anima translateY/opacity en loop sobre una franja de gradiente, dando
-// sensación de sistema "vivo" sobre la card del hero (temática de escaneo/hacking).
+// Barrido de escaneo sobre un panel — anime.js. Recolorizado a cian (dato
+// "en análisis") en vez del azul genérico anterior. Con reduced-motion se
+// reemplaza por una franja estática de baja opacidad (misma lectura, sin
+// movimiento).
 export default function ScanlineOverlay() {
   const ref = useRef<HTMLDivElement>(null)
+  const reduced = useReducedMotion()
 
   useEffect(() => {
-    if (!ref.current) return
+    if (!ref.current || reduced) return
     const animation = animate(ref.current, {
       translateY: ["-20%", "420%"],
-      opacity: [0, 0.6, 0],
+      opacity: [0, 0.55, 0],
       duration: 2800,
       ease: "linear",
       loop: true,
@@ -19,14 +22,24 @@ export default function ScanlineOverlay() {
     return () => {
       animation.pause()
     }
-  }, [])
+  }, [reduced])
+
+  if (reduced) {
+    return (
+      <div
+        className="absolute left-0 right-0 top-1/2 h-px pointer-events-none"
+        style={{ backgroundColor: "rgba(56,214,245,0.25)" }}
+        aria-hidden="true"
+      />
+    )
+  }
 
   return (
     <div
       ref={ref}
       className="absolute left-0 right-0 h-10 pointer-events-none"
       style={{
-        background: "linear-gradient(180deg, transparent, rgba(59,130,246,0.45), transparent)",
+        background: "linear-gradient(180deg, transparent, rgba(56,214,245,0.4), transparent)",
       }}
       aria-hidden="true"
     />

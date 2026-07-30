@@ -1,8 +1,8 @@
 import type { ReactNode } from "react"
 
-// Efecto "glitch RGB split" al pasar el mouse — dos copias del mismo texto
-// desfasadas en rojo/cian se activan vía CSS puro (:hover + animation-play-state),
-// sin JS ni librerías. Pensado para títulos, no para texto largo.
+// Aberración cromática ámbar/cian al pasar el mouse — CSS puro. Recolorizado
+// para calzar con la señal táctica (antes era rojo/azul genérico "glitch").
+// prefers-reduced-motion lo neutraliza automáticamente (ver index.css).
 export default function GlitchText({
   children,
   className = "",
@@ -18,14 +18,14 @@ export default function GlitchText({
       <span
         aria-hidden="true"
         className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100"
-        style={{ color: "#EF4444", mixBlendMode: "screen", animation: "glitch-shift-1 0.6s steps(2) infinite" }}
+        style={{ color: "var(--signal-amber)", mixBlendMode: "screen", animation: "chroma-shift-a 0.6s steps(2) infinite" }}
       >
         {children}
       </span>
       <span
         aria-hidden="true"
         className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100"
-        style={{ color: "#3B82F6", mixBlendMode: "screen", animation: "glitch-shift-2 0.6s steps(2) infinite" }}
+        style={{ color: "var(--signal-cyan)", mixBlendMode: "screen", animation: "chroma-shift-b 0.6s steps(2) infinite" }}
       >
         {children}
       </span>

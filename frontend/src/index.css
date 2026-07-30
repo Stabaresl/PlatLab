@@ -1,77 +1,344 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   GAIA — "Tactical Ops Console"
+   Dirección visual: consola de operaciones de un equipo de red-team/
+   hacking ético. OLED-black + un único acento ámbar de "sistema armado"
+   + cian de "dato/enlace" + verde/rojo de estado. Esquinas achaflanadas
+   (clip-path) en vez de border-radius, marcos tipo retícula de mira en
+   paneles clave, scanlines y boot-reveals puntuales (no ambientales todo
+   el tiempo — eso es lo que lo hacía sentir "template").
+   ============================================================ */
 :root {
-  --bg-canvas: #0F1117;
-  --bg-surface: #1A1D27;
-  --bg-surface-hover: #262A36;
-  --ui-border-default: #334155;
-  --ui-border-secondary: #475569;
-  --ui-border-gold: #F3DFB8;
-  --text-heading: #F1F5F9;
-  --text-base: #CBD5E1;
-  --text-muted: #94A3B8;
-  --text-err: #ed1730;
-  --accent-danger: #EF4444;
-  --accent-primary: #3B82F6;
-  --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.2);
+  /* ---- Primitivos de superficie (OLED-first) ---- */
+  --canvas: #08090c;
+  --canvas-raised: #0c0e13;
+  --surface: #10131a;
+  --surface-raised: #151a23;
+  --surface-hover: #1c222d;
+  --surface-sunken: #06070a;
 
-  /* Tipografía (via ui-ux-pro-max, pairing "Cyberpunk Mobile"): Orbitron
-     (títulos, look HUD/sci-fi agresivo) + JetBrains Mono (labels, código,
-     terminal) + Fira Sans (cuerpo de texto, legible). */
-  --font-heading: "Orbitron", "Fira Sans", sans-serif;
-  --font-body: "Fira Sans", "Inter", sans-serif;
+  /* ---- Bordes ---- */
+  --border-hairline: #1b212b;
+  --border-default: #262e3a;
+  --border-strong: #3b4657;
+  --border-amber: rgba(255, 176, 32, 0.45);
+  --border-cyan: rgba(56, 214, 245, 0.4);
+
+  /* ---- Texto ---- */
+  --text-heading: #f4f7fb;
+  --text-base: #c9d2de;
+  --text-muted: #8892a3;
+  --text-dim: #565f6d;
+
+  /* ---- Señal (un solo acento dominante + 3 de estado) ---- */
+  --signal-amber: #ffb020;
+  --signal-amber-strong: #ffc966;
+  --signal-amber-dim: #8a611c;
+  --signal-cyan: #38d6f5;
+  --signal-cyan-dim: #1b6d80;
+  --signal-green: #33d69f;
+  --signal-green-dim: #1c7a5c;
+  --signal-red: #ff4757;
+  --signal-red-dim: #8f2530;
+
+  /* ---- Tipografía ----
+     Orbitron: SOLO display (hero H1, números gigantes) — no en cada H2/H3,
+     para no caer en "todo Orbitron" (lo que ya se sentía genérico).
+     JetBrains Mono: chrome de UI — nav, botones, badges, labels, datos,
+     encabezados de sección (le da el carácter "consola").
+     Fira Sans: cuerpo de texto largo, legibilidad real. */
+  --font-display: "Orbitron", "JetBrains Mono", monospace;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-body: "Fira Sans", system-ui, sans-serif;
+
+  /* ---- Elevación ---- */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-panel: 0 12px 32px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.025);
+  --shadow-amber-glow: 0 0 0 1px rgba(255, 176, 32, 0.35), 0 0 28px -6px rgba(255, 176, 32, 0.35);
+  --shadow-cyan-glow: 0 0 0 1px rgba(56, 214, 245, 0.3), 0 0 28px -6px rgba(56, 214, 245, 0.3);
+
+  /* ---- Motion ---- */
+  --ease-tactical: cubic-bezier(0.19, 1, 0.22, 1);
+  --dur-instant: 100ms;
+  --dur-fast: 180ms;
+  --dur-med: 320ms;
+  --dur-slow: 620ms;
+
+  /* ---- Compat: nombres usados por componentes existentes (ir migrando) ---- */
+  --bg-canvas: var(--canvas);
+  --bg-surface: var(--surface);
+  --bg-surface-hover: var(--surface-hover);
+  --ui-border-default: var(--border-default);
+  --ui-border-secondary: var(--border-strong);
+  --ui-border-gold: var(--signal-amber);
+  --text-err: var(--signal-red);
+  --accent-danger: var(--signal-red);
+  --accent-primary: var(--signal-cyan);
+  --shadow-card: var(--shadow-xs);
+  --font-heading: var(--font-display);
+
+  /* ---- shadcn/ui semantic tokens → paleta táctica ---- */
+  --background: var(--canvas);
+  --foreground: var(--text-heading);
+  --card: var(--surface);
+  --card-foreground: var(--text-heading);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--text-heading);
+  --primary: var(--signal-amber);
+  --primary-foreground: #0a0700;
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--text-heading);
+  --muted: var(--surface);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--surface-hover);
+  --accent-foreground: var(--text-heading);
+  --destructive: var(--signal-red);
+  --destructive-foreground: #ffffff;
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --ring: var(--signal-cyan);
+  --chart-1: var(--signal-amber);
+  --chart-2: var(--signal-cyan);
+  --chart-3: var(--signal-green);
+  --chart-4: var(--signal-red);
+  --chart-5: var(--text-muted);
+  --radius: 3px;
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text-heading);
+  --sidebar-primary: var(--signal-amber);
+  --sidebar-primary-foreground: #0a0700;
+  --sidebar-accent: var(--surface-hover);
+  --sidebar-accent-foreground: var(--text-heading);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--signal-cyan);
+}
+
+* {
+  border-color: var(--border-default);
+}
+
+html {
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   font-family: var(--font-body);
-  background-color: var(--bg-canvas);
+  background-color: var(--canvas);
   color: var(--text-base);
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
+  font-family: var(--font-mono);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  color: var(--text-heading);
+}
+
+.text-display {
+  font-family: var(--font-display);
+}
+
+/* Foco visible SIN depender solo de color: outline cian + offset, más un
+   segundo trazo oscuro entre el elemento y el outline para que se note en
+   cualquier fondo (contraste de forma, no solo de tono). */
+:focus-visible {
+  outline: 2px solid var(--signal-cyan);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 1px var(--canvas);
+  border-radius: 1px;
+}
+
+::selection {
+  background: var(--signal-amber);
+  color: #0a0700;
+}
+
+/* ---- Esquinas achaflanadas (reemplazo de border-radius genérico) ---- */
+.chamfer {
+  clip-path: polygon(
+    16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px
+  );
+}
+.chamfer-sm {
+  clip-path: polygon(
+    8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px
+  );
+}
+.chamfer-t {
+  clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+}
+
+/* ---- Retícula de esquinas (marco tipo mira/HUD) — usar sobre un contenedor
+   position:relative como decoración ::before/::after o vía <ReticleFrame /> ---- */
+.reticle {
+  position: relative;
+}
+.reticle::before,
+.reticle::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  border-color: var(--signal-amber);
+  opacity: 0.85;
+}
+.reticle::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+.reticle::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid;
+  border-right: 2px solid;
+}
+
+/* ---- Textura de línea de escaneo persistente y muy sutil sobre superficies
+   "vivas" (panel de laboratorio en curso, hero). No usar en todos lados. ---- */
+.scan-texture {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.018) 0px,
+    rgba(255, 255, 255, 0.018) 1px,
+    transparent 1px,
+    transparent 3px
+  );
 }
 
 @keyframes blink {
   50% { opacity: 0; }
 }
 
-/* Grilla ciberpunk en movimiento — usada por <CyberGrid /> */
-@keyframes cyber-grid-scroll {
-  from { background-position: 0 0; }
-  to { background-position: 0 40px; }
+@keyframes status-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
-/* Ken Burns lento (zoom + pan) para fondos con imágenes hero reutilizadas
-   fuera de la Welcome — usado por <HeroBackground animated /> */
+/* Grilla táctica en movimiento lento — más sutil/lenta que la versión previa
+   (3s → 7s) para no leer como "plantilla cyberpunk stock". */
+@keyframes grid-drift {
+  from { background-position: 0 0; }
+  to { background-position: 0 48px; }
+}
+
 @keyframes hero-kenburns {
   0% { transform: scale(1) translate(0, 0); }
-  50% { transform: scale(1.08) translate(-1.5%, -1%); }
+  50% { transform: scale(1.06) translate(-1.2%, -0.8%); }
   100% { transform: scale(1) translate(0, 0); }
 }
 
-/* Deriva sutil de un gradiente radial — capa de "glow" ambiental */
 @keyframes ambient-drift {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(2%, -3%) scale(1.1); }
+  50% { transform: translate(2%, -3%) scale(1.08); }
 }
 
-/* Glitch tipo "RGB split" al pasar el mouse — usado por <GlitchText /> */
-@keyframes glitch-shift-1 {
+/* Aberración cromática ámbar/cian (reemplaza el glitch rojo/azul genérico) */
+@keyframes chroma-shift-a {
   0%, 100% { transform: translate(0, 0); opacity: 0; }
-  10% { transform: translate(-2px, 1px); opacity: 0.7; }
-  20% { transform: translate(2px, -1px); opacity: 0.7; }
-  30% { transform: translate(-1px, 0); opacity: 0.5; }
+  10% { transform: translate(-2px, 1px); opacity: 0.65; }
+  20% { transform: translate(2px, -1px); opacity: 0.65; }
+  30% { transform: translate(-1px, 0); opacity: 0.4; }
   40%, 100% { transform: translate(0, 0); opacity: 0; }
 }
-@keyframes glitch-shift-2 {
+@keyframes chroma-shift-b {
   0%, 100% { transform: translate(0, 0); opacity: 0; }
-  15% { transform: translate(2px, -1px); opacity: 0.7; }
-  25% { transform: translate(-2px, 1px); opacity: 0.7; }
-  35% { transform: translate(1px, 0); opacity: 0.5; }
+  15% { transform: translate(2px, -1px); opacity: 0.65; }
+  25% { transform: translate(-2px, 1px); opacity: 0.65; }
+  35% { transform: translate(1px, 0); opacity: 0.4; }
   45%, 100% { transform: translate(0, 0); opacity: 0; }
+}
+
+/* Barrido de escaneo — franja que recorre un panel una vez o en loop lento */
+@keyframes scan-sweep {
+  0% { transform: translateY(-20%); opacity: 0; }
+  10% { opacity: 0.7; }
+  90% { opacity: 0.7; }
+  100% { transform: translateY(420%); opacity: 0; }
+}
+
+/* Revelado de arranque tipo "boot sequence" — clip-path + opacity */
+@keyframes boot-reveal {
+  0% { clip-path: inset(0 100% 0 0); opacity: 0; }
+  60% { opacity: 1; }
+  100% { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(255, 176, 32, 0.5); }
+  100% { box-shadow: 0 0 0 10px rgba(255, 176, 32, 0); }
+}
+
+@theme inline {
+  --font-heading: var(--font-mono);
+  --font-sans: var(--font-body);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: var(--radius);
+  --radius-xl: 6px;
+  --radius-2xl: 10px;
+  --radius-3xl: 16px;
+  --radius-4xl: 22px;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ---- Accesibilidad: respeta prefers-reduced-motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

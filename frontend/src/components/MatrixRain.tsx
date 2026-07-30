@@ -1,21 +1,23 @@
 import { useEffect, useRef } from "react"
+import useReducedMotion from "../hooks/useReducedMotion"
 
-// Fondo tipo "matrix rain" (lluvia de caracteres estilo terminal/hacking) —
-// canvas + requestAnimationFrame, sin dependencias externas. Pensado como
-// textura ambiental de baja opacidad detrás del contenido, no como foco de
-// atención (por eso pointer-events: none y opacidad controlable por prop).
+// Textura ambiental tipo "data stream" — canvas + rAF, recolorizada a ámbar
+// tenue (ver index.css). Se desactiva por completo con reduced-motion (no
+// hay forma "estática" razonable de un rain, así que simplemente no se monta).
 const CHARS = "01アイウエオカキクケコサシスセソABCDEF{}<>/\\;:$#%&*01010011"
 
 export default function MatrixRain({
   opacity = 0.08,
-  color = "59,130,246",
+  color = "255,176,32",
 }: {
   opacity?: number
   color?: string
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const reduced = useReducedMotion()
 
   useEffect(() => {
+    if (reduced) return
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext("2d")
@@ -42,14 +44,14 @@ export default function MatrixRain({
 
     let frameId: number
     let lastTime = 0
-    const interval = 60 // ms entre frames — más lento que 60fps, look más "terminal"
+    const interval = 60
 
     const draw = (time: number) => {
       frameId = requestAnimationFrame(draw)
       if (time - lastTime < interval) return
       lastTime = time
 
-      ctx.fillStyle = "rgba(15, 17, 23, 0.12)"
+      ctx.fillStyle = "rgba(8, 9, 12, 0.12)"
       ctx.fillRect(0, 0, width, height)
 
       ctx.font = `${fontSize}px "JetBrains Mono", "Fira Code", monospace`
@@ -71,7 +73,9 @@ export default function MatrixRain({
       cancelAnimationFrame(frameId)
       resizeObserver.disconnect()
     }
-  }, [color])
+  }, [color, reduced])
+
+  if (reduced) return null
 
   return (
     <canvas

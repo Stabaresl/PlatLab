@@ -5,16 +5,13 @@ import CyberGrid from "./CyberGrid"
 
 const IMAGES = { grim: grimBg, term: termBg }
 
-// Fondo animado reutilizable con las imágenes hero de la Welcome (grim.png /
-// term.png). Pensado para "vestir" páginas que hoy son un lienzo plano
-// (Login, SignUp, About, dashboards, catálogo) sin repetir el layout del
-// hero original: Ken Burns lento sobre la imagen + overlay oscuro + textura
-// opcional (matrix rain / grilla) encima, todo detrás del contenido (z-index
-// del contenido debe ser >= 10 y position: relative).
+// Fondo reutilizable con las imágenes de marca (grim.png / term.png) —
+// Ken Burns lento + overlay OLED + textura opcional, siempre detrás del
+// contenido real (z-index del contenido debe ser >= 10).
 export default function HeroBackground({
   image = "grim",
-  imageOpacity = 0.16,
-  overlayOpacity = 0.82,
+  imageOpacity = 0.14,
+  overlayOpacity = 0.85,
   texture = "matrix",
   textureOpacity = 0.05,
   blur = 0,
@@ -37,13 +34,13 @@ export default function HeroBackground({
           backgroundRepeat: "no-repeat",
           opacity: imageOpacity,
           filter: blur ? `blur(${blur}px)` : undefined,
-          animation: "hero-kenburns 24s ease-in-out infinite",
+          animation: "hero-kenburns 26s ease-in-out infinite",
           willChange: "transform",
         }}
       />
       <div
         className="absolute inset-0"
-        style={{ backgroundColor: "var(--bg-canvas)", opacity: overlayOpacity }}
+        style={{ backgroundColor: "var(--canvas)", opacity: overlayOpacity }}
       />
       {texture === "matrix" && <MatrixRain opacity={textureOpacity} />}
       {texture === "grid" && <CyberGrid opacity={textureOpacity} />}
