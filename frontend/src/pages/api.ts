@@ -2,6 +2,9 @@
 // Reemplaza el mock (Bun/Express en :3001) de la rama mik4ela.
 
 const BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000/api/v1"
+// El WebSocket de la terminal (lab_environments) vive fuera de /api/v1,
+// en la raíz ASGI (config/asgi.py) — mismo host, protocolo ws(s) en vez de http(s).
+const WS_BASE = BASE.replace(/^http/, "ws").replace(/\/api\/v1\/?$/, "")
 
 // Los botones de Google/GitHub solo tienen sentido si el backend tiene
 // credenciales OAuth reales configuradas (GOOGLE_OAUTH_CLIENT_ID / GITHUB_
@@ -502,6 +505,8 @@ export interface ProgresoOverview {
   secciones_completas: boolean
   examen_disponible: boolean
   intentos_examen: number
+  vencido: boolean
+  fecha_vencimiento: string | null
   secciones: SeccionProgreso[]
 }
 
@@ -509,10 +514,30 @@ export function getProgresoOverview(assignmentId: string) {
   return api<ProgresoOverview>(`/progress/${assignmentId}/`)
 }
 
+export interface ComandoSimulado {
+  comando: string
+  salida: string
+}
+
+export interface EntornoPractica {
+  prompt: string
+  banner: string
+  comandos: ComandoSimulado[]
+}
+
+export interface ContenidoSeccion {
+  seccion_id: string
+  titulo: string
+  contenido_teorico: string
+  tiene_practica: boolean
+  estado: string
+  guia_paso_a_paso: string
+  entorno_practica: EntornoPractica | null
+  entorno_real_disponible: boolean
+}
+
 export function getSectionContent(assignmentId: string, sectionId: string) {
-  return api<{ seccion_id: string; titulo: string; contenido_teorico: string; tiene_practica: boolean; estado: string }>(
-    `/progress/${assignmentId}/sections/${sectionId}/`,
-  )
+  return api<ContenidoSeccion>(`/progress/${assignmentId}/sections/${sectionId}/`)
 }
 
 export function submitFlag(assignmentId: string, sectionId: string, valor: string) {
@@ -528,6 +553,51 @@ export function submitFlag(assignmentId: string, sectionId: string, valor: strin
     method: "POST",
     body: JSON.stringify({ valor }),
   })
+}
+
+// Única forma de avanzar una sección sin práctica (tiene_practica=false,
+// ej. una introducción teórica): no tiene flag que validar, así que no
+// pasa por submitFlag — sin esto el laboratorio quedaba trabado ahí.
+export function completeTheorySection(assignmentId: string, sectionId: string) {
+  return api<{ correcto: boolean; seccion_desbloqueada: string | null }>(
+    `/progress/${assignmentId}/sections/${sectionId}/complete/`,
+    { method: "POST" },
+  )
+}
+
+// ---------------------------------------------------------------------------
+// lab_environments — entorno de práctica REAL (contenedor Docker
+// descartable por estudiante, terminal vía WebSocket). Distinto de la
+// consola simulada (`entorno_practica`, siempre disponible sin infra) —
+// solo existe si la sección tiene `entorno_real_disponible=true`.
+// ---------------------------------------------------------------------------
+
+export interface EntornoRealEstado {
+  activo: boolean
+  id?: string
+  estado?: "iniciando" | "activo" | "detenido" | "error"
+  idle_timeout_minutos?: number
+  max_lifetime_minutos?: number
+}
+
+export function startLabEnvironment(assignmentId: string, sectionId: string) {
+  return api<Required<Omit<EntornoRealEstado, "activo">>>(
+    `/lab-environments/${assignmentId}/sections/${sectionId}/start/`,
+    { method: "POST" },
+  )
+}
+
+export function stopLabEnvironment(entornoId: string) {
+  return api<{ detenido: boolean }>(`/lab-environments/${entornoId}/stop/`, { method: "POST" })
+}
+
+export function getLabEnvironmentStatus(assignmentId: string, sectionId: string) {
+  return api<EntornoRealEstado>(`/lab-environments/${assignmentId}/sections/${sectionId}/status/`)
+}
+
+export function labEnvironmentTerminalUrl(entornoId: string): string {
+  const token = getAccessToken()
+  return `${WS_BASE}/ws/lab-environments/${entornoId}/terminal/?token=${encodeURIComponent(token || "")}`
 }
 
 export function getHint(assignmentId: string, sectionId: string) {
@@ -559,7 +629,7 @@ export function submitExam(assignmentId: string, respuestas: Record<string, stri
 }
 
 export function getHistory(assignmentId: string) {
-  return api<{ numero_intento: number; fecha_completado: string; puntaje: number }[]>(
+  return api<{ numero_intento: number; fecha_completado: string; puntaje: number | null }[]>(
     `/progress/${assignmentId}/history/`,
   )
 }

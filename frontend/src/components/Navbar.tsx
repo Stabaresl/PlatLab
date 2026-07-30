@@ -2,6 +2,8 @@ import { useState, useEffect } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 import { logout } from "../pages/api"
+import { Button } from "./ui/button"
+import StatusDot from "./StatusDot"
 
 const ROLE_LABELS: Record<string, string> = {
   estudiante: "Estudiante",
@@ -9,8 +11,8 @@ const ROLE_LABELS: Record<string, string> = {
   administrador: "Administrador",
 }
 
-// Navbar compartida — GAIA (logo, siempre vuelve a "/"), links contextuales
-// según sesión, usada en About/Login/SignUp/Dashboards.
+// Barra de navegación compartida — logo con marca de sistema ("GA::IA"),
+// enlaces contextuales según sesión y pill de rol. Siempre vuelve a "/".
 export default function Navbar({ variant = "solid" }: { variant?: "solid" | "transparent" }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -29,28 +31,32 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
       transition={{ duration: 0.35 }}
       className="w-full sticky top-0 z-40"
       style={{
-        backgroundColor: variant === "solid" ? "rgba(15,17,23,0.85)" : "transparent",
+        backgroundColor: variant === "solid" ? "rgba(8,9,12,0.88)" : "transparent",
         backdropFilter: variant === "solid" ? "blur(10px)" : "none",
-        borderBottom: variant === "solid" ? "1px solid var(--ui-border-default)" : "none",
+        borderBottom: variant === "solid" ? "1px solid var(--border-default)" : "1px solid transparent",
       }}
     >
-      <div
-        className="mx-auto flex items-center justify-between px-4 sm:px-6 md:px-8 h-16"
-        style={{ maxWidth: "1400px" }}
-      >
-        <Link
-          to="/"
-          className="text-xl sm:text-2xl font-semibold no-underline select-none"
-          style={{ color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}
-        >
-          GAIA
+      <div className="mx-auto flex items-center justify-between px-4 sm:px-6 md:px-8 h-16" style={{ maxWidth: "1400px" }}>
+        <Link to="/" className="flex items-center gap-2 no-underline select-none group">
+          <span
+            className="chamfer-sm flex items-center justify-center w-8 h-8 text-sm font-bold shrink-0"
+            style={{ backgroundColor: "var(--signal-amber)", color: "#0a0700", fontFamily: "var(--font-mono)" }}
+          >
+            G
+          </span>
+          <span
+            className="text-lg sm:text-xl font-bold tracking-wide"
+            style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}
+          >
+            GA<span style={{ color: "var(--signal-amber)" }}>::</span>IA
+          </span>
         </Link>
 
         <nav className="flex items-center gap-2 sm:gap-3">
           <Link
             to="/laboratorios"
-            className="hidden sm:inline text-sm no-underline transition-colors px-2 py-1"
-            style={{ color: "var(--text-muted)" }}
+            className="hidden sm:inline text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
+            style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
           >
@@ -58,8 +64,8 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
           </Link>
           <Link
             to="/about"
-            className="hidden sm:inline text-sm no-underline transition-colors px-2 py-1"
-            style={{ color: "var(--text-muted)" }}
+            className="hidden sm:inline text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
+            style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
           >
@@ -70,48 +76,38 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
             <>
               {role && (
                 <span
-                  className="hidden md:inline text-xs font-medium px-2.5 py-1 rounded-full"
-                  style={{ backgroundColor: "rgba(59,130,246,0.12)", color: "var(--accent-primary)", border: "1px solid rgba(59,130,246,0.3)" }}
+                  className="hidden md:inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2.5 py-1"
+                  style={{ backgroundColor: "rgba(56,214,245,0.08)", border: "1px solid var(--border-cyan)", color: "var(--signal-cyan)", fontFamily: "var(--font-mono)" }}
                 >
-                  {ROLE_LABELS[role] || role}
+                  <StatusDot variant="online" label={ROLE_LABELS[role] || role} />
                 </span>
               )}
-              <Link
-                to="/dashboard"
-                className="text-sm font-semibold no-underline px-3 sm:px-4 py-1.5 sm:py-2 rounded transition-opacity hover:opacity-85"
-                style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
-              >
-                Dashboard
-              </Link>
-              <button
+              <Button asChild size="sm" className="chamfer-sm font-mono text-xs uppercase tracking-wide">
+                <Link to="/dashboard">Dashboard</Link>
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={logout}
-                className="text-xs sm:text-sm font-semibold cursor-pointer border px-3 sm:px-4 py-1.5 sm:py-2 rounded transition-colors"
-                style={{ backgroundColor: "transparent", borderColor: "var(--ui-border-default)", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent-danger)"; e.currentTarget.style.color = "var(--accent-danger)" }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--ui-border-default)"; e.currentTarget.style.color = "var(--text-muted)" }}
+                className="chamfer-sm font-mono text-xs uppercase tracking-wide hover:text-[var(--signal-red)] hover:border-[var(--signal-red)]"
               >
                 Salir
-              </button>
+              </Button>
             </>
           ) : (
             <>
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="text-xs sm:text-sm font-semibold cursor-pointer border-none bg-transparent px-2 sm:px-3 py-1.5 transition-colors"
+                className="text-xs uppercase tracking-wide font-semibold cursor-pointer border-none bg-transparent px-2 sm:px-3 py-1.5 transition-colors"
                 style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}
               >
                 Iniciar sesión
               </button>
-              <button
-                type="button"
-                onClick={() => navigate("/signup")}
-                className="text-xs sm:text-sm font-semibold cursor-pointer border-none px-3 sm:px-5 py-1.5 sm:py-2 rounded transition-opacity hover:opacity-85"
-                style={{ backgroundColor: "var(--text-heading)", color: "#0F1117", fontFamily: "var(--font-mono)" }}
-              >
+              <Button size="sm" onClick={() => navigate("/signup")} className="chamfer-sm font-mono text-xs uppercase tracking-wide">
                 Comenzar
-              </button>
+              </Button>
             </>
           )}
         </nav>

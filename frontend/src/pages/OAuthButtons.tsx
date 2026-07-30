@@ -27,7 +27,7 @@ export default function OAuthButtons() {
   return (
     <div className="w-full flex flex-col gap-2">
       {error && (
-        <p className="text-xs text-center m-0" style={{ color: "var(--accent-danger)" }}>
+        <p className="text-xs text-center m-0" style={{ color: "var(--signal-red)" }}>
           {error}
         </p>
       )}
@@ -61,26 +61,26 @@ function OAuthButton({
       disabled={busy}
       whileHover={{ scale: busy ? 1 : 1.015 }}
       whileTap={{ scale: busy ? 1 : 0.98 }}
-      className="w-full flex items-center justify-center gap-2 py-2.5 rounded text-sm cursor-pointer border transition-all duration-150 disabled:opacity-60"
+      className="chamfer-sm w-full flex items-center justify-center gap-2 py-2.5 text-xs font-mono uppercase tracking-wide cursor-pointer border transition-all duration-150 disabled:opacity-60"
       style={{
         backgroundColor: "transparent",
-        borderColor: "var(--ui-border-default)",
+        borderColor: "var(--border-default)",
         color: "var(--text-muted)",
       }}
       onMouseEnter={(e) => {
         if (busy) return
-        e.currentTarget.style.backgroundColor = "var(--bg-surface-hover)"
-        e.currentTarget.style.borderColor = "var(--ui-border-secondary)"
+        e.currentTarget.style.backgroundColor = "var(--surface-hover)"
+        e.currentTarget.style.borderColor = "var(--border-strong)"
         e.currentTarget.style.color = "var(--text-base)"
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = "transparent"
-        e.currentTarget.style.borderColor = "var(--ui-border-default)"
+        e.currentTarget.style.borderColor = "var(--border-default)"
         e.currentTarget.style.color = "var(--text-muted)"
       }}
     >
       {children}
-      {busy ? "Redirigiendo…" : `Continue with ${provider}`}
+      {busy ? "Redirigiendo…" : `Continuar con ${provider}`}
     </motion.button>
   )
 }

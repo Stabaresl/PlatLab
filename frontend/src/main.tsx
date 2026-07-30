@@ -22,6 +22,7 @@ import OAuthCallbackPage from "./pages/OAuthCallbackPage"
 import CatalogPage from "./pages/CatalogPage"
 import LabDetailPage from "./pages/LabDetailPage"
 import ResolverLaboratorioPage from "./pages/ResolverLaboratorioPage"
+import SeccionMaterialPage from "./pages/SeccionMaterialPage"
 
 const token = () => localStorage.getItem("token")
 
@@ -46,7 +47,10 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
-        <Route path="/" element={<PublicRoute><WelcomePage /></PublicRoute>} />
+        {/* Sin PublicRoute a propósito: el logo/GA::IA del Navbar siempre
+            vuelve acá, incluso con sesión iniciada — antes redirigía a
+            /dashboard y el usuario nunca podía volver a ver la landing. */}
+        <Route path="/" element={<WelcomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/laboratorios" element={<CatalogPage />} />
         <Route path="/laboratorios/:id" element={<LabDetailPage />} />
@@ -55,6 +59,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/oauth/:provider/callback" element={<OAuthCallbackPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/resolver/:assignmentId" element={<ProtectedRoute><ResolverLaboratorioPage /></ProtectedRoute>} />
+        <Route path="/resolver/:assignmentId/secciones/:seccionId/material" element={<ProtectedRoute><SeccionMaterialPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

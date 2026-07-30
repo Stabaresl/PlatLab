@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   getAdminDashboard,
@@ -16,7 +16,9 @@ import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
 import ProgressRing from "../components/ProgressRing"
 import TerminalHeader from "../components/TerminalHeader"
+import StatusDot from "../components/StatusDot"
 import { IconChart, IconUsers, IconTrophy } from "../components/icons"
+import { Skeleton } from "../components/ui/skeleton"
 
 const ROLE_LABELS: Record<Rol, string> = {
   estudiante: "Estudiante",
@@ -25,9 +27,9 @@ const ROLE_LABELS: Record<Rol, string> = {
 }
 
 const ROLE_COLORS: Record<Rol, string> = {
-  estudiante: "#3B82F6",
-  instructor: "#22C55E",
-  administrador: "#F3DFB8",
+  estudiante: "var(--signal-cyan)",
+  instructor: "var(--signal-green)",
+  administrador: "var(--signal-amber)",
 }
 
 export default function AdminDashboard() {
@@ -73,195 +75,136 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--bg-canvas)", color: "var(--text-base)" }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--canvas)", color: "var(--text-base)" }}>
       <HeroBackground image="grim" imageOpacity={0.05} overlayOpacity={0.92} texture="none" />
       <div className="relative z-10 flex flex-col min-h-screen">
-      <Navbar />
-    <main className="flex-1">
-      <div
-        className="mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10"
-        style={{ maxWidth: "1200px" }}
-      >
-        {/* ══════════════════════════════════
-            HEADER
-            ══════════════════════════════════ */}
-        <TerminalHeader
-          title="Panel del Administrador"
-          subtitle="Estado general de la plataforma"
-          prompt="whoami → administrador"
-        />
+        <Navbar />
+        <main className="flex-1">
+          <div className="mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10" style={{ maxWidth: "1200px" }}>
+            <TerminalHeader title="Panel del Administrador" subtitle="Estado general de la plataforma" prompt="whoami → administrador" />
 
-        <AnimatePresence>
-          {error && (
-            <motion.p
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="text-sm mb-6"
-              style={{ color: "var(--accent-danger)" }}
-            >
-              {error}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
-        {loading ? (
-          <SkeletonBlock />
-        ) : (
-          <>
-            {/* ══════════════════════════════════
-                ESTADO GENERAL — /users/dashboard/
-                ══════════════════════════════════ */}
-            <section className="mb-8 sm:mb-10">
-              <SectionHeading icon={<IconChart />} title="Estado General" subtitle="Salud y adopción de la plataforma" />
-
-              {dashboard && (
-                <div
-                  className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 p-4 sm:p-6 rounded-lg mb-5"
-                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-default)" }}
-                >
-                  <ProgressRing percent={Math.round(dashboard.tasa_completitud_promedio * 100)} size={104} color="#22C55E" label="completitud promedio" />
-                  <div className="flex-1 w-full grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
-                    <StatCard label="Laboratorios activos" value={dashboard.laboratorios_activos} delay={0} />
-                    {Object.entries(dashboard.usuarios_por_rol).map(([rol, cantidad], i) => (
-                      <StatCard
-                        key={rol}
-                        label={ROLE_LABELS[rol as Rol] || rol}
-                        value={cantidad}
-                        delay={0.1 + i * 0.05}
-                        accent={ROLE_COLORS[rol as Rol]}
-                      />
-                    ))}
-                  </div>
-                </div>
+            <AnimatePresence>
+              {error && (
+                <motion.p initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-sm mb-6 px-3 py-2 chamfer-sm" style={{ color: "var(--signal-red)", backgroundColor: "rgba(255,71,87,0.08)", border: "1px solid var(--signal-red-dim)" }} role="alert">
+                  ▲ {error}
+                </motion.p>
               )}
+            </AnimatePresence>
 
-              {dashboard && dashboard.labs_mas_populares.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                    <IconTrophy style={{ color: "var(--ui-border-gold)" }} />
-                    <span className="text-sm font-semibold" style={{ color: "var(--text-heading)" }}>Laboratorios más populares</span>
+            {loading ? (
+              <SkeletonBlock />
+            ) : (
+              <>
+                {/* ═══ ESTADO GENERAL ═══ */}
+                <section className="mb-8 sm:mb-10">
+                  <SectionHeading icon={<IconChart />} title="Estado General" subtitle="Salud y adopción de la plataforma" />
+
+                  {dashboard && (
+                    <div className="chamfer flex flex-col sm:flex-row items-center gap-6 sm:gap-8 p-4 sm:p-6 mb-5" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
+                      <ProgressRing percent={Math.round(dashboard.tasa_completitud_promedio * 100)} size={104} color="var(--signal-green)" label="completitud promedio" />
+                      <div className="flex-1 w-full grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+                        <StatCard label="Laboratorios activos" value={dashboard.laboratorios_activos} delay={0} />
+                        {Object.entries(dashboard.usuarios_por_rol).map(([rol, cantidad], i) => (
+                          <StatCard key={rol} label={ROLE_LABELS[rol as Rol] || rol} value={cantidad} delay={0.1 + i * 0.05} accent={ROLE_COLORS[rol as Rol]} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {dashboard && dashboard.labs_mas_populares.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                        <IconTrophy style={{ color: "var(--signal-amber)" }} />
+                        <span className="text-sm font-bold uppercase tracking-wide" style={{ color: "var(--text-heading)" }}>Laboratorios más populares</span>
+                      </div>
+                      <div className="chamfer overflow-hidden" style={{ border: "1px solid var(--border-default)" }}>
+                        <dl className="m-0">
+                          {dashboard.labs_mas_populares.map((lab, i) => (
+                            <div
+                              key={lab.laboratorio_id}
+                              className="flex items-center justify-between gap-2 sm:gap-4 px-4 sm:px-5 py-3 sm:py-3.5"
+                              style={{
+                                backgroundColor: i % 2 === 0 ? "var(--surface)" : "var(--canvas)",
+                                borderBottom: i < dashboard.labs_mas_populares.length - 1 ? "1px solid var(--border-default)" : "none",
+                              }}
+                            >
+                              <dt className="text-xs sm:text-sm font-medium truncate" style={{ color: "var(--text-heading)" }}>
+                                <span className="mr-2 font-mono" style={{ color: "var(--text-dim)" }}>{String(i + 1).padStart(2, "0")}</span>
+                                {lab.nombre}
+                              </dt>
+                              <dd className="text-xs sm:text-sm m-0 shrink-0 font-mono" style={{ color: "var(--text-muted)" }}>
+                                {lab.estudiantes_inscritos} inscritos
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                {/* ═══ USUARIOS ═══ */}
+                <section>
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-0 mb-5">
+                    <SectionHeading icon={<IconUsers />} title="Usuarios" subtitle={`Total: ${users.length} usuarios registrados`} />
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <CarouselButton label="Anterior" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>←</CarouselButton>
+                      <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{page + 1}/{totalPages}</span>
+                      <CarouselButton label="Siguiente" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>→</CarouselButton>
+                    </div>
                   </div>
-                  <div
-                    className="rounded-lg overflow-hidden"
-                    style={{ border: "1px solid var(--ui-border-default)" }}
-                  >
-                  <dl className="m-0">
-                    {dashboard.labs_mas_populares.map((lab, i) => (
-                      <div
-                        key={lab.laboratorio_id}
-                        className="flex items-center justify-between gap-2 sm:gap-4 px-4 sm:px-5 py-3 sm:py-3.5"
-                        style={{
-                          backgroundColor: i % 2 === 0 ? "var(--bg-surface)" : "var(--bg-canvas)",
-                          borderBottom: i < dashboard.labs_mas_populares.length - 1 ? "1px solid var(--ui-border-default)" : "none",
-                        }}
-                      >
-                        <dt className="text-xs sm:text-sm font-medium truncate" style={{ color: "var(--text-heading)" }}>
-                          {lab.nombre}
-                        </dt>
-                        <dd className="text-xs sm:text-sm m-0 shrink-0" style={{ color: "var(--text-muted)" }}>
-                          {lab.estudiantes_inscritos} inscritos
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
+
+                  <div className="grid gap-3 sm:gap-4 mb-5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
+                    <AnimatePresence mode="popLayout">
+                      {visible.map((user) => (
+                        <motion.div
+                          key={user.id}
+                          layout
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.25 }}
+                          className="chamfer flex flex-col p-4 sm:p-5"
+                          style={{ backgroundColor: "var(--surface)", border: `1px solid ${user.is_active ? "var(--border-strong)" : "var(--border-default)"}` }}
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="chamfer-sm flex items-center justify-center w-10 h-10 text-sm font-bold shrink-0" style={{ backgroundColor: "var(--surface-hover)", color: ROLE_COLORS[user.rol] || "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                              {user.nombre_completo.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-heading)" }}>{user.nombre_completo}</span>
+                              <span className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{user.email}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-auto flex-wrap">
+                            <span
+                              className="text-[10px] font-bold px-2 py-0.5 chamfer-sm uppercase tracking-wide"
+                              style={{ backgroundColor: `color-mix(in srgb, ${ROLE_COLORS[user.rol]} 14%, transparent)`, color: ROLE_COLORS[user.rol], border: `1px solid ${ROLE_COLORS[user.rol]}` }}
+                            >
+                              {ROLE_LABELS[user.rol] || user.rol}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={busyUserId === user.id}
+                              onClick={() => toggleUser(user)}
+                              className="chamfer-sm px-2 py-0.5 cursor-pointer border-none disabled:opacity-50"
+                              style={{ backgroundColor: user.is_active ? "rgba(51,214,159,0.12)" : "rgba(255,71,87,0.12)" }}
+                            >
+                              <StatusDot variant={user.is_active ? "online" : "danger"} label={user.is_active ? "Activo" : "Inactivo"} />
+                            </button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   </div>
-                </div>
-              )}
-            </section>
-
-            {/* ══════════════════════════════════
-                USUARIOS — carrusel funcional
-                ══════════════════════════════════ */}
-            <section>
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-0 mb-5">
-                <SectionHeading icon={<IconUsers />} title="Usuarios" subtitle={`Total: ${users.length} usuarios registrados`} />
-
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <CarouselButton label="Anterior" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
-                    ←
-                  </CarouselButton>
-                  <span className="text-xs" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                    {page + 1}/{totalPages}
-                  </span>
-                  <CarouselButton label="Siguiente" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>
-                    →
-                  </CarouselButton>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:gap-4 mb-5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
-                <AnimatePresence mode="popLayout">
-                  {visible.map((user) => (
-                    <motion.div
-                      key={user.id}
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.25 }}
-                      className="flex flex-col p-4 sm:p-5 rounded-lg"
-                      style={{
-                        backgroundColor: "var(--bg-surface)",
-                        border: `1px solid ${user.is_active ? "var(--ui-border-secondary)" : "var(--ui-border-default)"}`,
-                      }}
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div
-                          className="flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold shrink-0"
-                          style={{
-                            backgroundColor: "var(--bg-surface-hover)",
-                            color: ROLE_COLORS[user.rol] || "var(--text-muted)",
-                            fontFamily: "var(--font-mono)",
-                          }}
-                        >
-                          {user.nombre_completo.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-sm sm:text-base font-medium truncate" style={{ color: "var(--text-heading)" }}>
-                            {user.nombre_completo}
-                          </span>
-                          <span className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
-                            {user.email}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-auto flex-wrap">
-                        <span
-                          className="text-xs font-medium px-2 py-0.5 rounded-full"
-                          style={{
-                            backgroundColor: `${ROLE_COLORS[user.rol]}18`,
-                            color: ROLE_COLORS[user.rol],
-                            border: `1px solid ${ROLE_COLORS[user.rol]}35`,
-                          }}
-                        >
-                          {ROLE_LABELS[user.rol] || user.rol}
-                        </span>
-                        <button
-                          type="button"
-                          disabled={busyUserId === user.id}
-                          onClick={() => toggleUser(user)}
-                          className="text-xs font-medium px-2 py-0.5 rounded-full cursor-pointer border-none disabled:opacity-50"
-                          style={{
-                            backgroundColor: user.is_active ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
-                            color: user.is_active ? "#22C55E" : "#EF4444",
-                            border: `1px solid ${user.is_active ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
-                          }}
-                        >
-                          {user.is_active ? "Activo" : "Inactivo"}
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            </section>
-          </>
-        )}
-      </div>
-    </main>
-      <Footer />
+                </section>
+              </>
+            )}
+          </div>
+        </main>
+        <Footer />
       </div>
     </div>
   )
@@ -273,16 +216,13 @@ function StatCard({ label, value, delay, accent }: { label: string; value: strin
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
-      className="p-4 rounded-lg"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-default)" }}
+      className="chamfer-sm p-4"
+      style={{ backgroundColor: "var(--canvas)", border: "1px solid var(--border-default)" }}
     >
-      <div
-        className="text-2xl font-bold"
-        style={{ color: accent || "var(--text-heading)", fontFamily: "var(--font-mono)" }}
-      >
+      <div className="text-2xl font-bold text-display" style={{ color: accent || "var(--text-heading)" }}>
         {value}
       </div>
-      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{label}</div>
+      <div className="text-xs mt-1 uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{label}</div>
     </motion.div>
   )
 }
@@ -291,52 +231,23 @@ function SkeletonBlock() {
   return (
     <div className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
       {Array.from({ length: 4 }).map((_, i) => (
-        <motion.div
-          key={i}
-          animate={{ opacity: [0.4, 0.8, 0.4] }}
-          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
-          className="h-20 rounded-lg"
-          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--ui-border-default)" }}
-        />
+        <Skeleton key={i} className="chamfer h-20" style={{ backgroundColor: "var(--surface)" }} />
       ))}
     </div>
   )
 }
 
-/* ───────── Componente interno: botón de carrusel ───────── */
-function CarouselButton({
-  label,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string
-  disabled: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
+function CarouselButton({ label, disabled, onClick, children }: { label: string; disabled: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex items-center justify-center w-8 h-8 rounded text-sm cursor-pointer border transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-      style={{
-        backgroundColor: "transparent",
-        borderColor: "var(--ui-border-default)",
-        color: "var(--text-base)",
-      }}
-      onMouseEnter={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.borderColor = "var(--ui-border-secondary)"
-          e.currentTarget.style.backgroundColor = "var(--bg-surface-hover)"
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "var(--ui-border-default)"
-        e.currentTarget.style.backgroundColor = "transparent"
-      }}
+      className="chamfer-sm flex items-center justify-center w-8 h-8 text-sm cursor-pointer border transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+      style={{ backgroundColor: "transparent", borderColor: "var(--border-default)", color: "var(--text-base)" }}
+      onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.borderColor = "var(--signal-amber)"; e.currentTarget.style.backgroundColor = "var(--surface-hover)" } }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; e.currentTarget.style.backgroundColor = "transparent" }}
     >
       {children}
     </button>
