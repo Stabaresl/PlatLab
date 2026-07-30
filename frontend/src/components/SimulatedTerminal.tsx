@@ -35,7 +35,7 @@ export default function SimulatedTerminal({ entorno }: { entorno: EntornoPractic
       const disponibles = entorno.comandos.map((c) => c.comando)
       return disponibles.length > 0
         ? `Comandos sugeridos:\n${disponibles.map((c) => `  ${c}`).join("\n")}`
-        : "No hay comandos sugeridos para esta sección — explorá con lo que sepas."
+        : "No hay comandos sugeridos para esta sección — explora con lo que sepas."
     }
     const match = entorno.comandos.find((c) => c.comando.trim().toLowerCase() === cmdLower)
     if (match) return match.salida
@@ -127,7 +127,7 @@ export default function SimulatedTerminal({ entorno }: { entorno: EntornoPractic
             autoComplete="off"
             className="flex-1 bg-transparent border-none outline-none"
             style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}
-            aria-label="Escribí un comando"
+            aria-label="Escribe un comando"
           />
           {!reduced && (
             <span aria-hidden="true" className="inline-block w-1.5 h-3.5" style={{ backgroundColor: "var(--signal-green)", animation: "blink 1s step-start infinite" }} />

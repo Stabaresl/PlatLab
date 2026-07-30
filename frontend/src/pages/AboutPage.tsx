@@ -105,7 +105,7 @@ export default function AboutPage() {
                 <FeatureCard
                   icon={<path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />}
                   title="Progreso automático"
-                  description="Todo se guarda automáticamente. Podés retomar cualquier laboratorio exactamente donde lo dejaste, incluso después de cerrar sesión o ante una caída del sistema."
+                  description="Todo se guarda automáticamente. Puedes retomar cualquier laboratorio exactamente donde lo dejaste, incluso después de cerrar sesión o ante una caída del sistema."
                 />
                 <FeatureCard
                   icon={<path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h9m5.25 0l-3-3m0 0l3-3m-3 3H21" />}

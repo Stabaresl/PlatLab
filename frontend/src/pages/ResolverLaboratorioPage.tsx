@@ -155,7 +155,7 @@ export default function ResolverLaboratorioPage() {
               <div className="chamfer flex items-center gap-3 p-4 mb-5 sm:mb-6" style={{ backgroundColor: "rgba(255,71,87,0.08)", border: "1px solid var(--signal-red)" }}>
                 <IconLock style={{ color: "var(--signal-red)" }} className="shrink-0" />
                 <p className="text-sm m-0" style={{ color: "var(--signal-red)" }}>
-                  Este laboratorio venció{overview.fecha_vencimiento ? ` el ${new Date(overview.fecha_vencimiento).toLocaleDateString()}` : ""}. Podés revisar el contenido, pero ya no se puede enviar flags, continuar secciones ni rendir el examen.
+                  Este laboratorio venció{overview.fecha_vencimiento ? ` el ${new Date(overview.fecha_vencimiento).toLocaleDateString()}` : ""}. Puedes revisar el contenido, pero ya no se puede enviar flags, continuar secciones ni presentar el examen.
                 </p>
               </div>
             )}
@@ -219,7 +219,7 @@ export default function ResolverLaboratorioPage() {
                     }}
                   />
                 ) : (
-                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>Elegí una sección para empezar.</p>
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>Elige una sección para empezar.</p>
                 )}
               </div>
             </div>
@@ -262,7 +262,7 @@ function AbrirEnPestanaButton({ assignmentId, seccionId, modo }: { assignmentId:
       style={{ backgroundColor: "transparent", borderColor: "var(--border-default)", color: "var(--text-muted)" }}
       onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--signal-cyan)"; e.currentTarget.style.color = "var(--signal-cyan)" }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; e.currentTarget.style.color = "var(--text-muted)" }}
-      title="Abrir en una pestaña aparte — queda disponible mientras trabajás en la práctica"
+      title="Abrir en una pestaña aparte — queda disponible mientras trabajas en la práctica"
     >
       ↗ Abrir en pestaña aparte
     </button>
@@ -514,7 +514,7 @@ function SeccionPanel({
                           <input
                             value={flagValor}
                             onChange={(e) => setFlagValor(e.target.value)}
-                            placeholder="Ingresá la flag capturada"
+                            placeholder="Ingresa la flag capturada"
                             disabled={vencido}
                             className="flex-1 py-2.5 bg-transparent border-none outline-none text-sm disabled:opacity-50"
                             style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}
@@ -560,12 +560,12 @@ function SeccionPanel({
                               <span className="text-[10px] uppercase tracking-wide font-bold" style={{ color: "var(--signal-amber)", fontFamily: "var(--font-mono)" }}>Pista</span>
                               <p className="text-sm m-0" style={{ color: "var(--text-base)" }}>{ayuda.pista}</p>
                               <p className="text-[11px] m-0" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
-                                El paso a paso completo se desbloquea a los {UMBRAL_PASO_A_PASO} intentos fallidos (llevás {ayuda.intentos}).
+                                El paso a paso completo se desbloquea a los {UMBRAL_PASO_A_PASO} intentos fallidos (llevas {ayuda.intentos}).
                               </p>
                             </>
                           ) : (
                             <p className="text-sm m-0" style={{ color: "var(--text-muted)" }}>
-                              Todavía no hay ayuda disponible — la pista se desbloquea a los {UMBRAL_PISTA} intentos fallidos (llevás {ayuda.intentos}). Probá con la guía paso a paso mientras tanto.
+                              Todavía no hay ayuda disponible — la pista se desbloquea a los {UMBRAL_PISTA} intentos fallidos (llevas {ayuda.intentos}). Prueba con la guía paso a paso mientras tanto.
                             </p>
                           )}
                         </div>
@@ -579,7 +579,7 @@ function SeccionPanel({
             {!contenido.tiene_practica && !completada && (
               <div className="flex flex-col gap-3 pt-4 mt-1" style={{ borderTop: "1px solid var(--border-default)" }}>
                 <p className="text-xs m-0" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                  Sección teórica — no requiere flag. Cuando termines de leer, continuá al siguiente paso.
+                  Sección teórica — no requiere flag. Cuando termines de leer, continúa al siguiente paso.
                 </p>
                 <Button type="button" onClick={handleContinuar} disabled={busy || vencido} className="self-start chamfer-sm font-mono text-xs uppercase tracking-wide">
                   {busy ? "Avanzando…" : "Continuar →"}

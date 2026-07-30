@@ -17,22 +17,22 @@ import termBg from "../assets/term.png"
 const STEPS = [
   {
     n: "01",
-    title: "Registrate",
-    desc: "Creá tu cuenta como estudiante en segundos, o pedí que te inviten como instructor.",
+    title: "Regístrate",
+    desc: "Crea tu cuenta como estudiante en segundos, o pide que te inviten como instructor.",
   },
   {
     n: "02",
-    title: "Elegí un laboratorio",
-    desc: "Explorá el catálogo por dificultad y tema, o aceptá una invitación de tu instructor.",
+    title: "Elige un laboratorio",
+    desc: "Explora el catálogo por dificultad y tema, o acepta una invitación de tu instructor.",
   },
   {
     n: "03",
     title: "Resolvé desafíos reales",
-    desc: "Avanzá sección por sección, capturá flags y pedí pistas progresivas si te trabás.",
+    desc: "Avanza sección por sección, captura flags y pide pistas progresivas si te trabas.",
   },
   {
     n: "04",
-    title: "Rendí el examen",
+    title: "Presenta el examen",
     desc: "Al completar todas las secciones se habilita el examen final con corrección automática.",
   },
 ]
@@ -47,7 +47,7 @@ const FEATURES = [
   },
   {
     title: "Pistas progresivas",
-    desc: "Pista tras 5 intentos fallidos, paso a paso completo tras 15. Aprendés, no te frustrás.",
+    desc: "Pista tras 5 intentos fallidos, paso a paso completo tras 15. Aprendes, no te frustras.",
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />,
   },
   {
@@ -59,7 +59,7 @@ const FEATURES = [
   },
   {
     title: "Progreso automático",
-    desc: "Todo se guarda al instante. Retomá cualquier laboratorio exactamente donde lo dejaste.",
+    desc: "Todo se guarda al instante. Retoma cualquier laboratorio exactamente donde lo dejaste.",
     icon: (
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
     ),
@@ -133,8 +133,8 @@ export default function WelcomePage() {
 
               <p className="text-sm sm:text-base md:text-lg leading-relaxed" style={{ maxWidth: "560px", lineHeight: "1.7" }}>
                 Plataforma de laboratorios interactivos de hacking ético.
-                Poné a prueba tus habilidades en entornos reales controlados,
-                aprendé de tus errores y convertite en un experto en
+                Pon a prueba tus habilidades en entornos reales controlados,
+                aprende de tus errores y conviértete en un experto en
                 ciberseguridad.
               </p>
 
@@ -149,7 +149,7 @@ export default function WelcomePage() {
                   </Button>
                 )}
                 <Button size="lg" variant="outline" onClick={() => navigate("/about")} className="chamfer font-mono text-xs sm:text-sm uppercase tracking-wide px-6 sm:px-8">
-                  Conocé más
+                  Conoce más
                 </Button>
               </div>
             </motion.div>
@@ -177,7 +177,7 @@ export default function WelcomePage() {
                     </div>
                     <div className="relative z-10 flex items-center justify-center w-full h-full px-6 sm:px-8">
                       <p className="text-sm sm:text-base md:text-lg font-medium text-center" style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}>
-                        Explorá, aprendé y dominá
+                        Explora, aprende y domina
                         <br />
                         la ciberseguridad
                       </p>
@@ -311,7 +311,7 @@ export default function WelcomePage() {
                     ¿Listo para el próximo laboratorio?
                   </h2>
                   <p className="relative z-10 text-sm m-0" style={{ color: "var(--text-muted)" }}>
-                    Explorá el catálogo completo y elegí tu siguiente desafío.
+                    Explora el catálogo completo y elige tu siguiente desafío.
                   </p>
                   <Button size="lg" onClick={() => navigate("/laboratorios")} className="relative z-10 chamfer font-mono text-xs sm:text-sm uppercase tracking-wide px-6 sm:px-8">
                     Ver catálogo de laboratorios
@@ -324,7 +324,7 @@ export default function WelcomePage() {
                     ¿Listo para poner a prueba tus habilidades?
                   </h2>
                   <p className="relative z-10 text-sm m-0" style={{ color: "var(--text-muted)" }}>
-                    Creá tu cuenta gratis y empezá a resolver laboratorios reales hoy mismo.
+                    Crea tu cuenta gratis y empieza a resolver laboratorios reales hoy mismo.
                   </p>
                   <Button size="lg" onClick={() => navigate("/signup")} className="relative z-10 chamfer font-mono text-xs sm:text-sm uppercase tracking-wide px-6 sm:px-8">
                     Crear cuenta gratis

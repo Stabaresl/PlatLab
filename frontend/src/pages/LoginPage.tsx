@@ -56,7 +56,7 @@ export default function LoginPage() {
           <div className="relative z-10 max-w-sm flex flex-col gap-6">
             <StatusDot variant="info" label="Acceso restringido" />
             <h2 className="text-display text-2xl xl:text-3xl font-black uppercase leading-tight" style={{ color: "var(--text-heading)" }}>
-              Reingresá a tu
+              Ingresa de nuevo a tu
               <br />
               consola de operaciones
             </h2>
@@ -149,9 +149,9 @@ export default function LoginPage() {
                 )}
 
                 <p className="text-sm m-0 text-center" style={{ color: "var(--text-muted)" }}>
-                  ¿No tenés cuenta?{" "}
+                  ¿No tienes cuenta?{" "}
                   <Link to="/signup" className="font-semibold no-underline transition-colors hover:underline" style={{ color: "var(--signal-cyan)" }}>
-                    Registrate
+                    Regístrate
                   </Link>
                 </p>
               </div>

@@ -294,7 +294,7 @@ export default function StudentDashboard() {
 
                   {proximosVencimientos.length === 0 ? (
                     <div className="chamfer p-6 sm:p-8 text-center" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
-                      <p className="text-sm m-0" style={{ color: "var(--text-muted)" }}>No tenés laboratorios por vencer.</p>
+                      <p className="text-sm m-0" style={{ color: "var(--text-muted)" }}>No tienes laboratorios por vencer.</p>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2 sm:gap-3">
@@ -323,7 +323,7 @@ export default function StudentDashboard() {
                         ¿Listo para el siguiente nivel?
                       </h2>
                       <p className="text-xs sm:text-sm m-0 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                        Como Instructor podés crear tus propios laboratorios con secciones, flags y exámenes,
+                        Como Instructor puedes crear tus propios laboratorios con secciones, flags y exámenes,
                         copiar laboratorios predeterminados para personalizarlos, invitar estudiantes y
                         hacer seguimiento de su progreso. Tu progreso actual como estudiante se conserva.
                       </p>
@@ -414,7 +414,7 @@ function InstructorRegistrationModal({
           </DialogTitle>
           {!sent && (
             <DialogDescription>
-              Contanos sobre vos para registrarte como instructor. Estos datos ayudarán a personalizar tu experiencia.
+              Cuéntanos sobre ti para registrarte como instructor. Estos datos ayudarán a personalizar tu experiencia.
             </DialogDescription>
           )}
         </DialogHeader>
@@ -436,7 +436,7 @@ function InstructorRegistrationModal({
                 </Label>
                 <Select value={form.tipo} onValueChange={(v) => update("tipo", v)}>
                   <SelectTrigger className="chamfer-sm w-full h-10">
-                    <SelectValue placeholder="Seleccioná un tipo" />
+                    <SelectValue placeholder="Selecciona un tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     {TIPOS_INSTRUCTOR.map((t) => (
@@ -457,8 +457,8 @@ function InstructorRegistrationModal({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>¿Por qué querés ser instructor?</Label>
-                <Textarea value={form.motivacion} onChange={(e) => update("motivacion", e.target.value)} placeholder="Contanos qué te motiva a crear laboratorios y guiar a otros estudiantes…" rows={3} className="chamfer-sm resize-none" />
+                <Label className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>¿Por qué quieres ser instructor?</Label>
+                <Textarea value={form.motivacion} onChange={(e) => update("motivacion", e.target.value)} placeholder="Cuéntanos qué te motiva a crear laboratorios y guiar a otros estudiantes…" rows={3} className="chamfer-sm resize-none" />
               </div>
             </div>
 

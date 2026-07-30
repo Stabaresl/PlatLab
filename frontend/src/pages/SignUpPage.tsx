@@ -78,7 +78,7 @@ export default function SignUpPage() {
           <div className="relative z-10 max-w-sm flex flex-col gap-6">
             <StatusDot variant="active" label="Registro de nuevo operador" pulse />
             <h2 className="text-display text-2xl xl:text-3xl font-black uppercase leading-tight" style={{ color: "var(--text-heading)" }}>
-              Sumate a la
+              Súmate a la
               <br />
               siguiente misión
             </h2>
@@ -173,9 +173,9 @@ export default function SignUpPage() {
                 )}
 
                 <p className="text-sm m-0 text-center" style={{ color: "var(--text-muted)" }}>
-                  ¿Ya tenés cuenta?{" "}
+                  ¿Ya tienes cuenta?{" "}
                   <Link to="/login" className="font-semibold no-underline transition-colors hover:underline" style={{ color: "var(--signal-cyan)" }}>
-                    Iniciá sesión
+                    Inicia sesión
                   </Link>
                 </p>
               </div>

@@ -89,7 +89,7 @@ export default function InstructorDashboard() {
         <Navbar />
         <main className="flex-1">
           <div className="mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10" style={{ maxWidth: "1200px" }}>
-            <TerminalHeader title="Panel del Instructor" subtitle="Gestioná tus laboratorios y estudiantes" prompt="whoami → instructor" />
+            <TerminalHeader title="Panel del Instructor" subtitle="Gestiona tus laboratorios y estudiantes" prompt="whoami → instructor" />
 
             <AnimatePresence>
               {error && (

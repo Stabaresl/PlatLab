@@ -50,7 +50,7 @@ export default function LabDetailPage() {
       navigate(`/resolver/${asignacion.id}`)
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setEnrollError("Ya estás inscrito en este laboratorio. Revisá tu Dashboard para continuarlo.")
+        setEnrollError("Ya estás inscrito en este laboratorio. Revisa tu Dashboard para continuarlo.")
       } else if (err instanceof ApiError) {
         setEnrollError(err.message)
       } else {
@@ -179,9 +179,9 @@ export default function LabDetailPage() {
                       <p className="text-xs sm:text-sm m-0 leading-relaxed" style={{ color: "var(--text-muted)" }}>
                         {authed
                           ? role === "estudiante"
-                            ? enrollError || "Inscribite para empezar a resolver este laboratorio ahora mismo. Solo podés tener un laboratorio activo a la vez."
-                            : "Este laboratorio está disponible en el catálogo. Consultá tu Dashboard para gestionar tus laboratorios."
-                          : "Creá tu cuenta gratis para inscribirte y empezar a resolver este laboratorio ahora mismo."}
+                            ? enrollError || "Inscríbete para empezar a resolver este laboratorio ahora mismo. Solo puedes tener un laboratorio activo a la vez."
+                            : "Este laboratorio está disponible en el catálogo. Consulta tu Dashboard para gestionar tus laboratorios."
+                          : "Crea tu cuenta gratis para inscribirte y empezar a resolver este laboratorio ahora mismo."}
                       </p>
                     </div>
                     {authed ? (
