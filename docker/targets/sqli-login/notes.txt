@@ -1,0 +1,4 @@
+TODO interno (no debería estar accesible desde fuera del servidor):
+- sacar este archivo antes de pasar a produccion
+- el login corre en 127.0.0.1:5000, ver app.py para la query real
+- recordar migrar a prepared statements

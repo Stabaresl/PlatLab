@@ -36,6 +36,8 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -56,6 +58,7 @@ INSTALLED_APPS = [
     'modules.reports',
     'modules.notifications',
     'modules.audit',
+    'modules.lab_environments',
 ]
 
 MIDDLEWARE = [
@@ -156,6 +159,14 @@ CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS', default=['http://localhost:5173', 'http://127.0.0.1:5173']
 )
 CORS_ALLOW_CREDENTIALS = True
+
+
+# lab_environments — entornos de práctica reales (contenedor Docker por
+# estudiante, ver modules/lab_environments). Límites conservadores para un
+# único host de desarrollo; ajustables sin tocar código.
+LAB_ENV_MAX_CONCURRENTES = env.int('LAB_ENV_MAX_CONCURRENTES', default=5)
+LAB_ENV_IDLE_MINUTES = env.int('LAB_ENV_IDLE_MINUTES', default=20)
+LAB_ENV_MAX_LIFETIME_MINUTES = env.int('LAB_ENV_MAX_LIFETIME_MINUTES', default=120)
 
 
 # Password validation

@@ -19,6 +19,7 @@ app.autodiscover_tasks()
 app.conf.imports = (
     'modules.assignments.infrastructure.tasks',
     'modules.notifications.infrastructure.celery_tasks',
+    'modules.lab_environments.infrastructure.tasks',
 )
 
 # RF-32, UC-07: revisa asignaciones vencidas cada 15 minutos (frecuencia
@@ -28,5 +29,13 @@ app.conf.beat_schedule = {
     'cerrar-asignaciones-vencidas': {
         'task': 'modules.assignments.infrastructure.tasks.cerrar_asignaciones_vencidas_task',
         'schedule': 900.0,
+    },
+    # Entornos de práctica reales: se revisan más seguido que las
+    # asignaciones (su ciclo de vida es de minutos, no de semanas) — sin
+    # esto, un contenedor olvidado sigue consumiendo CPU/memoria del host
+    # indefinidamente.
+    'reap-entornos-inactivos': {
+        'task': 'modules.lab_environments.infrastructure.tasks.reap_idle_environments_task',
+        'schedule': 120.0,
     },
 }

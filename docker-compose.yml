@@ -37,6 +37,15 @@ services:
     env_file: .env
     volumes:
       - .:/app
+      # Docker-outside-of-Docker: le permite al backend crear/parar
+      # contenedores hermanos (lab_environments) hablando con el Docker del
+      # host. ADVERTENCIA DE SEGURIDAD: esto le da a este contenedor control
+      # equivalente a root sobre el host Docker — aceptable para desarrollo
+      # en una máquina propia, pero antes de exponer el servicio a
+      # estudiantes reales por Internet hace falta separar el ejecutor de
+      # contenedores del backend (host/VM dedicado) y reforzar el
+      # aislamiento (gVisor/Kata) — ver modules/lab_environments/infrastructure/docker_provider.py.
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8000:8000"
     depends_on:
@@ -44,7 +53,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # Daphne sirve HTTP + WebSocket en un solo proceso ASGI (config/asgi.py)
+    # — reemplaza a `runserver`, que no entiende WebSockets.
+    command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
 
   worker:
     build:
@@ -55,6 +66,10 @@ services:
     env_file: .env
     volumes:
       - .:/app
+      # El reaper de entornos inactivos (Celery Beat -> este worker) también
+      # necesita poder parar contenedores — mismo trade-off de seguridad que
+      # en `web` (ver comentario arriba).
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       postgres:
         condition: service_healthy

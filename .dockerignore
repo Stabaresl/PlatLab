@@ -11,3 +11,9 @@ db.sqlite3
 .pytest_cache/
 .coverage
 htmlcov/
+
+# El backend (Django) no necesita nada de frontend/ en su imagen — sin
+# esto, node_modules infla el build context a cientos de MB y en Windows
+# puede romper el build por symlinks/archivos que Docker no puede leer.
+frontend/node_modules/
+frontend/dist/
