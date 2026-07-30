@@ -1,6 +1,11 @@
 from rest_framework import serializers
 
-from modules.laboratories.domain.value_objects import NivelDificultad, TipoPregunta
+from modules.laboratories.domain.value_objects import (
+    ComandoSimulado,
+    EntornoPractica,
+    NivelDificultad,
+    TipoPregunta,
+)
 
 
 class CatalogoFiltroQuerySerializer(serializers.Serializer):
@@ -48,6 +53,39 @@ class EditarLaboratorioRequestSerializer(serializers.Serializer):
     temas = serializers.ListField(child=serializers.CharField(max_length=100), required=False)
 
 
+class ComandoSimuladoRequestSerializer(serializers.Serializer):
+    """Un par comando/salida de la consola simulada (ver `EntornoPractica`)."""
+
+    comando = serializers.CharField(max_length=200, trim_whitespace=False)
+    salida = serializers.CharField(trim_whitespace=False)
+
+
+class EntornoPracticaRequestSerializer(serializers.Serializer):
+    """
+    Guion completo de la consola simulada de una sección práctica —
+    autoría del instructor/administrador, sin ejecución real (ver
+    `EntornoPractica` en el dominio).
+    """
+
+    prompt = serializers.CharField(max_length=100, required=False, default="root@lab:~#")
+    banner = serializers.CharField(required=False, allow_blank=True, default="")
+    comandos = ComandoSimuladoRequestSerializer(many=True, required=False, default=list)
+
+    def create(self, validated_data):
+        return EntornoPractica(
+            prompt=validated_data["prompt"],
+            banner=validated_data["banner"],
+            comandos=[
+                ComandoSimulado(comando=c["comando"], salida=c["salida"])
+                for c in validated_data["comandos"]
+            ],
+        )
+
+    def to_internal_value(self, data):
+        validated = super().to_internal_value(data)
+        return self.create(validated)
+
+
 class CrearSeccionRequestSerializer(serializers.Serializer):
     """api.md §5 `POST /laboratories/{id}/sections/`."""
 
@@ -55,6 +93,9 @@ class CrearSeccionRequestSerializer(serializers.Serializer):
     contenido_teorico = serializers.CharField()
     orden = serializers.IntegerField(min_value=1)
     tiene_practica = serializers.BooleanField(required=False, default=False)
+    guia_paso_a_paso = serializers.CharField(required=False, allow_blank=True, default="")
+    entorno_practica = EntornoPracticaRequestSerializer(required=False, allow_null=True)
+    imagen_practica = serializers.CharField(max_length=200, required=False, allow_null=True, allow_blank=False)
 
 
 class EditarSeccionRequestSerializer(serializers.Serializer):
@@ -64,6 +105,9 @@ class EditarSeccionRequestSerializer(serializers.Serializer):
     contenido_teorico = serializers.CharField(required=False)
     orden = serializers.IntegerField(min_value=1, required=False)
     tiene_practica = serializers.BooleanField(required=False)
+    guia_paso_a_paso = serializers.CharField(required=False, allow_blank=True)
+    entorno_practica = EntornoPracticaRequestSerializer(required=False, allow_null=True)
+    imagen_practica = serializers.CharField(max_length=200, required=False, allow_null=True, allow_blank=False)
 
 
 class AgregarPreguntaRequestSerializer(serializers.Serializer):

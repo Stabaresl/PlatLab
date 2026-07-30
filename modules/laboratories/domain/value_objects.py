@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 
@@ -30,7 +30,40 @@ class AyudaProgresiva:
     """
     dominio.md §2: pista y paso a paso, siempre asociados a una `Flag`.
     Ambos opcionales (el instructor puede omitir la ayuda progresiva).
+    Esta ayuda se DESBLOQUEA progresivamente (5/15 intentos fallidos,
+    HE-06) — es distinta de `Seccion.guia_paso_a_paso`, que está
+    disponible desde el arranque, sin gatillo.
     """
 
     pista: str | None = None
     paso_a_paso: str | None = None
+
+
+@dataclass(frozen=True)
+class ComandoSimulado:
+    """
+    Un par comando/salida de la consola simulada de una `Seccion`
+    práctica (`Seccion.entorno_practica`). No ejecuta nada real: el
+    instructor autoría el guion completo (estilo HackerRank/TryHackMe
+    "salas" con terminal embebida pero controlada) y el frontend solo
+    compara el texto tipeado contra `comando` para mostrar `salida`.
+    """
+
+    comando: str
+    salida: str
+
+
+@dataclass(frozen=True)
+class EntornoPractica:
+    """
+    Consola simulada opcional de una `Seccion` práctica — le da la
+    sensación de "tener una VM" sin ejecutar comandos reales contra
+    ningún sistema (eso requeriría una infraestructura de aislamiento
+    aparte, fuera de alcance). `comandos` es el guion completo que
+    autoría el instructor; el frontend resuelve cualquier comando no
+    listado con un mensaje genérico de "comando no encontrado".
+    """
+
+    prompt: str = "root@lab:~#"
+    banner: str = ""
+    comandos: list[ComandoSimulado] = field(default_factory=list)

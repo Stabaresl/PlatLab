@@ -4,6 +4,7 @@ from modules.progress.application.dtos import (
     ProgresoOverviewDTO,
     SeccionProgresoItemDTO,
 )
+from modules.progress.domain.ports import IEstadoAsignacionProvider
 from modules.progress.domain.repositories import IProgresoRepository
 from modules.progress.domain.value_objects import EstadoProgresoSeccion
 from modules.shared.domain.exceptions import NotFoundError
@@ -30,9 +31,11 @@ class ObtenerProgresoQuery:
         self,
         progreso_repository: IProgresoRepository,
         laboratorio_repository: ILaboratorioRepository,
+        estado_asignacion_provider: IEstadoAsignacionProvider | None = None,
     ):
         self._progreso_repository = progreso_repository
         self._laboratorio_repository = laboratorio_repository
+        self._estado_asignacion_provider = estado_asignacion_provider
 
     def execute(self, input_dto: ObtenerProgresoDTO) -> ProgresoOverviewDTO:
         progreso = self._progreso_repository.get_by_asignacion(input_dto.asignacion_id)
@@ -68,6 +71,16 @@ class ObtenerProgresoQuery:
         examen = self._laboratorio_repository.get_examen_by_laboratorio(laboratorio_id)
         historial = self._progreso_repository.get_historial(progreso.id)
 
+        vencido = False
+        fecha_vencimiento = None
+        if self._estado_asignacion_provider is not None:
+            estado_asignacion = self._estado_asignacion_provider.obtener_estado(
+                input_dto.asignacion_id
+            )
+            if estado_asignacion is not None:
+                vencido = estado_asignacion.vencida
+                fecha_vencimiento = estado_asignacion.fecha_vencimiento
+
         return ProgresoOverviewDTO(
             asignacion_id=input_dto.asignacion_id,
             laboratorio_id=laboratorio_id,
@@ -76,4 +89,6 @@ class ObtenerProgresoQuery:
             secciones_completas=secciones_completas,
             examen_disponible=examen is not None,
             intentos_examen=len(historial),
+            vencido=vencido,
+            fecha_vencimiento=fecha_vencimiento,
         )

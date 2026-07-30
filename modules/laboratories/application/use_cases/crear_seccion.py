@@ -56,6 +56,9 @@ class CrearSeccionUseCase(BaseUseCase[CrearSeccionDTO, SeccionResultDTO]):
             contenido_teorico=sanitizar_contenido_html(input_dto.contenido_teorico),
             orden=input_dto.orden,
             tiene_practica=input_dto.tiene_practica,
+            guia_paso_a_paso=sanitizar_contenido_html(input_dto.guia_paso_a_paso),
+            entorno_practica=input_dto.entorno_practica,
+            imagen_practica=input_dto.imagen_practica,
         )
         guardada = self._laboratorio_repository.add_seccion(seccion)
 

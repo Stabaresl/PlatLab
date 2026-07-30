@@ -6,6 +6,8 @@ from modules.laboratories.domain.value_objects import TipoPregunta
 from modules.progress.application.dtos import EnviarExamenDTO, EnviarExamenResultDTO
 from modules.progress.domain.entities import HistorialCompletitud, ResultadoExamen
 from modules.progress.domain.events import ExamGraded
+from modules.progress.domain.exceptions import AsignacionVencidaError
+from modules.progress.domain.ports import IEstadoAsignacionProvider
 from modules.progress.domain.repositories import IProgresoRepository
 from modules.progress.domain.services import CalificadorDeExamen
 from modules.progress.domain.value_objects import EstadoProgresoSeccion
@@ -21,6 +23,7 @@ _PROGRESO_NO_ENCONTRADO_MSG = "Progreso no encontrado."
 _SECCIONES_INCOMPLETAS_MSG = "Debes completar todas las secciones antes de enviar el examen."
 _EXAMEN_NO_CONFIGURADO_MSG = "Este laboratorio no tiene examen configurado."
 _PREGUNTA_DESCONOCIDA_MSG = "Las respuestas incluyen una pregunta que no pertenece a este examen."
+_VENCIDA_MSG = "Este laboratorio venció. Ya no se puede continuar."
 
 
 class EnviarExamenUseCase(BaseUseCase[EnviarExamenDTO, EnviarExamenResultDTO]):
@@ -45,16 +48,23 @@ class EnviarExamenUseCase(BaseUseCase[EnviarExamenDTO, EnviarExamenResultDTO]):
         progreso_repository: IProgresoRepository,
         laboratorio_repository: ILaboratorioRepository,
         calificador: CalificadorDeExamen | None = None,
+        estado_asignacion_provider: IEstadoAsignacionProvider | None = None,
     ):
         super().__init__(unit_of_work, event_dispatcher)
         self._progreso_repository = progreso_repository
         self._laboratorio_repository = laboratorio_repository
         self._calificador = calificador or CalificadorDeExamen()
+        self._estado_asignacion_provider = estado_asignacion_provider
 
     def _validate(self, input_dto: EnviarExamenDTO) -> None:
         progreso = self._progreso_repository.get_by_asignacion(input_dto.asignacion_id)
         if progreso is None or not progreso.es_propio_de(input_dto.estudiante_id):
             raise NotFoundError(_PROGRESO_NO_ENCONTRADO_MSG)
+
+        if self._estado_asignacion_provider is not None:
+            estado = self._estado_asignacion_provider.obtener_estado(input_dto.asignacion_id)
+            if estado is not None and estado.vencida:
+                raise AsignacionVencidaError(_VENCIDA_MSG)
 
         secciones = self._progreso_repository.get_secciones(progreso.id)
         if not secciones or any(s.estado != EstadoProgresoSeccion.COMPLETADA for s in secciones):

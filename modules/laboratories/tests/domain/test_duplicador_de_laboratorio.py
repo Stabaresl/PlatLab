@@ -6,6 +6,8 @@ from modules.laboratories.domain.entities import Flag, Laboratorio, Seccion
 from modules.laboratories.domain.exceptions import OrigenInvalidoParaDuplicarError
 from modules.laboratories.domain.services import DuplicadorDeLaboratorio
 from modules.laboratories.domain.value_objects import (
+    ComandoSimulado,
+    EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
     TipoLaboratorio,
@@ -21,12 +23,15 @@ def test_duplicar_predeterminado_crea_copia_personalizado():
         tipo=TipoLaboratorio.PREDETERMINADO,
         temas=["red team"],
     )
+    entorno = EntornoPractica(comandos=[ComandoSimulado(comando="ls", salida="flag.txt")])
     seccion = Seccion(
         laboratorio_id=original.id,
         titulo="Practica",
         contenido_teorico="...",
         orden=1,
         tiene_practica=True,
+        guia_paso_a_paso="<p>Paso 1</p>",
+        entorno_practica=entorno,
     )
     flag = Flag(seccion_id=seccion.id, hash="hash-x")
     instructor_id = uuid.uuid4()
@@ -46,6 +51,8 @@ def test_duplicar_predeterminado_crea_copia_personalizado():
     assert len(flags_copiadas) == 1
     assert flags_copiadas[0].seccion_id == secciones_copiadas[0].id
     assert flags_copiadas[0].hash == flag.hash
+    assert secciones_copiadas[0].guia_paso_a_paso == "<p>Paso 1</p>"
+    assert secciones_copiadas[0].entorno_practica.comandos[0].comando == "ls"
 
 
 def test_duplicar_personalizado_lanza_origen_invalido():

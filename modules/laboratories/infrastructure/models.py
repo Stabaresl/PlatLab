@@ -88,6 +88,12 @@ class SeccionModel(models.Model):
     contenido_teorico = models.TextField()
     orden = models.PositiveIntegerField()
     tiene_practica = models.BooleanField(default=False)
+    guia_paso_a_paso = models.TextField(blank=True, default="")
+    # {"prompt": str, "banner": str, "comandos": [{"comando": str, "salida": str}, ...]}
+    entorno_practica = models.JSONField(null=True, blank=True)
+    # Imagen Docker del entorno de práctica real (lab_environments), ej.
+    # "platlab-target-sqli:latest". Null = sección sin entorno real.
+    imagen_practica = models.CharField(max_length=200, null=True, blank=True)
 
     class Meta:
         db_table = "laboratories_seccion"

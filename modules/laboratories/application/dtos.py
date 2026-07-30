@@ -1,6 +1,8 @@
 import uuid
 from dataclasses import dataclass, field
 
+from modules.laboratories.domain.value_objects import EntornoPractica
+
 
 @dataclass(frozen=True)
 class ListarLaboratoriosFiltroDTO:
@@ -130,6 +132,9 @@ class CrearSeccionDTO:
     actor_id: uuid.UUID
     actor_rol: str
     tiene_practica: bool = False
+    guia_paso_a_paso: str = ""
+    entorno_practica: EntornoPractica | None = None
+    imagen_practica: str | None = None
 
 
 @dataclass(frozen=True)
@@ -144,6 +149,9 @@ class EditarSeccionDTO:
     contenido_teorico: str | None = None
     orden: int | None = None
     tiene_practica: bool | None = None
+    guia_paso_a_paso: str | None = None
+    entorno_practica: EntornoPractica | None = None
+    imagen_practica: str | None = None
 
 
 @dataclass(frozen=True)

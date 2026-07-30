@@ -64,6 +64,12 @@ class EditarSeccionUseCase(BaseUseCase[EditarSeccionDTO, SeccionResultDTO]):
             seccion.orden = input_dto.orden
         if input_dto.tiene_practica is not None:
             seccion.tiene_practica = input_dto.tiene_practica
+        if input_dto.guia_paso_a_paso is not None:
+            seccion.guia_paso_a_paso = sanitizar_contenido_html(input_dto.guia_paso_a_paso)
+        if input_dto.entorno_practica is not None:
+            seccion.entorno_practica = input_dto.entorno_practica
+        if input_dto.imagen_practica is not None:
+            seccion.imagen_practica = input_dto.imagen_practica
 
         actualizada = self._laboratorio_repository.update_seccion(seccion)
 

@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.progress.application.dtos import (
+    CompletarSeccionTeoricaDTO,
     EnviarExamenDTO,
     ObtenerContenidoSeccionDTO,
     ObtenerExamenDTO,
@@ -22,8 +23,12 @@ from modules.progress.application.queries.obtener_examen import ObtenerExamenQue
 from modules.progress.application.queries.obtener_historial import ObtenerHistorialQuery
 from modules.progress.application.queries.obtener_pista import ObtenerPistaQuery
 from modules.progress.application.queries.obtener_progreso import ObtenerProgresoQuery
+from modules.progress.application.use_cases.completar_seccion_teorica import (
+    CompletarSeccionTeoricaUseCase,
+)
 from modules.progress.application.use_cases.enviar_examen import EnviarExamenUseCase
 from modules.progress.application.use_cases.validar_flag import ValidarFlagUseCase
+from modules.progress.infrastructure.asignacion_estado_provider import AsignacionEstadoProvider
 from modules.progress.infrastructure.rate_limiter import FlagRateLimiter
 from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.progress.presentation.serializers import (
@@ -57,6 +62,7 @@ class ProgresoOverviewView(APIView):
         resultado = ObtenerProgresoQuery(
             progreso_repository=ProgresoRepository(),
             laboratorio_repository=LaboratorioRepository(),
+            estado_asignacion_provider=AsignacionEstadoProvider(),
         ).execute(
             ObtenerProgresoDTO(
                 asignacion_id=_parsear_uuid(assignment_id), estudiante_id=request.user.id
@@ -71,6 +77,10 @@ class ProgresoOverviewView(APIView):
                 "secciones_completas": resultado.secciones_completas,
                 "examen_disponible": resultado.examen_disponible,
                 "intentos_examen": resultado.intentos_examen,
+                "vencido": resultado.vencido,
+                "fecha_vencimiento": (
+                    resultado.fecha_vencimiento.isoformat() if resultado.fecha_vencimiento else None
+                ),
                 "secciones": [
                     {
                         "id": str(s.id),
@@ -110,6 +120,9 @@ class ContenidoSeccionView(APIView):
                 "contenido_teorico": resultado.contenido_teorico,
                 "tiene_practica": resultado.tiene_practica,
                 "estado": resultado.estado,
+                "guia_paso_a_paso": resultado.guia_paso_a_paso,
+                "entorno_practica": resultado.entorno_practica,
+                "entorno_real_disponible": resultado.entorno_real_disponible,
             },
             status=status.HTTP_200_OK,
         )
@@ -136,6 +149,7 @@ class FlagValidationView(APIView):
             event_dispatcher=EventDispatcher(),
             progreso_repository=ProgresoRepository(),
             laboratorio_repository=LaboratorioRepository(),
+            estado_asignacion_provider=AsignacionEstadoProvider(),
         ).execute(
             ValidarFlagDTO(
                 asignacion_id=_parsear_uuid(assignment_id),
@@ -167,6 +181,46 @@ class FlagValidationView(APIView):
                 data["paso_a_paso"] = resultado.paso_a_paso
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class SectionCompletionView(APIView):
+    """
+    `POST /progress/{assignment_id}/sections/{section_id}/complete/` —
+    UC-02 bis. Única forma de avanzar una sección sin práctica
+    (`tiene_practica=False`, ej. una introducción teórica): no tiene flag
+    que validar, así que no pasa por `FlagValidationView`. Sin esto, el
+    frontend no tenía ningún botón/endpoint para "continuar" después de
+    leer una sección puramente teórica y el laboratorio quedaba trabado.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, assignment_id, section_id):
+        resultado = CompletarSeccionTeoricaUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            progreso_repository=ProgresoRepository(),
+            laboratorio_repository=LaboratorioRepository(),
+            estado_asignacion_provider=AsignacionEstadoProvider(),
+        ).execute(
+            CompletarSeccionTeoricaDTO(
+                asignacion_id=_parsear_uuid(assignment_id),
+                seccion_id=_parsear_uuid(section_id),
+                estudiante_id=request.user.id,
+            )
+        )
+
+        return Response(
+            {
+                "correcto": True,
+                "seccion_desbloqueada": (
+                    str(resultado.seccion_desbloqueada)
+                    if resultado.seccion_desbloqueada
+                    else None
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class HintView(APIView):
@@ -243,6 +297,7 @@ class ExamSubmissionView(APIView):
             event_dispatcher=EventDispatcher(),
             progreso_repository=ProgresoRepository(),
             laboratorio_repository=LaboratorioRepository(),
+            estado_asignacion_provider=AsignacionEstadoProvider(),
         ).execute(
             EnviarExamenDTO(
                 asignacion_id=_parsear_uuid(assignment_id),

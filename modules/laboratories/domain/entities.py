@@ -4,6 +4,7 @@ from datetime import datetime
 
 from modules.laboratories.domain.value_objects import (
     AyudaProgresiva,
+    EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
     TipoLaboratorio,
@@ -70,6 +71,16 @@ class Seccion(BaseEntity):
     contenido_teorico: str
     orden: int
     tiene_practica: bool = False
+    # Guía paso a paso SIEMPRE disponible (no gatillada por intentos
+    # fallidos, a diferencia de `Flag.ayuda.paso_a_paso`) — el material de
+    # referencia que el estudiante puede abrir en una pestaña aparte y
+    # dejar abierto mientras resuelve la práctica.
+    guia_paso_a_paso: str = ""
+    entorno_practica: EntornoPractica | None = None
+    # Referencia de imagen Docker (ej. "platlab-target-sqli:latest") para el
+    # entorno de práctica REAL (lab_environments) — opcional, distinto de
+    # `entorno_practica` (consola simulada, siempre disponible sin infra).
+    imagen_practica: str | None = None
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):

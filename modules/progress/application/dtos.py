@@ -23,6 +23,18 @@ class ContenidoSeccionDTO:
     contenido_teorico: str
     tiene_practica: bool
     estado: str
+    # Guía siempre disponible una vez desbloqueada la sección (no gatillada
+    # por intentos fallidos, a diferencia de la ayuda progresiva de la Flag)
+    # — puede abrirse en una pestaña aparte y queda disponible durante la
+    # práctica (ver ResolverLaboratorioPage en el frontend).
+    guia_paso_a_paso: str = ""
+    # Consola simulada (estilo HackerRank/TryHackMe, sin ejecución real) —
+    # {"prompt": str, "banner": str, "comandos": [{"comando": str, "salida": str}]}
+    entorno_practica: dict | None = None
+    # True si además hay un entorno REAL (contenedor Docker por estudiante,
+    # módulo lab_environments) configurado para esta sección — nunca se
+    # expone la imagen Docker en sí al estudiante, solo la disponibilidad.
+    entorno_real_disponible: bool = False
 
 
 @dataclass(frozen=True)
@@ -46,6 +58,24 @@ class ValidarFlagResultDTO:
     pista: str | None = None
     paso_a_paso_disponible: bool = False
     paso_a_paso: str | None = None
+
+
+@dataclass(frozen=True)
+class CompletarSeccionTeoricaDTO:
+    """
+    UC-02 bis, `POST /progress/{assignment_id}/sections/{section_id}/complete/`
+    — completa una sección sin práctica (`tiene_practica=False`), que no
+    tiene flag que validar y por lo tanto no puede avanzar vía `.../flag/`.
+    """
+
+    asignacion_id: uuid.UUID
+    seccion_id: uuid.UUID
+    estudiante_id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class CompletarSeccionTeoricaResultDTO:
+    seccion_desbloqueada: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -148,3 +178,5 @@ class ProgresoOverviewDTO:
     secciones_completas: bool
     examen_disponible: bool
     intentos_examen: int
+    vencido: bool = False
+    fecha_vencimiento: datetime | None = None

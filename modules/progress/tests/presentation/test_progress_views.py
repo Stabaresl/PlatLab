@@ -7,6 +7,8 @@ from rest_framework.test import APIClient
 from modules.authentication.infrastructure.jwt_service import JWTService
 from modules.laboratories.domain.entities import Flag, Laboratorio, Seccion
 from modules.laboratories.domain.value_objects import (
+    ComandoSimulado,
+    EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
     TipoLaboratorio,
@@ -46,6 +48,40 @@ def _crear_lab_con_seccion(valor_flag: str = "FLAG{correcta}"):
     )
     lab_repo.save_flag(Flag(seccion_id=seccion.id, hash=make_password(valor_flag)))
     return lab, seccion
+
+
+def _crear_lab_con_secciones_teorica_y_practica():
+    """Lab[intro sin práctica -> práctica con flag], para la vista `.../complete/`."""
+    lab_repo = LaboratorioRepository()
+    lab = lab_repo.add(
+        Laboratorio(
+            nombre=f"Lab Vista Teorica {uuid.uuid4()}",
+            descripcion="desc",
+            nivel_dificultad=NivelDificultad.BASICO,
+            estado=EstadoLaboratorio.PUBLICADO,
+            tipo=TipoLaboratorio.PREDETERMINADO,
+        )
+    )
+    intro = lab_repo.add_seccion(
+        Seccion(
+            laboratorio_id=lab.id,
+            titulo="Introducción",
+            contenido_teorico="contenido teorico",
+            orden=1,
+            tiene_practica=False,
+        )
+    )
+    practica = lab_repo.add_seccion(
+        Seccion(
+            laboratorio_id=lab.id,
+            titulo="Practica",
+            contenido_teorico="contenido",
+            orden=2,
+            tiene_practica=True,
+        )
+    )
+    lab_repo.save_flag(Flag(seccion_id=practica.id, hash=make_password("FLAG{x}")))
+    return lab, intro, practica
 
 
 def _crear_progreso(seccion, estudiante_id, estado=EstadoProgresoSeccion.EN_PROGRESO):
@@ -108,6 +144,45 @@ def test_contenido_seccion_endpoint_otro_estudiante_devuelve_404():
 
 
 @pytest.mark.django_db
+def test_contenido_seccion_endpoint_expone_guia_y_entorno_practica():
+    estudiante_id = uuid.uuid4()
+    lab_repo = LaboratorioRepository()
+    lab = lab_repo.add(
+        Laboratorio(
+            nombre=f"Lab Guia {uuid.uuid4()}",
+            descripcion="desc",
+            nivel_dificultad=NivelDificultad.BASICO,
+            estado=EstadoLaboratorio.PUBLICADO,
+            tipo=TipoLaboratorio.PREDETERMINADO,
+        )
+    )
+    seccion = lab_repo.add_seccion(
+        Seccion(
+            laboratorio_id=lab.id,
+            titulo="Practica",
+            contenido_teorico="contenido",
+            orden=1,
+            tiene_practica=True,
+            guia_paso_a_paso="<p>Guia completa</p>",
+            entorno_practica=EntornoPractica(
+                prompt="root@target:~#",
+                comandos=[ComandoSimulado(comando="ls", salida="login.php")],
+            ),
+        )
+    )
+    lab_repo.save_flag(Flag(seccion_id=seccion.id, hash=make_password("FLAG{x}")))
+    progreso = _crear_progreso(seccion, estudiante_id)
+    client = _client_autenticado(estudiante_id)
+
+    response = client.get(f"/api/v1/progress/{progreso.asignacion_id}/sections/{seccion.id}/")
+
+    assert response.status_code == 200
+    assert response.data["guia_paso_a_paso"] == "<p>Guia completa</p>"
+    assert response.data["entorno_practica"]["prompt"] == "root@target:~#"
+    assert response.data["entorno_practica"]["comandos"][0]["comando"] == "ls"
+
+
+@pytest.mark.django_db
 def test_flag_endpoint_correcta_devuelve_correcto_true():
     estudiante_id = uuid.uuid4()
     _, seccion = _crear_lab_con_seccion("FLAG{correcta}")
@@ -157,6 +232,53 @@ def test_flag_endpoint_rate_limit_bloquea_intento_21():
     response = client.post(url, {"valor": "FLAG{incorrecta}"}, format="json")
 
     assert response.status_code == 429
+
+
+@pytest.mark.django_db
+def test_section_complete_endpoint_seccion_teorica_desbloquea_siguiente():
+    estudiante_id = uuid.uuid4()
+    _, intro, practica = _crear_lab_con_secciones_teorica_y_practica()
+    progreso_repo = ProgresoRepository()
+    progreso = progreso_repo.add(
+        Progreso(asignacion_id=uuid.uuid4(), estudiante_id=estudiante_id)
+    )
+    progreso_repo.add_secciones(
+        [
+            ProgresoSeccion(
+                progreso_id=progreso.id,
+                seccion_id=intro.id,
+                estado=EstadoProgresoSeccion.EN_PROGRESO,
+            ),
+            ProgresoSeccion(
+                progreso_id=progreso.id,
+                seccion_id=practica.id,
+                estado=EstadoProgresoSeccion.BLOQUEADA,
+            ),
+        ]
+    )
+    client = _client_autenticado(estudiante_id)
+
+    response = client.post(
+        f"/api/v1/progress/{progreso.asignacion_id}/sections/{intro.id}/complete/"
+    )
+
+    assert response.status_code == 200
+    assert response.data["correcto"] is True
+    assert response.data["seccion_desbloqueada"] == str(practica.id)
+
+
+@pytest.mark.django_db
+def test_section_complete_endpoint_seccion_con_practica_devuelve_422():
+    estudiante_id = uuid.uuid4()
+    _, seccion = _crear_lab_con_seccion()
+    progreso = _crear_progreso(seccion, estudiante_id)
+    client = _client_autenticado(estudiante_id)
+
+    response = client.post(
+        f"/api/v1/progress/{progreso.asignacion_id}/sections/{seccion.id}/complete/"
+    )
+
+    assert response.status_code == 422
 
 
 @pytest.mark.django_db

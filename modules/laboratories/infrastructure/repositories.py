@@ -4,6 +4,7 @@ from django.db.models import Q
 
 from modules.laboratories.domain.entities import Examen, Flag, Laboratorio, Pregunta, Seccion
 from modules.laboratories.infrastructure.mappers import (
+    entorno_practica_to_dict,
     examen_to_entity,
     flag_to_entity,
     laboratorio_to_entity,
@@ -100,6 +101,9 @@ class LaboratorioRepository:
             contenido_teorico=seccion.contenido_teorico,
             orden=seccion.orden,
             tiene_practica=seccion.tiene_practica,
+            guia_paso_a_paso=seccion.guia_paso_a_paso,
+            entorno_practica=entorno_practica_to_dict(seccion.entorno_practica),
+            imagen_practica=seccion.imagen_practica,
         )
         return seccion_to_entity(model)
 
@@ -113,6 +117,9 @@ class LaboratorioRepository:
         model.contenido_teorico = seccion.contenido_teorico
         model.orden = seccion.orden
         model.tiene_practica = seccion.tiene_practica
+        model.guia_paso_a_paso = seccion.guia_paso_a_paso
+        model.entorno_practica = entorno_practica_to_dict(seccion.entorno_practica)
+        model.imagen_practica = seccion.imagen_practica
         model.save()
         return seccion_to_entity(model)
 

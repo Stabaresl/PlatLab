@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -68,6 +69,24 @@ def test_inscripcion_exitosa_crea_asignacion_activa_y_progreso():
     progreso = ProgresoRepository().get_by_asignacion(resultado.id)
     assert progreso is not None
     assert progreso.estudiante_id == estudiante_id
+
+
+@pytest.mark.django_db
+def test_inscripcion_fija_vencimiento_a_30_dias():
+    repo = LaboratorioRepository()
+    lab = _crear_lab(repo)
+    estudiante_id = uuid.uuid4()
+
+    resultado = _uc().execute(
+        InscribirseLaboratorioDTO(
+            laboratorio_id=lab.id, actor_id=estudiante_id, actor_rol="estudiante"
+        )
+    )
+
+    asignacion = AsignacionRepository().get_by_id(resultado.id)
+    assert asignacion.fecha_vencimiento is not None
+    esperado = datetime.now(timezone.utc) + timedelta(days=30)
+    assert abs((asignacion.fecha_vencimiento - esperado).total_seconds()) < 60
 
 
 @pytest.mark.django_db

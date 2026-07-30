@@ -46,6 +46,9 @@ class DuplicadorDeLaboratorio:
                 contenido_teorico=seccion.contenido_teorico,
                 orden=seccion.orden,
                 tiene_practica=seccion.tiene_practica,
+                guia_paso_a_paso=seccion.guia_paso_a_paso,
+                entorno_practica=seccion.entorno_practica,
+                imagen_practica=seccion.imagen_practica,
             )
             secciones_copiadas.append(nueva_seccion)
 

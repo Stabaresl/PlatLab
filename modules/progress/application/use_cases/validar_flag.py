@@ -6,7 +6,8 @@ from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.progress.application.dtos import ValidarFlagDTO, ValidarFlagResultDTO
 from modules.progress.domain.entities import HistorialCompletitud, IntentoFlag
 from modules.progress.domain.events import FlagValidated, LabCompleted, SectionCompleted
-from modules.progress.domain.exceptions import SeccionBloqueadaError
+from modules.progress.domain.exceptions import AsignacionVencidaError, SeccionBloqueadaError
+from modules.progress.domain.ports import IEstadoAsignacionProvider
 from modules.progress.domain.repositories import IProgresoRepository
 from modules.progress.domain.services import GestorDeSecuencia, ValidadorDeFlag
 from modules.progress.domain.value_objects import ContadorFallos, EstadoProgresoSeccion
@@ -18,6 +19,7 @@ _PROGRESO_NO_ENCONTRADO_MSG = "Progreso no encontrado."
 _SECCION_NO_ENCONTRADA_MSG = "Sección no encontrada."
 _FLAG_NO_DEFINIDA_MSG = "Esta sección todavía no tiene una flag definida."
 _BLOQUEADA_MSG = "Esta sección todavía está bloqueada."
+_VENCIDA_MSG = "Este laboratorio venció. Ya no se puede continuar."
 
 
 class ValidarFlagUseCase(BaseUseCase[ValidarFlagDTO, ValidarFlagResultDTO]):
@@ -37,17 +39,24 @@ class ValidarFlagUseCase(BaseUseCase[ValidarFlagDTO, ValidarFlagResultDTO]):
         laboratorio_repository: ILaboratorioRepository,
         validador_de_flag: ValidadorDeFlag | None = None,
         gestor_de_secuencia: GestorDeSecuencia | None = None,
+        estado_asignacion_provider: IEstadoAsignacionProvider | None = None,
     ):
         super().__init__(unit_of_work, event_dispatcher)
         self._progreso_repository = progreso_repository
         self._laboratorio_repository = laboratorio_repository
         self._validador = validador_de_flag or ValidadorDeFlag()
         self._gestor = gestor_de_secuencia or GestorDeSecuencia()
+        self._estado_asignacion_provider = estado_asignacion_provider
 
     def _validate(self, input_dto: ValidarFlagDTO) -> None:
         progreso = self._progreso_repository.get_by_asignacion(input_dto.asignacion_id)
         if progreso is None or not progreso.es_propio_de(input_dto.estudiante_id):
             raise NotFoundError(_PROGRESO_NO_ENCONTRADO_MSG)
+
+        if self._estado_asignacion_provider is not None:
+            estado = self._estado_asignacion_provider.obtener_estado(input_dto.asignacion_id)
+            if estado is not None and estado.vencida:
+                raise AsignacionVencidaError(_VENCIDA_MSG)
 
         progreso_seccion = self._progreso_repository.get_seccion(
             progreso.id, input_dto.seccion_id

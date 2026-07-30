@@ -50,4 +50,18 @@ class ObtenerContenidoSeccionQuery:
             contenido_teorico=seccion.contenido_teorico,
             tiene_practica=seccion.tiene_practica,
             estado=progreso_seccion.estado.value,
+            guia_paso_a_paso=seccion.guia_paso_a_paso,
+            entorno_practica=(
+                {
+                    "prompt": seccion.entorno_practica.prompt,
+                    "banner": seccion.entorno_practica.banner,
+                    "comandos": [
+                        {"comando": c.comando, "salida": c.salida}
+                        for c in seccion.entorno_practica.comandos
+                    ],
+                }
+                if seccion.entorno_practica
+                else None
+            ),
+            entorno_real_disponible=bool(seccion.imagen_practica),
         )

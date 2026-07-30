@@ -1,6 +1,8 @@
 from modules.laboratories.domain.entities import Examen, Flag, Laboratorio, Pregunta, Seccion
 from modules.laboratories.domain.value_objects import (
     AyudaProgresiva,
+    ComandoSimulado,
+    EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
     TipoLaboratorio,
@@ -31,6 +33,29 @@ def laboratorio_to_entity(model: LaboratorioModel) -> Laboratorio:
     )
 
 
+def entorno_practica_to_entity(data: dict | None) -> EntornoPractica | None:
+    if not data:
+        return None
+    return EntornoPractica(
+        prompt=data.get("prompt") or "root@lab:~#",
+        banner=data.get("banner") or "",
+        comandos=[
+            ComandoSimulado(comando=c["comando"], salida=c["salida"])
+            for c in data.get("comandos", [])
+        ],
+    )
+
+
+def entorno_practica_to_dict(entorno: EntornoPractica | None) -> dict | None:
+    if entorno is None:
+        return None
+    return {
+        "prompt": entorno.prompt,
+        "banner": entorno.banner,
+        "comandos": [{"comando": c.comando, "salida": c.salida} for c in entorno.comandos],
+    }
+
+
 def seccion_to_entity(model: SeccionModel) -> Seccion:
     return Seccion(
         id=model.id,
@@ -39,6 +64,9 @@ def seccion_to_entity(model: SeccionModel) -> Seccion:
         contenido_teorico=model.contenido_teorico,
         orden=model.orden,
         tiene_practica=model.tiene_practica,
+        guia_paso_a_paso=model.guia_paso_a_paso,
+        entorno_practica=entorno_practica_to_entity(model.entorno_practica),
+        imagen_practica=model.imagen_practica,
     )
 
 

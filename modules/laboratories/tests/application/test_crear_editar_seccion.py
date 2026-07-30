@@ -7,6 +7,8 @@ from modules.laboratories.application.use_cases.crear_seccion import CrearSeccio
 from modules.laboratories.application.use_cases.editar_seccion import EditarSeccionUseCase
 from modules.laboratories.domain.entities import Laboratorio, Seccion
 from modules.laboratories.domain.value_objects import (
+    ComandoSimulado,
+    EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
     TipoLaboratorio,
@@ -196,6 +198,64 @@ def test_editar_seccion_inexistente_lanza_not_found():
                 titulo="x",
             )
         )
+
+
+@pytest.mark.django_db
+def test_crear_seccion_persiste_guia_y_entorno_practica():
+    instructor_id = uuid.uuid4()
+    lab = _crear_lab_personalizado(instructor_id)
+    entorno = EntornoPractica(
+        prompt="root@target:~#",
+        banner="Bienvenido",
+        comandos=[ComandoSimulado(comando="ls", salida="login.php")],
+    )
+
+    resultado = _crear_uc().execute(
+        CrearSeccionDTO(
+            laboratorio_id=lab.id,
+            titulo="Practica",
+            contenido_teorico="...",
+            orden=1,
+            actor_id=instructor_id,
+            actor_rol="instructor",
+            tiene_practica=True,
+            guia_paso_a_paso="<p>Paso 1</p><script>alert(1)</script>",
+            entorno_practica=entorno,
+        )
+    )
+
+    guardada = LaboratorioRepository().get_seccion_by_id(resultado.id)
+    assert "<script>" not in guardada.guia_paso_a_paso
+    assert "<p>Paso 1</p>" in guardada.guia_paso_a_paso
+    assert guardada.entorno_practica.prompt == "root@target:~#"
+    assert guardada.entorno_practica.comandos[0].comando == "ls"
+    assert guardada.entorno_practica.comandos[0].salida == "login.php"
+
+
+@pytest.mark.django_db
+def test_editar_seccion_actualiza_entorno_practica():
+    instructor_id = uuid.uuid4()
+    lab = _crear_lab_personalizado(instructor_id)
+    lab_repo = LaboratorioRepository()
+    seccion = lab_repo.add_seccion(
+        Seccion(laboratorio_id=lab.id, titulo="Practica", contenido_teorico="...", orden=1)
+    )
+    nuevo_entorno = EntornoPractica(
+        comandos=[ComandoSimulado(comando="whoami", salida="root")]
+    )
+
+    _editar_uc().execute(
+        EditarSeccionDTO(
+            laboratorio_id=lab.id,
+            seccion_id=seccion.id,
+            actor_id=instructor_id,
+            actor_rol="instructor",
+            entorno_practica=nuevo_entorno,
+        )
+    )
+
+    guardada = lab_repo.get_seccion_by_id(seccion.id)
+    assert guardada.entorno_practica.comandos[0].comando == "whoami"
 
 
 @pytest.mark.django_db

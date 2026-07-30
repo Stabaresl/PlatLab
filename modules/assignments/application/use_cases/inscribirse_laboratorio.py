@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from modules.assignments.application.dtos import AsignacionResultDTO, InscribirseLaboratorioDTO
 from modules.assignments.domain.entities import Asignacion
 from modules.assignments.domain.events import AssignmentAccepted
@@ -15,6 +17,8 @@ from modules.shared.domain.exceptions import (
     ForbiddenError,
     NotFoundError,
 )
+
+_VIGENCIA_AUTOINSCRIPCION_DIAS = 30
 
 _SIN_PERMISO_MSG = "Solo un estudiante puede autoinscribirse a un laboratorio."
 _LAB_NO_ENCONTRADO_MSG = "Laboratorio no encontrado."
@@ -46,6 +50,12 @@ class InscribirseLaboratorioUseCase(BaseUseCase[InscribirseLaboratorioDTO, Asign
     Al igual que `AceptarInvitacionUseCase`, otorga acceso inmediato
     (`activa`, no `pendiente` — no hay a quién "aceptarle" una invitación
     que uno mismo se dio) e inicializa el `Progreso` en el mismo paso.
+
+    A diferencia de `InvitarEstudiantesUseCase` (donde el instructor elige
+    la fecha de vencimiento, incluso "sin fecha"), la autoinscripción
+    siempre fija `_VIGENCIA_AUTOINSCRIPCION_DIAS` (RF-32/HI-07): sin esto,
+    un laboratorio autoinscripto quedaba vigente para siempre y
+    `CerrarAsignacionesVencidasJob` nunca lo cerraba.
     """
 
     def __init__(
@@ -104,6 +114,8 @@ class InscribirseLaboratorioUseCase(BaseUseCase[InscribirseLaboratorioDTO, Asign
             estudiante_id=input_dto.actor_id,
             laboratorio_id=input_dto.laboratorio_id,
             instructor_id=None,
+            fecha_vencimiento=datetime.now(timezone.utc)
+            + timedelta(days=_VIGENCIA_AUTOINSCRIPCION_DIAS),
         )
         creada = self._asignacion_repository.add(asignacion)
         # `add()` solo persiste el estado inicial (pendiente) — la transición a
