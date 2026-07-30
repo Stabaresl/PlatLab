@@ -12,6 +12,10 @@ class NotificacionModel(models.Model):
         REPORTE_RESUELTO = "reporte_resuelto", "Reporte resuelto"
         LABORATORIO_PUBLICADO = "laboratorio_publicado", "Laboratorio publicado"
         ACCESO_VENCIDO = "acceso_vencido", "Acceso vencido"
+        INSTRUCTOR_APROBADO = "instructor_aprobado", "Instructor aprobado"
+        INSTRUCTOR_RECHAZADO = "instructor_rechazado", "Instructor rechazado"
+        LABORATORIO_APROBADO = "laboratorio_aprobado", "Laboratorio aprobado"
+        LABORATORIO_RECHAZADO = "laboratorio_rechazado", "Laboratorio rechazado"
 
     class Canal(models.TextChoices):
         IN_APP = "in_app", "In-app"

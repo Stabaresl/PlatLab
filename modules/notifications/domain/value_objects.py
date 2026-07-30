@@ -14,6 +14,10 @@ class TipoNotificacion(str, Enum):
     REPORTE_RESUELTO = "reporte_resuelto"
     LABORATORIO_PUBLICADO = "laboratorio_publicado"
     ACCESO_VENCIDO = "acceso_vencido"
+    INSTRUCTOR_APROBADO = "instructor_aprobado"
+    INSTRUCTOR_RECHAZADO = "instructor_rechazado"
+    LABORATORIO_APROBADO = "laboratorio_aprobado"
+    LABORATORIO_RECHAZADO = "laboratorio_rechazado"
 
 
 class CanalNotificacion(str, Enum):
