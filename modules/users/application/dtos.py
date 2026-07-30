@@ -1,5 +1,8 @@
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
+
+from modules.users.domain.verificacion_academica import ResultadoVerificacionAcademica
 
 
 @dataclass(frozen=True)
@@ -76,3 +79,29 @@ class DashboardAdminResultDTO:
     laboratorios_activos: int
     labs_mas_populares: list[LabPopularDTO]
     tasa_completitud_promedio: float
+
+
+@dataclass(frozen=True)
+class SolicitarInstructorDTO:
+    actor_id: uuid.UUID
+    actor_rol: str
+    orcid: str
+    tipo: str
+    institucion: str = ""
+    especialidades: str = ""
+    motivacion: str = ""
+
+
+@dataclass(frozen=True)
+class SolicitudInstructorResultDTO:
+    id: uuid.UUID
+    estado: str
+    orcid: str
+    motivo_rechazo: str | None = None
+    created_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class ProcesarVerificacionInstructorDTO:
+    solicitud_id: uuid.UUID
+    resultado: ResultadoVerificacionAcademica

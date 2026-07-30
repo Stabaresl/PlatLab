@@ -1,14 +1,18 @@
 import uuid
 
-from modules.users.domain.entities import ProveedorAutenticacion, User
+from modules.users.domain.entities import ProveedorAutenticacion, SolicitudInstructor, User
+from modules.users.domain.value_objects import SolicitudInstructorEstado
 from modules.users.infrastructure.mappers import (
     proveedor_to_entity,
     proveedor_to_model,
+    solicitud_instructor_to_entity,
+    solicitud_instructor_to_model,
     user_to_entity,
     user_to_model,
 )
 from modules.users.infrastructure.models import (
     ProveedorAutenticacionModel,
+    SolicitudInstructorModel,
     UserModel,
 )
 
@@ -86,3 +90,39 @@ class UserRepository:
         if not vinculo:
             return None
         return self.get_by_id(vinculo.user_id)
+
+
+class SolicitudInstructorRepository:
+    """Implementación de `ISolicitudInstructorRepository` sobre PostgreSQL."""
+
+    def get_by_id(self, solicitud_id: uuid.UUID) -> SolicitudInstructor | None:
+        model = SolicitudInstructorModel.objects.filter(id=solicitud_id).first()
+        return solicitud_instructor_to_entity(model) if model else None
+
+    def get_pendiente_by_user_id(self, user_id: uuid.UUID) -> SolicitudInstructor | None:
+        model = SolicitudInstructorModel.objects.filter(
+            user_id=user_id, estado=SolicitudInstructorEstado.PENDIENTE.value
+        ).first()
+        return solicitud_instructor_to_entity(model) if model else None
+
+    def get_ultima_by_user_id(self, user_id: uuid.UUID) -> SolicitudInstructor | None:
+        model = (
+            SolicitudInstructorModel.objects.filter(user_id=user_id)
+            .order_by("-created_at")
+            .first()
+        )
+        return solicitud_instructor_to_entity(model) if model else None
+
+    def add(self, solicitud: SolicitudInstructor) -> SolicitudInstructor:
+        model = solicitud_instructor_to_model(solicitud)
+        model.save()
+        return solicitud_instructor_to_entity(model)
+
+    def update(self, solicitud: SolicitudInstructor) -> SolicitudInstructor:
+        model = SolicitudInstructorModel.objects.get(id=solicitud.id)
+        model.estado = solicitud.estado.value
+        model.motivo_rechazo = solicitud.motivo_rechazo
+        model.resultado_verificacion = solicitud.resultado_verificacion
+        model.resolved_at = solicitud.resolved_at
+        model.save()
+        return solicitud_instructor_to_entity(model)

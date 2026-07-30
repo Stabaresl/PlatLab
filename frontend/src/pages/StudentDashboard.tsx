@@ -7,9 +7,12 @@ import {
   getHistory,
   acceptInvitation,
   rejectInvitation,
+  solicitarConvertirseEnInstructor,
+  getMiSolicitudInstructor,
   ApiError,
   type Asignacion,
   type LaboratorioDetalle,
+  type SolicitudInstructor,
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
@@ -58,6 +61,7 @@ export default function StudentDashboard() {
   const [showInstructorModal, setShowInstructorModal] = useState(false)
   const [instructorForm, setInstructorForm] = useState({
     tipo: "",
+    orcid: "",
     institucion: "",
     especialidades: "",
     motivacion: "",
@@ -391,6 +395,23 @@ const TIPOS_INSTRUCTOR = [
   { value: "independiente", label: "Independiente / Freelancer" },
 ]
 
+const ORCID_REGEX = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/
+
+const ESTADO_COPY: Record<SolicitudInstructor["estado"], { titulo: string; texto: (motivo: string | null) => string }> = {
+  pendiente: {
+    titulo: "Verificando tu ORCID",
+    texto: () => "Estamos comparando tu ORCID contra OpenAlex (nombre + publicaciones registradas). Te avisaremos el resultado por notificación en unos minutos.",
+  },
+  aprobada: {
+    titulo: "¡Ya eres instructor!",
+    texto: () => "Tu ORCID fue verificado en OpenAlex. Ya puedes crear y publicar laboratorios.",
+  },
+  rechazada: {
+    titulo: "Solicitud rechazada",
+    texto: (motivo) => motivo || "No pudimos verificar tu ORCID contra OpenAlex.",
+  },
+}
+
 function InstructorRegistrationModal({
   open,
   form,
@@ -398,37 +419,84 @@ function InstructorRegistrationModal({
   onClose,
 }: {
   open: boolean
-  form: { tipo: string; institucion: string; especialidades: string; motivacion: string }
+  form: { tipo: string; orcid: string; institucion: string; especialidades: string; motivacion: string }
   onChange: (f: typeof form) => void
   onClose: () => void
 }) {
-  const [sent, setSent] = useState(false)
+  const [estadoActual, setEstadoActual] = useState<SolicitudInstructor | null>(null)
+  const [cargando, setCargando] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [error, setError] = useState("")
   const update = (field: keyof typeof form, value: string) => onChange({ ...form, [field]: value })
 
+  useEffect(() => {
+    if (!open) return
+    setError("")
+    setCargando(true)
+    getMiSolicitudInstructor()
+      .then((solicitud) => setEstadoActual(solicitud ?? null))
+      .catch(() => setEstadoActual(null))
+      .finally(() => setCargando(false))
+  }, [open])
+
+  const handleSubmit = async () => {
+    setEnviando(true)
+    setError("")
+    try {
+      const resultado = await solicitarConvertirseEnInstructor({
+        orcid: form.orcid,
+        tipo: form.tipo,
+        institucion: form.institucion,
+        especialidades: form.especialidades,
+        motivacion: form.motivacion,
+      })
+      setEstadoActual(resultado)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudo enviar la solicitud.")
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  const orcidValido = ORCID_REGEX.test(form.orcid)
+  const mostrarFormulario = !cargando && (estadoActual === null || estadoActual.estado === "rechazada")
+
   return (
-    <Dialog open={open} onOpenChange={(next) => { if (!next) { onClose(); setSent(false) } }}>
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}>
       <DialogContent className="chamfer sm:max-w-lg" style={{ backgroundColor: "var(--canvas-raised)", border: "1px solid var(--border-default)" }}>
         <DialogHeader>
           <DialogTitle className="text-lg font-bold uppercase tracking-wide" style={{ color: "var(--text-heading)" }}>
             Registro de Instructor
           </DialogTitle>
-          {!sent && (
+          {mostrarFormulario && (
             <DialogDescription>
-              Cuéntanos sobre ti para registrarte como instructor. Estos datos ayudarán a personalizar tu experiencia.
+              Cuéntanos sobre ti para registrarte como instructor. Verificamos tu ORCID contra
+              OpenAlex: el nombre debe coincidir y debes tener al menos un trabajo de
+              investigación registrado.
             </DialogDescription>
           )}
         </DialogHeader>
 
-        {sent ? (
+        {cargando ? (
+          <div className="py-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>Cargando…</div>
+        ) : estadoActual && estadoActual.estado !== "rechazada" ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <p className="text-sm font-bold uppercase tracking-wide" style={{ color: "var(--text-heading)" }}>
+              {ESTADO_COPY[estadoActual.estado].titulo}
+            </p>
             <p className="text-sm" style={{ color: "var(--text-base)" }}>
-              Tu solicitud fue registrada. Un administrador debe aprobar el cambio de rol —
-              todavía no existe un flujo automático de autoservicio para esto.
+              {ESTADO_COPY[estadoActual.estado].texto(estadoActual.motivo_rechazo)}
             </p>
             <Button onClick={onClose} className="chamfer-sm font-mono text-xs uppercase">Entendido</Button>
           </div>
         ) : (
           <>
+            {estadoActual?.estado === "rechazada" && (
+              <div className="chamfer-sm px-3 py-2 text-sm" style={{ backgroundColor: "rgba(255,71,87,0.1)", border: "1px solid var(--signal-red)", color: "var(--text-base)" }}>
+                {ESTADO_COPY.rechazada.texto(estadoActual.motivo_rechazo)} Puedes intentarlo de nuevo.
+              </div>
+            )}
+
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
@@ -447,6 +515,21 @@ function InstructorRegistrationModal({
               </div>
 
               <div className="flex flex-col gap-1.5">
+                <Label className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                  ORCID <span style={{ color: "var(--signal-red)" }}>*</span>
+                </Label>
+                <Input
+                  value={form.orcid}
+                  onChange={(e) => update("orcid", e.target.value)}
+                  placeholder="0000-0000-0000-0000"
+                  className="chamfer-sm h-10 font-mono"
+                />
+                {form.orcid.length > 0 && !orcidValido && (
+                  <span className="text-xs" style={{ color: "var(--signal-red)" }}>Formato esperado: 0000-0000-0000-0000</span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
                 <Label className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>Institución / Afiliación</Label>
                 <Input value={form.institucion} onChange={(e) => update("institucion", e.target.value)} placeholder="Ej: Universidad Nacional de Colombia" className="chamfer-sm h-10" />
               </div>
@@ -460,12 +543,14 @@ function InstructorRegistrationModal({
                 <Label className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>¿Por qué quieres ser instructor?</Label>
                 <Textarea value={form.motivacion} onChange={(e) => update("motivacion", e.target.value)} placeholder="Cuéntanos qué te motiva a crear laboratorios y guiar a otros estudiantes…" rows={3} className="chamfer-sm resize-none" />
               </div>
+
+              {error && <p className="text-sm" style={{ color: "var(--signal-red)" }}>{error}</p>}
             </div>
 
             <DialogFooter className="chamfer-t" style={{ backgroundColor: "var(--surface)" }}>
               <Button variant="outline" onClick={onClose} className="chamfer-sm font-mono text-xs uppercase">Cancelar</Button>
-              <Button onClick={() => setSent(true)} disabled={!form.tipo} className="chamfer-sm font-mono text-xs uppercase">
-                Registrarme como Instructor
+              <Button onClick={handleSubmit} disabled={!form.tipo || !orcidValido || enviando} className="chamfer-sm font-mono text-xs uppercase">
+                {enviando ? "Enviando…" : "Registrarme como Instructor"}
               </Button>
             </DialogFooter>
           </>

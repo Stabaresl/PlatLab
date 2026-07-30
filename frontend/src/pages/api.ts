@@ -5,6 +5,18 @@ const BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000/ap
 // El WebSocket de la terminal (lab_environments) vive fuera de /api/v1,
 // en la raíz ASGI (config/asgi.py) — mismo host, protocolo ws(s) en vez de http(s).
 const WS_BASE = BASE.replace(/^http/, "ws").replace(/\/api\/v1\/?$/, "")
+// `default_storage.url()` (Django) devuelve una ruta relativa ("/media/...")
+// pensada para un backend que sirve las vistas Y los archivos desde el mismo
+// origen — acá el frontend (Vite) vive en otro origen, así que un <a href>
+// con esa ruta tal cual navega dentro de la SPA en vez de descargar el
+// archivo, y el catch-all del router termina mandando a "/". Hay que
+// resolverla contra el origen real del backend.
+const MEDIA_ORIGIN = BASE.replace(/\/api\/v1\/?$/, "")
+
+export function resolveMediaUrl(url: string): string {
+  if (/^https?:\/\//.test(url)) return url
+  return `${MEDIA_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`
+}
 
 // Los botones de Google/GitHub solo tienen sentido si el backend tiene
 // credenciales OAuth reales configuradas (GOOGLE_OAUTH_CLIENT_ID / GITHUB_
@@ -177,7 +189,7 @@ export async function api<T>(path: string, options?: RequestOptions): Promise<T>
 
 export type Rol = "estudiante" | "instructor" | "administrador"
 export type NivelDificultad = "basico" | "intermedio" | "avanzado"
-export type EstadoLaboratorio = "borrador" | "publicado"
+export type EstadoLaboratorio = "borrador" | "en_revision" | "publicado"
 export type TipoLaboratorio = "predeterminado" | "personalizado"
 export type EstadoAsignacion = "pendiente" | "aceptada" | "rechazada" | "activa" | "vencida"
 export type EstadoReporte = "abierto" | "en_revision" | "resuelto" | "no_reproducible"
@@ -276,6 +288,7 @@ export interface LaboratorioDetalle {
   estado: EstadoLaboratorio
   temas: string[]
   total_secciones: number
+  motivo_rechazo: string | null
 }
 
 export interface PaginatedResponse<T> {
@@ -297,8 +310,15 @@ export function getLaboratorio(id: string) {
 export function getToc(id: string) {
   return api<{
     laboratorio_id: string
-    secciones: { orden: number; titulo: string; tiene_practica: boolean }[]
+    secciones: { id: string; orden: number; titulo: string; tiene_practica: boolean; duracion_estimada_minutos: number }[]
   }>(`/laboratories/${id}/toc/`)
+}
+
+interface LaboratorioResult {
+  id: string
+  nombre: string
+  estado: EstadoLaboratorio
+  tipo: TipoLaboratorio
 }
 
 export function createLaboratorio(body: {
@@ -306,8 +326,9 @@ export function createLaboratorio(body: {
   descripcion: string
   nivel_dificultad: NivelDificultad
   temas?: string[]
+  resumen_cierre?: string
 }) {
-  return api<{ id: string; nombre: string; estado: EstadoLaboratorio; tipo: TipoLaboratorio }>("/laboratories/", {
+  return api<LaboratorioResult>("/laboratories/", {
     method: "POST",
     body: JSON.stringify(body),
   })
@@ -318,34 +339,119 @@ export function updateLaboratorio(id: string, body: Partial<{
   descripcion: string
   nivel_dificultad: NivelDificultad
   temas: string[]
+  resumen_cierre: string
 }>) {
-  return api<{ id: string; nombre: string; estado: EstadoLaboratorio; tipo: TipoLaboratorio }>(`/laboratories/${id}/`, {
+  return api<LaboratorioResult>(`/laboratories/${id}/`, {
     method: "PATCH",
     body: JSON.stringify(body),
   })
 }
 
 export function publishLaboratorio(id: string) {
-  return api<{ id: string; nombre: string; estado: EstadoLaboratorio; tipo: TipoLaboratorio }>(`/laboratories/${id}/publish/`, {
-    method: "POST",
-  })
+  return api<LaboratorioResult>(`/laboratories/${id}/publish/`, { method: "POST" })
 }
 
 export function duplicateLaboratorio(id: string) {
-  return api<{ id: string; nombre: string; estado: EstadoLaboratorio; tipo: TipoLaboratorio }>(`/laboratories/${id}/duplicate/`, {
+  return api<LaboratorioResult>(`/laboratories/${id}/duplicate/`, { method: "POST" })
+}
+
+export function submitLabForReview(id: string) {
+  return api<LaboratorioResult>(`/laboratories/${id}/submit-review/`, { method: "POST" })
+}
+
+export function approveLab(id: string) {
+  return api<LaboratorioResult>(`/laboratories/${id}/approve/`, { method: "POST" })
+}
+
+export function rejectLab(id: string, motivo: string) {
+  return api<LaboratorioResult>(`/laboratories/${id}/reject/`, {
     method: "POST",
+    body: JSON.stringify({ motivo }),
   })
 }
 
-export function createSeccion(laboratorioId: string, body: {
+export interface LaboratorioEnRevisionItem {
+  id: string
+  nombre: string
+  instructor_id: string | null
+  updated_at: string | null
+}
+
+export function listReviewQueue() {
+  return api<LaboratorioEnRevisionItem[]>("/laboratories/review-queue/")
+}
+
+export interface PasoGuiaInput {
+  orden: number
+  titulo: string
+  instrucciones: string
+  comando_sugerido?: string | null
+}
+
+interface SeccionBody {
   titulo: string
   contenido_teorico: string
   orden: number
   tiene_practica?: boolean
-}) {
-  return api<{ id: string; laboratorio_id: string; orden: number; titulo: string; tiene_practica: boolean }>(
-    `/laboratories/${laboratorioId}/sections/`,
-    { method: "POST", body: JSON.stringify(body) },
+  objetivos?: string[]
+  duracion_estimada_minutos?: number
+  pasos_guia?: PasoGuiaInput[]
+  entorno_practica?: EntornoPractica | null
+  imagen_practica?: string | null
+}
+
+interface SeccionResult {
+  id: string
+  laboratorio_id: string
+  orden: number
+  titulo: string
+  tiene_practica: boolean
+}
+
+export function createSeccion(laboratorioId: string, body: SeccionBody) {
+  return api<SeccionResult>(`/laboratories/${laboratorioId}/sections/`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateSeccion(laboratorioId: string, seccionId: string, body: Partial<SeccionBody>) {
+  return api<SeccionResult>(`/laboratories/${laboratorioId}/sections/${seccionId}/`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  })
+}
+
+export function uploadDockerfile(laboratorioId: string, seccionId: string, archivo: File) {
+  const formData = new FormData()
+  formData.append("archivo", archivo)
+  return api<{ id: string; seccion_id: string; archivo_url: string; nombre_archivo: string; tamano_kb: number }>(
+    `/laboratories/${laboratorioId}/sections/${seccionId}/dockerfile/`,
+    { method: "POST", body: formData },
+  )
+}
+
+export interface ContenidoSeccionPreview {
+  seccion_id: string
+  titulo: string
+  contenido_teorico: string
+  tiene_practica: boolean
+  objetivos: string[]
+  duracion_estimada_minutos: number
+  pasos_guia: PasoGuia[]
+  entorno_practica: EntornoPractica | null
+  tiene_dockerfile: boolean
+  dockerfile_url: string | null
+}
+
+export function getSeccionPreview(laboratorioId: string, seccionId: string) {
+  return api<ContenidoSeccionPreview>(`/laboratories/${laboratorioId}/sections/${seccionId}/preview/`)
+}
+
+export function checkFlagPreview(laboratorioId: string, seccionId: string, valor: string) {
+  return api<{ correcto: boolean }>(
+    `/laboratories/${laboratorioId}/sections/${seccionId}/preview/check-flag/`,
+    { method: "POST", body: JSON.stringify({ valor }) },
   )
 }
 
@@ -475,6 +581,31 @@ export function enableUser(id: string) {
   return api<UsuarioItem>(`/users/${id}/enable/`, { method: "POST" })
 }
 
+export interface SolicitudInstructor {
+  id: string
+  estado: "pendiente" | "aprobada" | "rechazada"
+  orcid: string
+  motivo_rechazo: string | null
+  created_at: string | null
+}
+
+export function solicitarConvertirseEnInstructor(body: {
+  orcid: string
+  tipo: string
+  institucion?: string
+  especialidades?: string
+  motivacion?: string
+}) {
+  return api<SolicitudInstructor>("/users/instructor-requests/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+export function getMiSolicitudInstructor() {
+  return api<SolicitudInstructor | undefined>("/users/instructor-requests/mine/")
+}
+
 export interface AdminDashboard {
   usuarios_por_rol: Record<string, number>
   laboratorios_activos: number
@@ -507,6 +638,7 @@ export interface ProgresoOverview {
   intentos_examen: number
   vencido: boolean
   fecha_vencimiento: string | null
+  resumen_cierre: string | null
   secciones: SeccionProgreso[]
 }
 
@@ -525,13 +657,22 @@ export interface EntornoPractica {
   comandos: ComandoSimulado[]
 }
 
+export interface PasoGuia {
+  orden: number
+  titulo: string
+  instrucciones: string
+  comando_sugerido: string | null
+}
+
 export interface ContenidoSeccion {
   seccion_id: string
   titulo: string
   contenido_teorico: string
   tiene_practica: boolean
   estado: string
-  guia_paso_a_paso: string
+  objetivos: string[]
+  duracion_estimada_minutos: number
+  pasos_guia: PasoGuia[]
   entorno_practica: EntornoPractica | null
   entorno_real_disponible: boolean
 }

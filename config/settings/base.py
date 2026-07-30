@@ -169,6 +169,13 @@ LAB_ENV_IDLE_MINUTES = env.int('LAB_ENV_IDLE_MINUTES', default=20)
 LAB_ENV_MAX_LIFETIME_MINUTES = env.int('LAB_ENV_MAX_LIFETIME_MINUTES', default=120)
 
 
+# OpenAlex — verificación académica (ORCID + nombre + publicaciones) al
+# solicitar convertirse en instructor (modules/users). API pública, sin
+# credenciales; `mailto` es opcional y solo mejora la prioridad en el
+# "polite pool" de OpenAlex.
+OPENALEX_MAILTO = env('OPENALEX_MAILTO', default='')
+
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 

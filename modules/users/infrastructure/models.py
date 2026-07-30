@@ -53,3 +53,32 @@ class ProveedorAutenticacionModel(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id} -> {self.proveedor}"
+
+
+class SolicitudInstructorModel(models.Model):
+    class Estado(models.TextChoices):
+        PENDIENTE = "pendiente", "Pendiente"
+        APROBADA = "aprobada", "Aprobada"
+        RECHAZADA = "rechazada", "Rechazada"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        UserModel, on_delete=models.CASCADE, related_name="solicitudes_instructor"
+    )
+    orcid = models.CharField(max_length=19, db_index=True)
+    nombre_declarado = models.CharField(max_length=200)
+    tipo = models.CharField(max_length=30)
+    institucion = models.CharField(max_length=200, blank=True)
+    especialidades = models.CharField(max_length=300, blank=True)
+    motivacion = models.TextField(blank=True)
+    estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.PENDIENTE)
+    motivo_rechazo = models.CharField(max_length=300, null=True, blank=True)
+    resultado_verificacion = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "users_solicitudinstructor"
+
+    def __str__(self) -> str:
+        return f"{self.user_id} -> {self.estado}"

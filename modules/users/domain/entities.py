@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 
 from modules.shared.domain.base_entity import BaseEntity
-from modules.users.domain.value_objects import Email, Rol
+from modules.users.domain.value_objects import Email, Rol, SolicitudInstructorEstado
 
 
 class ProveedorTipo(str, Enum):
@@ -43,6 +43,34 @@ class ProveedorAutenticacion(BaseEntity):
     proveedor: ProveedorTipo
     proveedor_uid: str
     created_at: datetime = field(default_factory=datetime.utcnow)
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+
+    def __post_init__(self):
+        BaseEntity.__init__(self, id=self.id)
+
+
+@dataclass(eq=False)
+class SolicitudInstructor(BaseEntity):
+    """
+    Solicitud de un estudiante para convertirse en instructor, verificada
+    automáticamente contra OpenAlex (nombre + ORCID + al menos un trabajo
+    de investigación publicado). Sin intervención de un administrador —
+    la aprobación/rechazo la resuelve `ProcesarVerificacionInstructorUseCase`
+    a partir del resultado de `IVerificadorAcademicoProvider`.
+    """
+
+    user_id: uuid.UUID
+    orcid: str
+    nombre_declarado: str
+    tipo: str
+    institucion: str = ""
+    especialidades: str = ""
+    motivacion: str = ""
+    estado: SolicitudInstructorEstado = SolicitudInstructorEstado.PENDIENTE
+    motivo_rechazo: str | None = None
+    resultado_verificacion: dict | None = None
+    created_at: datetime = field(default_factory=datetime.utcnow)
+    resolved_at: datetime | None = None
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):

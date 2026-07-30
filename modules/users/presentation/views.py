@@ -18,17 +18,25 @@ from modules.users.application.dtos import (
     HabilitarUsuarioDTO,
     ListarUsuariosDTO,
     ObtenerDashboardAdminDTO,
+    SolicitarInstructorDTO,
 )
 from modules.users.application.queries.listar_usuarios import ListarUsuariosQuery
 from modules.users.application.queries.obtener_dashboard_admin import ObtenerDashboardAdminQuery
+from modules.users.application.queries.obtener_solicitud_instructor_actual import (
+    ObtenerSolicitudInstructorActualQuery,
+)
 from modules.users.application.queries.obtener_usuario import ObtenerUsuarioQuery
 from modules.users.application.use_cases.actualizar_usuario import ActualizarUsuarioUseCase
 from modules.users.application.use_cases.deshabilitar_usuario import DeshabilitarUsuarioUseCase
 from modules.users.application.use_cases.habilitar_usuario import HabilitarUsuarioUseCase
-from modules.users.infrastructure.repositories import UserRepository
+from modules.users.application.use_cases.solicitar_convertirse_en_instructor import (
+    SolicitarConvertirseEnInstructorUseCase,
+)
+from modules.users.infrastructure.repositories import SolicitudInstructorRepository, UserRepository
 from modules.users.presentation.serializers import (
     ActualizarUsuarioRequestSerializer,
     ListarUsuariosQuerySerializer,
+    SolicitarInstructorRequestSerializer,
 )
 
 _ID_INVALIDO_MSG = "Usuario no encontrado."
@@ -48,6 +56,16 @@ def _serializar_usuario(resultado) -> dict:
         "nombre_completo": resultado.nombre_completo,
         "rol": resultado.rol,
         "is_active": resultado.is_active,
+    }
+
+
+def _serializar_solicitud_instructor(resultado) -> dict:
+    return {
+        "id": str(resultado.id),
+        "estado": resultado.estado,
+        "orcid": resultado.orcid,
+        "motivo_rechazo": resultado.motivo_rechazo,
+        "created_at": resultado.created_at.isoformat() if resultado.created_at else None,
     }
 
 
@@ -123,6 +141,35 @@ class UserViewSet(ViewSet):
             )
         )
         return Response(_serializar_usuario(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="instructor-requests")
+    def solicitar_instructor(self, request):
+        serializer = SolicitarInstructorRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = SolicitarConvertirseEnInstructorUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            user_repository=UserRepository(),
+            solicitud_repository=SolicitudInstructorRepository(),
+        )
+        resultado = use_case.execute(
+            SolicitarInstructorDTO(
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                **serializer.validated_data,
+            )
+        )
+        return Response(_serializar_solicitud_instructor(resultado), status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=["get"], url_path="instructor-requests/mine")
+    def mi_solicitud_instructor(self, request):
+        resultado = ObtenerSolicitudInstructorActualQuery(SolicitudInstructorRepository()).execute(
+            actor_id=request.user.id
+        )
+        if resultado is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(_serializar_solicitud_instructor(resultado), status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="dashboard")
     def dashboard(self, request):

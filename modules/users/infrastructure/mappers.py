@@ -1,7 +1,13 @@
-from modules.users.domain.entities import ProveedorAutenticacion, ProveedorTipo, User
-from modules.users.domain.value_objects import Email, Rol
+from modules.users.domain.entities import (
+    ProveedorAutenticacion,
+    ProveedorTipo,
+    SolicitudInstructor,
+    User,
+)
+from modules.users.domain.value_objects import Email, Rol, SolicitudInstructorEstado
 from modules.users.infrastructure.models import (
     ProveedorAutenticacionModel,
+    SolicitudInstructorModel,
     UserModel,
 )
 
@@ -49,4 +55,39 @@ def proveedor_to_model(entity: ProveedorAutenticacion) -> ProveedorAutenticacion
         user_id=entity.user_id,
         proveedor=entity.proveedor.value,
         proveedor_uid=entity.proveedor_uid,
+    )
+
+
+def solicitud_instructor_to_entity(model: SolicitudInstructorModel) -> SolicitudInstructor:
+    return SolicitudInstructor(
+        id=model.id,
+        user_id=model.user_id,
+        orcid=model.orcid,
+        nombre_declarado=model.nombre_declarado,
+        tipo=model.tipo,
+        institucion=model.institucion,
+        especialidades=model.especialidades,
+        motivacion=model.motivacion,
+        estado=SolicitudInstructorEstado(model.estado),
+        motivo_rechazo=model.motivo_rechazo,
+        resultado_verificacion=model.resultado_verificacion,
+        created_at=model.created_at,
+        resolved_at=model.resolved_at,
+    )
+
+
+def solicitud_instructor_to_model(entity: SolicitudInstructor) -> SolicitudInstructorModel:
+    return SolicitudInstructorModel(
+        id=entity.id,
+        user_id=entity.user_id,
+        orcid=entity.orcid,
+        nombre_declarado=entity.nombre_declarado,
+        tipo=entity.tipo,
+        institucion=entity.institucion,
+        especialidades=entity.especialidades,
+        motivacion=entity.motivacion,
+        estado=entity.estado.value,
+        motivo_rechazo=entity.motivo_rechazo,
+        resultado_verificacion=entity.resultado_verificacion,
+        resolved_at=entity.resolved_at,
     )

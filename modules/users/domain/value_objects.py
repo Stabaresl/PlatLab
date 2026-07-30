@@ -14,6 +14,12 @@ class Rol(str, Enum):
     ADMINISTRADOR = "administrador"
 
 
+class SolicitudInstructorEstado(str, Enum):
+    PENDIENTE = "pendiente"
+    APROBADA = "aprobada"
+    RECHAZADA = "rechazada"
+
+
 @dataclass(frozen=True)
 class Email(BaseValueObject):
     value: str

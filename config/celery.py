@@ -20,6 +20,7 @@ app.conf.imports = (
     'modules.assignments.infrastructure.tasks',
     'modules.notifications.infrastructure.celery_tasks',
     'modules.lab_environments.infrastructure.tasks',
+    'modules.users.infrastructure.celery_tasks',
 )
 
 # RF-32, UC-07: revisa asignaciones vencidas cada 15 minutos (frecuencia

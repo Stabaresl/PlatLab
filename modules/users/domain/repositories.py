@@ -1,7 +1,7 @@
 import uuid
 from typing import Protocol
 
-from modules.users.domain.entities import ProveedorAutenticacion, User
+from modules.users.domain.entities import ProveedorAutenticacion, SolicitudInstructor, User
 
 
 class IUserRepository(Protocol):
@@ -43,3 +43,17 @@ class IUserRepository(Protocol):
     def get_by_proveedor(
         self, proveedor: str, proveedor_uid: str
     ) -> User | None: ...
+
+
+class ISolicitudInstructorRepository(Protocol):
+    """Puerto de persistencia de `SolicitudInstructor` (verificación OpenAlex)."""
+
+    def get_by_id(self, solicitud_id: uuid.UUID) -> SolicitudInstructor | None: ...
+
+    def get_pendiente_by_user_id(self, user_id: uuid.UUID) -> SolicitudInstructor | None: ...
+
+    def get_ultima_by_user_id(self, user_id: uuid.UUID) -> SolicitudInstructor | None: ...
+
+    def add(self, solicitud: SolicitudInstructor) -> SolicitudInstructor: ...
+
+    def update(self, solicitud: SolicitudInstructor) -> SolicitudInstructor: ...
