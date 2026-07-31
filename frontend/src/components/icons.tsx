@@ -52,3 +52,21 @@ export const IconArrowRight = (props: SVGProps<SVGSVGElement>) => (
 export const IconLock = (props: SVGProps<SVGSVGElement>) => (
   <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-12v3H8V7a4 4 0 118 0z" /></Base>
 )
+export const IconBell = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" /></Base>
+)
+export const IconActivity = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2" /></Base>
+)
+export const IconGlobe = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zM3.6 9h16.8M3.6 15h16.8M12 3a14.5 14.5 0 010 18M12 3a14.5 14.5 0 000 18" /></Base>
+)
+export const IconGlasses = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M4 15a3 3 0 106 0 3 3 0 00-6 0zm10 0a3 3 0 106 0 3 3 0 00-6 0zM10 15h4M2 9l2 6M22 9l-2 6M8 9h8" /></Base>
+)
+export const IconMask = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M3 10c0-3 4-5 9-5s9 2 9 5-4 8-9 8-9-5-9-8zM8 11l1.5 1.5M16 11l-1.5 1.5M9 15c1 1 5 1 6 0" /></Base>
+)
+export const IconBackpack = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M7 8V6a5 5 0 0110 0v2M5 10a2 2 0 012-2h10a2 2 0 012 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2v-9zM9 10v3h6v-3M9 20v-4h6v4" /></Base>
+)
