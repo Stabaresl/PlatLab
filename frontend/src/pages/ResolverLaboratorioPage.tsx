@@ -19,6 +19,7 @@ import {
   type ContenidoSeccion,
   type EntornoRealEstado,
 } from "./api"
+import { ContenidoHtml, PasosGuia } from "../components/ContenidoSeccion"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 import HeroBackground from "../components/HeroBackground"
@@ -160,6 +161,15 @@ export default function ResolverLaboratorioPage() {
               </div>
             )}
 
+            {overview.secciones_completas && overview.resumen_cierre && (
+              <div className="chamfer p-4 sm:p-5 mb-5 sm:mb-6" style={{ backgroundColor: "rgba(51,214,159,0.06)", border: "1px solid var(--signal-green-dim)" }}>
+                <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--signal-green)", fontFamily: "var(--font-mono)" }}>Resumen del laboratorio</span>
+                <div className="mt-2">
+                  <ContenidoHtml html={overview.resumen_cierre} />
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
               {/* ═══ Sidebar: stepper de secciones ═══ */}
               <aside className="w-full md:w-72 shrink-0">
@@ -266,22 +276,6 @@ function AbrirEnPestanaButton({ assignmentId, seccionId, modo }: { assignmentId:
     >
       ↗ Abrir en pestaña aparte
     </button>
-  )
-}
-
-function ContenidoHtml({ html }: { html: string }) {
-  return (
-    <div
-      className="text-sm leading-relaxed [&_p]:mb-3 [&_pre]:p-3 [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:font-mono [&_pre]:text-xs [&_code]:font-mono [&_code]:text-[13px] [&_h1]:font-bold [&_h1]:uppercase [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:font-bold [&_h2]:uppercase [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:font-bold [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h4]:font-bold [&_h4]:mt-3 [&_h4]:mb-1 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:pl-3 [&_blockquote]:italic"
-      style={{ color: "var(--text-base)" }}
-    >
-      <style>{`.sec-content pre { background: var(--surface-sunken); border: 1px solid var(--border-default); color: var(--signal-green); }
-        .sec-content code { color: var(--signal-amber); }
-        .sec-content h1, .sec-content h2, .sec-content h3, .sec-content h4 { color: var(--text-heading); font-family: var(--font-mono); }
-        .sec-content a { color: var(--signal-cyan); }
-        .sec-content blockquote { border-left: 2px solid var(--signal-amber); color: var(--text-muted); }`}</style>
-      <div className="sec-content" dangerouslySetInnerHTML={{ __html: html }} />
-    </div>
   )
 }
 
@@ -419,7 +413,7 @@ function SeccionPanel({
   }
 
   const completada = contenido.estado === "completada"
-  const tieneGuia = contenido.guia_paso_a_paso.trim().length > 0
+  const tieneGuia = contenido.pasos_guia.length > 0
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
@@ -448,6 +442,23 @@ function SeccionPanel({
               )}
             </div>
 
+            {(contenido.objetivos.length > 0 || contenido.duracion_estimada_minutos > 0) && (
+              <div className="flex flex-wrap items-start gap-4 mb-4 chamfer-sm p-3" style={{ backgroundColor: "var(--surface-hover)", border: "1px solid var(--border-hairline)" }}>
+                {contenido.objetivos.length > 0 && (
+                  <div className="flex-1 min-w-[200px]">
+                    <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--signal-cyan)", fontFamily: "var(--font-mono)" }}>Objetivos</span>
+                    <ul className="mt-1 pl-4 text-sm list-disc" style={{ color: "var(--text-base)" }}>
+                      {contenido.objetivos.map((o, i) => <li key={i}>{o}</li>)}
+                    </ul>
+                  </div>
+                )}
+                <div className="shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--signal-amber)", fontFamily: "var(--font-mono)" }}>Duración estimada</span>
+                  <p className="text-sm font-mono mt-1 mb-0" style={{ color: "var(--text-base)" }}>{contenido.duracion_estimada_minutos} min</p>
+                </div>
+              </div>
+            )}
+
             <Tabs value={tab} onValueChange={setTab}>
               <TabsList variant="line" className="mb-4">
                 <TabsTrigger value="teoria" className="font-mono text-xs uppercase">Teoría</TabsTrigger>
@@ -467,7 +478,7 @@ function SeccionPanel({
                   <div className="flex justify-end">
                     <AbrirEnPestanaButton assignmentId={assignmentId} seccionId={seccionId} modo="guia" />
                   </div>
-                  <ContenidoHtml html={contenido.guia_paso_a_paso} />
+                  <PasosGuia pasos={contenido.pasos_guia} />
                 </TabsContent>
               )}
 
