@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'modules.audit',
     'modules.lab_environments',
     'modules.roadmap',
+    'modules.gamification',
 ]
 
 MIDDLEWARE = [

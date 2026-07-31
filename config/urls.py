@@ -46,6 +46,7 @@ urlpatterns = [
     path('api/v1/audit/', include('modules.audit.presentation.urls')),
     path('api/v1/lab-environments/', include('modules.lab_environments.presentation.urls')),
     path('api/v1/roadmap/', include('modules.roadmap.presentation.urls')),
+    path('api/v1/gamification/', include('modules.gamification.presentation.urls')),
 ]
 
 # Adjuntos de reportes y Dockerfiles subidos por instructores (MEDIA_ROOT)
