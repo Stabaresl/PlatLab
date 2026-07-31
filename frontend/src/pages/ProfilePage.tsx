@@ -64,7 +64,7 @@ export default function ProfilePage() {
         <Navbar />
         <main className="flex-1">
           <div className="mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12" style={{ maxWidth: "980px" }}>
-            <TerminalHeader title="Mi Perfil" subtitle="Tu progresión en GAIA" prompt="whoami --progresion" />
+            <TerminalHeader title="Mi Perfil" subtitle="Tu progresión en PlatLAB" prompt="whoami --progresion" />
 
             <AnimatePresence>
               {error && (

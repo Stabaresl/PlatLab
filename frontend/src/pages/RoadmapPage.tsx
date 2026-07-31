@@ -60,7 +60,7 @@ export default function RoadmapPage() {
           <div className="mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12" style={{ maxWidth: "1200px" }}>
             <TerminalHeader
               title="Roadmap"
-              subtitle="Camino curado por el equipo de GAIA — completá cada laboratorio para desbloquear el siguiente de su pista."
+              subtitle="Camino curado por el equipo de PlatLAB — completá cada laboratorio para desbloquear el siguiente de su pista."
               prompt="cat /roadmap --tree"
               right={
                 role === "administrador" ? (

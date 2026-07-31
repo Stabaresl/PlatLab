@@ -47,7 +47,7 @@ export default function TerminalHeader({
               className="ml-2 text-[10px] sm:text-xs truncate"
               style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
             >
-              gaia@platlab:~$ {prompt}
+              root@platlab:~$ {prompt}
             </span>
           </div>
 

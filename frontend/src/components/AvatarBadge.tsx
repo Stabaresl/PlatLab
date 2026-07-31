@@ -13,7 +13,7 @@ const RAREZA_GLOW: Record<RarezaCosmetico, string> = {
   mitico: "255,60,172",
 }
 
-// El "avatar" de GAIA — no un personaje 3D (ver decisión de alcance),
+// El "avatar" de PlatLAB — no un personaje 3D (ver decisión de alcance),
 // sino una insignia de operador. El centro es la identidad elegida
 // (emoji predeterminado o foto subida); lo que se equipa se dibuja
 // como capas alrededor: marco = borde exterior, aura = glow pulsante,

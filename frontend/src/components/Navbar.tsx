@@ -14,7 +14,7 @@ const ROLE_LABELS: Record<string, string> = {
   administrador: "Administrador",
 }
 
-// Barra de navegación compartida — logo con marca de sistema ("GA::IA"),
+// Barra de navegación compartida — logo con marca de sistema ("PLAT::LAB"),
 // enlaces contextuales según sesión y pill de rol. Siempre vuelve a "/".
 export default function Navbar({ variant = "solid" }: { variant?: "solid" | "transparent" }) {
   const navigate = useNavigate()
@@ -51,13 +51,13 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
             className="chamfer-sm flex items-center justify-center w-8 h-8 text-sm font-bold shrink-0"
             style={{ backgroundColor: "var(--signal-amber)", color: "#0a0700", fontFamily: "var(--font-mono)" }}
           >
-            G
+            P
           </span>
           <span
             className="text-lg sm:text-xl font-bold tracking-wide"
             style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}
           >
-            GA<span style={{ color: "var(--signal-amber)" }}>::</span>IA
+            PLAT<span style={{ color: "var(--signal-amber)" }}>::</span>LAB
           </span>
         </Link>
 
@@ -89,7 +89,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
           >
-            Sobre GAIA
+            Sobre PlatLAB
           </Link>
 
           {authed ? (

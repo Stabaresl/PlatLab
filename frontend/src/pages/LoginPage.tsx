@@ -82,10 +82,10 @@ export default function LoginPage() {
             <ReticleFrame color="var(--signal-amber)" size={14}>
               <div className="chamfer flex flex-col gap-5 sm:gap-6 p-6 sm:p-8" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
                 <div className="flex items-center gap-2">
-                  <span className="chamfer-sm flex items-center justify-center w-8 h-8 text-sm font-bold" style={{ backgroundColor: "var(--signal-amber)", color: "#0a0700", fontFamily: "var(--font-mono)" }}>G</span>
+                  <span className="chamfer-sm flex items-center justify-center w-8 h-8 text-sm font-bold" style={{ backgroundColor: "var(--signal-amber)", color: "#0a0700", fontFamily: "var(--font-mono)" }}>P</span>
                   <div>
                     <h1 className="text-lg font-bold m-0" style={{ color: "var(--text-heading)" }}>Iniciar sesión</h1>
-                    <p className="text-[11px] m-0" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>gaia@platlab:~$ auth --login</p>
+                    <p className="text-[11px] m-0" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>root@platlab:~$ auth --login</p>
                   </div>
                 </div>
 

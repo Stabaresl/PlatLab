@@ -16,7 +16,7 @@ interface TourStep {
 const STEPS: TourStep[] = [
   {
     target: "logo",
-    title: "¡Bienvenido a GAIA!",
+    title: "¡Bienvenido a PlatLAB!",
     body: "Te mostramos rápido dónde está todo — son unos segundos, y podés saltarlo cuando quieras.",
   },
   {
@@ -27,7 +27,7 @@ const STEPS: TourStep[] = [
   {
     target: "nav-roadmap",
     title: "Roadmap",
-    body: "Un camino guiado de laboratorios curados por el equipo de GAIA, del más fácil al más difícil — completá uno para desbloquear el siguiente.",
+    body: "Un camino guiado de laboratorios curados por el equipo de PlatLAB, del más fácil al más difícil — completá uno para desbloquear el siguiente.",
   },
   {
     target: "nav-bell",

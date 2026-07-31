@@ -30,7 +30,7 @@ _LOGROS = [
     {
         "clave": "primer_laboratorio",
         "nombre": "Primer Hackeo",
-        "descripcion": "Completaste tu primer laboratorio en GAIA.",
+        "descripcion": "Completaste tu primer laboratorio en PlatLAB.",
         "tipo_criterio": TipoCriterioLogro.PRIMER_LABORATORIO,
         "criterio_valor": None,
         "rareza": RarezaCosmetico.COMUN,
@@ -53,7 +53,7 @@ _LOGROS = [
     },
     {
         "clave": "25_laboratorios",
-        "nombre": "Leyenda de GAIA",
+        "nombre": "Leyenda de PlatLAB",
         "descripcion": "Completaste 25 laboratorios.",
         "tipo_criterio": TipoCriterioLogro.N_LABORATORIOS,
         "criterio_valor": "25",
@@ -248,7 +248,7 @@ _TITULOS = [
     },
     {
         "clave": "leyenda_gaia",
-        "nombre": "Leyenda de GAIA",
+        "nombre": "Leyenda de PlatLAB",
         "descripcion": "Otorgado al completar 25 laboratorios.",
         "rareza": RarezaCosmetico.MITICO,
         "logro_clave": "25_laboratorios",

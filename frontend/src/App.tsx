@@ -29,7 +29,7 @@ function App() {
 
         {/* Título */}
         <h1 className="text-2xl font-semibold text-center" style={{ color: "var(--text-heading)" }}>
-          GAIA
+          PlatLAB
         </h1>
 
         {/* Form */}

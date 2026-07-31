@@ -106,10 +106,10 @@ export default function SignUpPage() {
             <ReticleFrame color="var(--signal-amber)" size={14}>
               <div className="chamfer flex flex-col gap-5 p-6 sm:p-8" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
                 <div className="flex items-center gap-2">
-                  <span className="chamfer-sm flex items-center justify-center w-8 h-8 text-sm font-bold" style={{ backgroundColor: "var(--signal-amber)", color: "#0a0700", fontFamily: "var(--font-mono)" }}>G</span>
+                  <span className="chamfer-sm flex items-center justify-center w-8 h-8 text-sm font-bold" style={{ backgroundColor: "var(--signal-amber)", color: "#0a0700", fontFamily: "var(--font-mono)" }}>P</span>
                   <div>
                     <h1 className="text-lg font-bold m-0" style={{ color: "var(--text-heading)" }}>Crear cuenta</h1>
-                    <p className="text-[11px] m-0" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>gaia@platlab:~$ auth --register</p>
+                    <p className="text-[11px] m-0" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>root@platlab:~$ auth --register</p>
                   </div>
                 </div>
 

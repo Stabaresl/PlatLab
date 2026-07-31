@@ -54,7 +54,7 @@ createRoot(document.getElementById("root")!).render(
       <ScrollToTop />
       <OnboardingTour />
       <Routes>
-        {/* Sin PublicRoute a propósito: el logo/GA::IA del Navbar siempre
+        {/* Sin PublicRoute a propósito: el logo/PLAT::LAB del Navbar siempre
             vuelve acá, incluso con sesión iniciada — antes redirigía a
             /dashboard y el usuario nunca podía volver a ver la landing. */}
         <Route path="/" element={<WelcomePage />} />

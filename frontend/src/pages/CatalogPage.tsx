@@ -52,7 +52,7 @@ export default function CatalogPage() {
           <div className="mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12" style={{ maxWidth: "1200px" }}>
             <TerminalHeader
               title="Catálogo de Laboratorios"
-              subtitle="Este es el roadmap completo de laboratorios de GAIA: no hace falta esperar una invitación para ver qué hay disponible. Inicia sesión para inscribirte en cualquiera de ellos."
+              subtitle="Este es el roadmap completo de laboratorios de PlatLAB: no hace falta esperar una invitación para ver qué hay disponible. Inicia sesión para inscribirte en cualquiera de ellos."
               prompt="ls /laboratorios --publicados"
             />
 

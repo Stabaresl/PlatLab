@@ -253,7 +253,7 @@ export default function WelcomePage() {
           <div className="flex items-center gap-3 mb-8 sm:mb-12 justify-center">
             <span className="h-px w-8" style={{ backgroundColor: "var(--signal-cyan)" }} />
             <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-widest text-center" style={{ color: "var(--text-heading)" }}>
-              Por qué GAIA
+              Por qué PlatLAB
             </h2>
             <span className="h-px w-8" style={{ backgroundColor: "var(--signal-cyan)" }} />
           </div>
