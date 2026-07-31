@@ -63,6 +63,15 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
             Laboratorios
           </Link>
           <Link
+            to="/roadmap"
+            className="hidden sm:inline text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
+            style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
+          >
+            Roadmap
+          </Link>
+          <Link
             to="/about"
             className="hidden sm:inline text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
             style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}

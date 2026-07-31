@@ -575,6 +575,94 @@ export function getInstructorDashboard() {
 }
 
 // ---------------------------------------------------------------------------
+// Roadmap — /api/v1/roadmap (solo laboratorios predeterminado, de admin)
+// ---------------------------------------------------------------------------
+
+export type EstadoNodoRoadmap = "completado" | "disponible" | "bloqueado"
+
+export interface PrerequisitoRoadmap {
+  laboratorio_id: string
+  nombre: string
+}
+
+export interface RoadmapNodo {
+  id: string
+  laboratorio_id: string
+  posicion: number
+  nombre: string
+  nivel_dificultad: NivelDificultad
+  temas: string[]
+  prerequisitos: PrerequisitoRoadmap[]
+  // null = visitante anónimo, sin sesión de estudiante activa.
+  estado: EstadoNodoRoadmap | null
+}
+
+export interface RoadmapCategoria {
+  id: string
+  nombre: string
+  orden: number
+  nodos: RoadmapNodo[]
+}
+
+// Sin `skipAuth`: si hay sesión, el token viaja igual (el backend lo usa
+// para calcular el estado completado/disponible/bloqueado por-estudiante),
+// pero sin token igual responde 200 (`AllowAny`) para un visitante anónimo.
+export function getRoadmap() {
+  return api<RoadmapCategoria[]>("/roadmap/")
+}
+
+export function enrollRoadmapNode(nodoId: string) {
+  return api<{ id: string; laboratorio_id: string; estado: EstadoAsignacion }>(
+    `/roadmap/nodos/${nodoId}/inscribirse/`,
+    { method: "POST" },
+  )
+}
+
+export function listRoadmapCategorias() {
+  return api<{ id: string; nombre: string; orden: number }[]>("/roadmap/categorias/")
+}
+
+export function createRoadmapCategoria(nombre: string) {
+  return api<{ id: string; nombre: string; orden: number }>("/roadmap/categorias/", {
+    method: "POST",
+    body: JSON.stringify({ nombre }),
+  })
+}
+
+export interface LaboratorioSinRoadmap {
+  id: string
+  nombre: string
+  nivel_dificultad: NivelDificultad
+  temas: string[]
+}
+
+export function listUnassignedRoadmapLabs() {
+  return api<LaboratorioSinRoadmap[]>("/roadmap/sin-asignar/")
+}
+
+interface RoadmapNodoResult {
+  id: string
+  categoria_id: string
+  laboratorio_id: string
+  posicion: number
+}
+
+export function addRoadmapNodo(body: { categoria_id: string; laboratorio_id: string; posicion?: number }) {
+  return api<RoadmapNodoResult>("/roadmap/nodos/", { method: "POST", body: JSON.stringify(body) })
+}
+
+export function reorderRoadmapNodo(nodoId: string, body: { categoria_id: string; posicion: number }) {
+  return api<RoadmapNodoResult>(`/roadmap/nodos/${nodoId}/`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  })
+}
+
+export function removeRoadmapNodo(nodoId: string) {
+  return api<void>(`/roadmap/nodos/${nodoId}/`, { method: "DELETE" })
+}
+
+// ---------------------------------------------------------------------------
 // Users — /api/v1/users (mayormente solo-admin)
 // ---------------------------------------------------------------------------
 
