@@ -125,6 +125,7 @@ class LaboratorioResultDTO:
     nombre: str
     estado: str
     tipo: str
+    visible_en_catalogo: bool = False
 
 
 @dataclass(frozen=True)
@@ -319,3 +320,23 @@ class VerificarFlagPreviewDTO:
     valor: str
     actor_id: uuid.UUID
     actor_rol: str
+
+
+@dataclass(frozen=True)
+class CambiarVisibilidadCatalogoDTO:
+    """`PATCH /laboratories/{id}/catalog-visibility/` — opt-in de un `personalizado` al catálogo público."""
+
+    laboratorio_id: uuid.UUID
+    visible: bool
+    actor_id: uuid.UUID
+    actor_rol: str
+
+
+@dataclass(frozen=True)
+class LaboratorioPersonalizadoPublicadoItemDTO:
+    """`GET /laboratories/published-custom/` — gestión admin de visibilidad de catálogo."""
+
+    id: uuid.UUID
+    nombre: str
+    instructor_id: uuid.UUID | None
+    visible_en_catalogo: bool

@@ -197,3 +197,116 @@ def test_listar_endpoint_es_publico():
     response = APIClient().get("/api/v1/laboratories/")
 
     assert response.status_code != 403
+
+
+@pytest.mark.django_db
+def test_catalog_visibility_endpoint_instructor_dueno_activa():
+    instructor_id = uuid.uuid4()
+    lab = _crear_lab(
+        nombre="Lab Visibilidad Endpoint",
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=instructor_id,
+    )
+    client = _client_autenticado(instructor_id, "instructor")
+
+    response = client.patch(
+        f"/api/v1/laboratories/{lab.id}/catalog-visibility/",
+        {"visible": True},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.data["visible_en_catalogo"] is True
+
+
+@pytest.mark.django_db
+def test_catalog_visibility_endpoint_instructor_ajeno_403():
+    lab = _crear_lab(
+        nombre="Lab Visibilidad Ajeno",
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+    )
+    client = _client_autenticado(uuid.uuid4(), "instructor")
+
+    response = client.patch(
+        f"/api/v1/laboratories/{lab.id}/catalog-visibility/",
+        {"visible": True},
+        format="json",
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_catalog_visibility_endpoint_requiere_auth():
+    lab = _crear_lab(
+        nombre="Lab Visibilidad Sin Auth",
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+    )
+
+    response = APIClient().patch(
+        f"/api/v1/laboratories/{lab.id}/catalog-visibility/",
+        {"visible": True},
+        format="json",
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_published_custom_endpoint_admin_ve_personalizados_publicados():
+    _crear_lab(
+        nombre="Personalizado Publicado Endpoint",
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+    )
+    client = _client_autenticado(uuid.uuid4(), "administrador")
+
+    response = client.get("/api/v1/laboratories/published-custom/")
+
+    assert response.status_code == 200
+    nombres = [item["nombre"] for item in response.data]
+    assert "Personalizado Publicado Endpoint" in nombres
+
+
+@pytest.mark.django_db
+def test_published_custom_endpoint_instructor_403():
+    client = _client_autenticado(uuid.uuid4(), "instructor")
+
+    response = client.get("/api/v1/laboratories/published-custom/")
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_catalog_visibility_endpoint_invalida_cache_del_listado_sin_filtro():
+    """
+    Reproduce el bug reportado: el listado sin filtro ("Todos") tiene su
+    propia entrada de cache (`CachedLaboratorioRepository`, TTL 60s) —
+    sin invalidación explícita, activar la visibilidad de catálogo podía
+    tardar hasta 60s en reflejarse ahí, aunque una categoría específica
+    (nunca antes cacheada) ya mostrara el resultado fresco.
+    """
+    instructor_id = uuid.uuid4()
+    lab = _crear_lab(
+        nombre="Lab Recien Visible",
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=instructor_id,
+    )
+
+    # Precalienta el cache del listado sin filtro ("Todos") ANTES de
+    # activar la visibilidad — sin invalidación, este resultado (sin el
+    # lab) quedaría servido desde cache hasta por 60s.
+    precalentado = APIClient().get("/api/v1/laboratories/")
+    assert str(lab.id) not in {u["id"] for u in precalentado.data["results"]}  # sanity check
+
+    client = _client_autenticado(instructor_id, "instructor")
+    toggle = client.patch(
+        f"/api/v1/laboratories/{lab.id}/catalog-visibility/", {"visible": True}, format="json"
+    )
+    assert toggle.status_code == 200
+
+    respuesta_sin_filtro = APIClient().get("/api/v1/laboratories/")
+    nombres = [item["nombre"] for item in respuesta_sin_filtro.data["results"]]
+    assert "Lab Recien Visible" in nombres

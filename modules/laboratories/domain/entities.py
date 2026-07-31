@@ -46,6 +46,12 @@ class Laboratorio(BaseEntity):
     # (`SolicitarRevisionLaboratorioUseCase`). No hay un estado `rechazado`
     # separado: un rechazo vuelve a `borrador` con este campo poblado.
     motivo_rechazo: str | None = None
+    # Opt-in de un `personalizado` al catálogo público (`CambiarVisibilidadCatalogoUseCase`)
+    # — lo activa su instructor dueño o un admin, nunca por defecto (un
+    # `personalizado` sigue siendo privado/por invitación salvo que alguien
+    # decida exponerlo). Sin efecto en un `predeterminado`, que ya es
+    # público apenas se publica.
+    visible_en_catalogo: bool = False
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
@@ -55,14 +61,17 @@ class Laboratorio(BaseEntity):
 
     def es_visible_para(self, instructor_id: uuid.UUID | None = None) -> bool:
         """
-        HV-02/HI-01: el catálogo público (y el de estudiante, HE-02) solo
-        muestra laboratorios `predeterminado` + `publicado`. Un instructor
+        HV-02/HI-01: el catálogo público (y el de estudiante, HE-02)
+        muestra laboratorios `predeterminado` + `publicado` siempre, y un
+        `personalizado` + `publicado` cuando su instructor (o un admin) lo
+        marcó explícitamente como `visible_en_catalogo` — de lo contrario
+        sigue siendo privado, solo asignable por invitación. Un instructor
         además ve sus propios laboratorios `personalizado`, sin importar
-        el estado (borrador incluido) — nunca los de otro instructor.
+        el estado (borrador incluido) ni `visible_en_catalogo` — nunca los
+        de otro instructor.
         """
-        if (
-            self.estado == EstadoLaboratorio.PUBLICADO
-            and self.tipo == TipoLaboratorio.PREDETERMINADO
+        if self.estado == EstadoLaboratorio.PUBLICADO and (
+            self.tipo == TipoLaboratorio.PREDETERMINADO or self.visible_en_catalogo
         ):
             return True
         return instructor_id is not None and self.instructor_id == instructor_id

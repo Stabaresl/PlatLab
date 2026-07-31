@@ -172,6 +172,12 @@ class RechazarLaboratorioRequestSerializer(serializers.Serializer):
     motivo = serializers.CharField(max_length=1000, trim_whitespace=True)
 
 
+class CambiarVisibilidadCatalogoRequestSerializer(serializers.Serializer):
+    """`PATCH /laboratories/{id}/catalog-visibility/` — opt-in de un personalizado al catálogo."""
+
+    visible = serializers.BooleanField()
+
+
 class SubirDockerfileRequestSerializer(serializers.Serializer):
     """
     `POST /laboratories/{id}/sections/{section_id}/dockerfile/` —

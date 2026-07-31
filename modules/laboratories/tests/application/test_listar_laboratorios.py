@@ -16,6 +16,10 @@ from modules.laboratories.infrastructure.repositories import LaboratorioReposito
 
 
 def _crear_lab(repo: LaboratorioRepository, **overrides) -> Laboratorio:
+    # `visible_en_catalogo` no lo acepta `add()` (una creación nunca nace ya
+    # visible en catálogo, ver `LaboratorioRepository.add`) — se aplica
+    # después vía `update()`, igual que `CambiarVisibilidadCatalogoUseCase`.
+    visible_en_catalogo = overrides.pop("visible_en_catalogo", None)
     defaults = dict(
         nombre="Lab Catalogo",
         descripcion="desc",
@@ -25,7 +29,11 @@ def _crear_lab(repo: LaboratorioRepository, **overrides) -> Laboratorio:
         temas=[],
     )
     defaults.update(overrides)
-    return repo.add(Laboratorio(**defaults))
+    lab = repo.add(Laboratorio(**defaults))
+    if visible_en_catalogo is not None:
+        lab.visible_en_catalogo = visible_en_catalogo
+        lab = repo.update(lab)
+    return lab
 
 
 @pytest.mark.django_db
@@ -46,6 +54,30 @@ def test_catalogo_publico_solo_predeterminados_publicados():
     assert "Visible Publico" in nombres
     assert "Borrador Oculto" not in nombres
     assert "Personalizado Oculto" not in nombres
+
+
+@pytest.mark.django_db
+def test_catalogo_publico_incluye_personalizado_con_visible_en_catalogo():
+    repo = LaboratorioRepository()
+    _crear_lab(
+        repo,
+        nombre="Personalizado Visible",
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+        visible_en_catalogo=True,
+    )
+    _crear_lab(
+        repo,
+        nombre="Personalizado No Visible",
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+    )
+
+    resultados = ListarLaboratoriosQuery(repo).execute(ListarLaboratoriosFiltroDTO())
+
+    nombres = [r.nombre for r in resultados]
+    assert "Personalizado Visible" in nombres
+    assert "Personalizado No Visible" not in nombres
 
 
 @pytest.mark.django_db

@@ -46,8 +46,8 @@ class LaboratorioRepository:
         tema: str | None = None,
         nombre: str | None = None,
     ) -> list[Laboratorio]:
-        visibilidad = Q(
-            estado=LaboratorioModel.Estado.PUBLICADO, tipo=LaboratorioModel.Tipo.PREDETERMINADO
+        visibilidad = Q(estado=LaboratorioModel.Estado.PUBLICADO) & (
+            Q(tipo=LaboratorioModel.Tipo.PREDETERMINADO) | Q(visible_en_catalogo=True)
         )
         if instructor_id is not None:
             visibilidad |= Q(tipo=LaboratorioModel.Tipo.PERSONALIZADO, instructor_id=instructor_id)
@@ -75,6 +75,7 @@ class LaboratorioRepository:
         model.estado = laboratorio.estado.value
         model.resumen_cierre = laboratorio.resumen_cierre
         model.motivo_rechazo = laboratorio.motivo_rechazo
+        model.visible_en_catalogo = laboratorio.visible_en_catalogo
         model.save()
 
         temas_modelo = [

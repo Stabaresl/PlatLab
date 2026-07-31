@@ -39,6 +39,7 @@ def laboratorio_to_entity(model: LaboratorioModel) -> Laboratorio:
         instructor_id=model.instructor_id,
         resumen_cierre=model.resumen_cierre,
         motivo_rechazo=model.motivo_rechazo,
+        visible_en_catalogo=model.visible_en_catalogo,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )

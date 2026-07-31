@@ -59,6 +59,9 @@ class LaboratorioModel(models.Model):
     # todas las secciones (ver ProgresoOverviewDTO en Progress).
     resumen_cierre = models.TextField(blank=True, default="")
     motivo_rechazo = models.TextField(null=True, blank=True)
+    # Opt-in de un `personalizado` al catálogo público — ver docstring de
+    # `Laboratorio.es_visible_para` (domain/entities.py).
+    visible_en_catalogo = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

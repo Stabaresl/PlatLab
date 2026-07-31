@@ -12,17 +12,25 @@ from modules.laboratories.domain.value_objects import (
 from modules.shared.infrastructure.redis_client import RedisClient
 
 _CATALOGO_TTL_SECONDS = 60
+_VERSION_KEY = "catalogo_labs:version"
 
 
 class CachedLaboratorioRepository:
     """
     Decorator (patrón Decorator, RNF-02.1/02.2) sobre otro
     `ILaboratorioRepository`: cachea `find_catalogo` en Redis por 60s bajo
-    una clave derivada de los filtros. El catálogo es de lectura intensiva
-    y cambia con poca frecuencia (solo al publicar/editar un laboratorio,
-    algo que Sprint 2 todavía no construye). No cachea
-    `get_by_id`/`get_secciones` (detalle/TOC): tráfico bastante menor que
-    el listado y se prefiere no invalidar cache en más de un lugar todavía.
+    una clave derivada de los filtros + una "versión" global
+    (`_VERSION_KEY`). El catálogo es de lectura intensiva y cambia con
+    poca frecuencia (publicar/aprobar/rechazar/cambiar visibilidad) —
+    en vez de enumerar y borrar cada combinación de filtros ya cacheada
+    (`instructor_id`/`nivel_dificultad`/`tema`, imposible de listar sin
+    recorrer Redis), `invalidar_catalogo()` incrementa la versión: todas
+    las claves viejas quedan huérfanas (expiran solas por TTL) y cualquier
+    lectura nueva recalcula con la versión actual. Sin esto, un cambio de
+    visibilidad de catálogo podía tardar hasta 60s en reflejarse en
+    `/laboratorios` — confuso cuando una categoría específica (nunca
+    cacheada antes) sí mostraba el resultado fresco y "Todos" (la vista
+    más cacheada, por ser la de mayor tráfico) todavía no.
     """
 
     def __init__(
@@ -59,10 +67,17 @@ class CachedLaboratorioRepository:
     def get_secciones(self, laboratorio_id: uuid.UUID) -> list[Seccion]:
         return self._repo.get_secciones(laboratorio_id)
 
+    def invalidar_catalogo(self) -> None:
+        """Llamar tras cualquier escritura que pueda cambiar qué se ve en el catálogo público."""
+        self._redis.raw.incr(_VERSION_KEY)
+
+    def _version_catalogo(self) -> str:
+        return self._redis.get(_VERSION_KEY) or "0"
+
     def _clave_catalogo(
         self, instructor_id: uuid.UUID | None, nivel_dificultad: str | None, tema: str | None
     ) -> str:
-        crudo = f"{instructor_id}:{nivel_dificultad}:{tema}"
+        crudo = f"{self._version_catalogo()}:{instructor_id}:{nivel_dificultad}:{tema}"
         return f"catalogo_labs:{hashlib.sha256(crudo.encode()).hexdigest()}"
 
     def _serializar(self, laboratorio: Laboratorio) -> dict:

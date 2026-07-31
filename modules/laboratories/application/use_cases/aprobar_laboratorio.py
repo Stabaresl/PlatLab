@@ -59,6 +59,8 @@ class AprobarLaboratorioUseCase(BaseUseCase[AprobarLaboratorioDTO, LaboratorioRe
             tipo=actualizado.tipo.value,
         )
         event = LaboratoryApproved(
-            laboratorio_id=actualizado.id, instructor_id=actualizado.instructor_id
+            laboratorio_id=actualizado.id,
+            instructor_id=actualizado.instructor_id,
+            admin_id=input_dto.actor_id,
         )
         return result, [event]

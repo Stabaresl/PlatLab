@@ -64,6 +64,28 @@ def test_find_catalogo_distingue_cache_por_filtros():
     assert fake_repo.llamadas == 2  # claves de cache distintas, no debe reusar
 
 
+def test_invalidar_catalogo_fuerza_recalculo_en_la_siguiente_lectura():
+    tema = f"cache-tema-{uuid.uuid4()}"
+    lab_viejo = _lab(f"Lab Viejo {uuid.uuid4()}", tema)
+    fake_repo = _FakeRepo([lab_viejo])
+    cached = CachedLaboratorioRepository(fake_repo)
+
+    primera = cached.find_catalogo(tema=tema)
+    assert fake_repo.llamadas == 1
+
+    lab_nuevo = _lab(f"Lab Nuevo {uuid.uuid4()}", tema)
+    fake_repo.resultado = [lab_viejo, lab_nuevo]
+    sin_invalidar = cached.find_catalogo(tema=tema)
+    assert fake_repo.llamadas == 1  # todavía sirve el cache viejo (sin el lab nuevo)
+    assert len(sin_invalidar) == 1
+
+    cached.invalidar_catalogo()
+    tras_invalidar = cached.find_catalogo(tema=tema)
+    assert fake_repo.llamadas == 2  # la invalidación forzó un recálculo
+    assert len(tras_invalidar) == 2
+    assert primera[0].id == lab_viejo.id
+
+
 def test_get_by_id_y_get_secciones_no_pasan_por_cache():
     class _RepoConMarca:
         def find_catalogo(self, **kwargs):

@@ -55,3 +55,27 @@ def test_personalizado_publicado_no_es_visible_para_publico():
     )
 
     assert lab.es_visible_para(None) is False
+
+
+def test_personalizado_publicado_con_visible_en_catalogo_es_visible_para_publico():
+    lab = _lab(
+        estado=EstadoLaboratorio.PUBLICADO,
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+        visible_en_catalogo=True,
+    )
+
+    assert lab.es_visible_para(None) is True
+    assert lab.es_visible_para(uuid.uuid4()) is True
+
+
+def test_personalizado_en_revision_con_visible_en_catalogo_no_es_visible_para_publico():
+    """visible_en_catalogo por sí solo no basta — el opt-in solo aplica si ya está `publicado`."""
+    lab = _lab(
+        estado=EstadoLaboratorio.EN_REVISION,
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+        visible_en_catalogo=True,
+    )
+
+    assert lab.es_visible_para(None) is False

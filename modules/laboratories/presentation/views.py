@@ -10,6 +10,7 @@ from rest_framework.viewsets import ViewSet
 from modules.laboratories.application.dtos import (
     AgregarPreguntaDTO,
     AprobarLaboratorioDTO,
+    CambiarVisibilidadCatalogoDTO,
     CrearExamenDTO,
     CrearLaboratorioDTO,
     CrearSeccionDTO,
@@ -31,6 +32,9 @@ from modules.laboratories.application.queries.listar_laboratorios import (
 from modules.laboratories.application.queries.listar_laboratorios_en_revision import (
     ListarLaboratoriosEnRevisionQuery,
 )
+from modules.laboratories.application.queries.listar_laboratorios_personalizados_publicados import (
+    ListarLaboratoriosPersonalizadosPublicadosQuery,
+)
 from modules.laboratories.application.queries.obtener_contenido_seccion_preview import (
     ObtenerContenidoSeccionPreviewQuery,
 )
@@ -44,6 +48,9 @@ from modules.laboratories.application.queries.verificar_flag_preview import (
 from modules.laboratories.application.use_cases.agregar_pregunta import AgregarPreguntaUseCase
 from modules.laboratories.application.use_cases.aprobar_laboratorio import (
     AprobarLaboratorioUseCase,
+)
+from modules.laboratories.application.use_cases.cambiar_visibilidad_catalogo import (
+    CambiarVisibilidadCatalogoUseCase,
 )
 from modules.laboratories.application.use_cases.crear_examen import CrearExamenUseCase
 from modules.laboratories.application.use_cases.crear_laboratorio import (
@@ -79,6 +86,7 @@ from modules.laboratories.infrastructure.cached_laboratorio_repository import (
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.laboratories.presentation.serializers import (
     AgregarPreguntaRequestSerializer,
+    CambiarVisibilidadCatalogoRequestSerializer,
     CatalogoFiltroQuerySerializer,
     CrearLaboratorioRequestSerializer,
     CrearSeccionRequestSerializer,
@@ -109,6 +117,7 @@ def _serializar_resultado_laboratorio(resultado) -> dict:
         "nombre": resultado.nombre,
         "estado": resultado.estado,
         "tipo": resultado.tipo,
+        "visible_en_catalogo": resultado.visible_en_catalogo,
     }
 
 
@@ -329,6 +338,7 @@ class LaboratorioViewSet(ViewSet):
                 **serializer.validated_data,
             )
         )
+        self._repositorio().invalidar_catalogo()
 
         return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
 
@@ -346,6 +356,7 @@ class LaboratorioViewSet(ViewSet):
                 actor_rol=request.user.rol,
             )
         )
+        self._repositorio().invalidar_catalogo()
 
         return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
 
@@ -379,6 +390,7 @@ class LaboratorioViewSet(ViewSet):
                 actor_rol=request.user.rol,
             )
         )
+        self._repositorio().invalidar_catalogo()
         return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"], url_path="reject")
@@ -399,7 +411,47 @@ class LaboratorioViewSet(ViewSet):
                 **serializer.validated_data,
             )
         )
+        self._repositorio().invalidar_catalogo()
         return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["patch"], url_path="catalog-visibility")
+    def cambiar_visibilidad_catalogo(self, request, pk=None):
+        serializer = CambiarVisibilidadCatalogoRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = CambiarVisibilidadCatalogoUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            CambiarVisibilidadCatalogoDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                **serializer.validated_data,
+            )
+        )
+        self._repositorio().invalidar_catalogo()
+        return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"], url_path="published-custom")
+    def personalizados_publicados(self, request):
+        resultados = ListarLaboratoriosPersonalizadosPublicadosQuery(
+            LaboratorioRepository()
+        ).execute(actor_rol=request.user.rol)
+        return Response(
+            [
+                {
+                    "id": str(item.id),
+                    "nombre": item.nombre,
+                    "instructor_id": str(item.instructor_id) if item.instructor_id else None,
+                    "visible_en_catalogo": item.visible_en_catalogo,
+                }
+                for item in resultados
+            ],
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=False, methods=["get"], url_path="review-queue")
     def cola_revision(self, request):

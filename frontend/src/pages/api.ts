@@ -319,6 +319,7 @@ interface LaboratorioResult {
   nombre: string
   estado: EstadoLaboratorio
   tipo: TipoLaboratorio
+  visible_en_catalogo: boolean
 }
 
 export function createLaboratorio(body: {
@@ -379,6 +380,29 @@ export interface LaboratorioEnRevisionItem {
 
 export function listReviewQueue() {
   return api<LaboratorioEnRevisionItem[]>("/laboratories/review-queue/")
+}
+
+// Opt-in de un laboratorio personalizado (ya publicado) al catálogo público
+// — activado por su instructor dueño o por un admin. Sin esto, un
+// personalizado solo se asigna por invitación directa (`inviteStudents`).
+export function setCatalogVisibility(id: string, visible: boolean) {
+  return api<LaboratorioResult>(`/laboratories/${id}/catalog-visibility/`, {
+    method: "PATCH",
+    body: JSON.stringify({ visible }),
+  })
+}
+
+export interface LaboratorioPersonalizadoPublicadoItem {
+  id: string
+  nombre: string
+  instructor_id: string | null
+  visible_en_catalogo: boolean
+}
+
+// Admin-only: todos los personalizado+publicado de cualquier instructor,
+// para gestionar su visibilidad de catálogo (no solo la propia).
+export function listPublishedCustomLabs() {
+  return api<LaboratorioPersonalizadoPublicadoItem[]>("/laboratories/published-custom/")
 }
 
 export interface PasoGuiaInput {
@@ -542,6 +566,8 @@ export interface InstructorDashboardItem {
   estado: EstadoLaboratorio
   estudiantes_inscritos: number
   porcentaje_completitud_promedio: number
+  tipo: TipoLaboratorio
+  visible_en_catalogo: boolean
 }
 
 export function getInstructorDashboard() {

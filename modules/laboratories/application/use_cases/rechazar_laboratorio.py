@@ -63,6 +63,7 @@ class RechazarLaboratorioUseCase(BaseUseCase[RechazarLaboratorioDTO, Laboratorio
         event = LaboratoryRejected(
             laboratorio_id=actualizado.id,
             instructor_id=actualizado.instructor_id,
+            admin_id=input_dto.actor_id,
             motivo=actualizado.motivo_rechazo,
         )
         return result, [event]
