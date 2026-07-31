@@ -5,6 +5,7 @@ import { logout } from "../pages/api"
 import { useGamificationStore } from "../store/gamificationStore"
 import { Button } from "./ui/button"
 import StatusDot from "./StatusDot"
+import NotificationBell from "./NotificationBell"
 import AvatarBadge from "./AvatarBadge"
 
 const ROLE_LABELS: Record<string, string> = {
@@ -99,6 +100,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
                   <StatusDot variant="online" label={ROLE_LABELS[role] || role} />
                 </span>
               )}
+              <NotificationBell />
               {role === "estudiante" && (
                 <Link to="/profile" aria-label="Mi perfil" className="flex items-center">
                   <AvatarBadge perfil={perfil} size="sm" />
