@@ -223,6 +223,11 @@ h1, h2, h3, h4, h5, h6 {
   50% { opacity: 0.35; }
 }
 
+@keyframes avatar-aura-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.35); }
+}
+
 /* Grilla táctica en movimiento lento — más sutil/lenta que la versión previa
    (3s → 7s) para no leer como "plantilla cyberpunk stock". */
 @keyframes grid-drift {

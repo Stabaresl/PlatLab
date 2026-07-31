@@ -663,6 +663,141 @@ export function removeRoadmapNodo(nodoId: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Gamification — /api/v1/gamification (XP, niveles, logros, cosméticos)
+// ---------------------------------------------------------------------------
+
+export type RarezaCosmetico = "comun" | "poco_comun" | "raro" | "epico" | "legendario" | "mitico"
+export type TipoCosmetico =
+  | "hoodie" | "gafas" | "mascara" | "aura" | "insignia"
+  | "mochila" | "guantes" | "zapatos" | "gorra" | "audifonos" | "marco"
+export type AvatarTipo = "preset" | "subido"
+
+export interface LogroPerfilItem {
+  id: string
+  clave: string
+  nombre: string
+  descripcion: string
+  rareza: RarezaCosmetico
+  desbloqueado: boolean
+  // Progreso legible cuando aplica (ej. "7/10"), null si ya está desbloqueado o no corresponde.
+  progreso: string | null
+}
+
+export interface CosmeticoPerfilItem {
+  // id del desbloqueo (lo que se usa para equipar/quitar) — no el id del cosmético en sí.
+  id: string
+  cosmetico_id: string
+  clave: string
+  nombre: string
+  tipo: TipoCosmetico
+  rareza: RarezaCosmetico
+  color: string
+  equipado: boolean
+}
+
+export interface TituloPerfilItem {
+  // id del desbloqueo (lo que se usa para equipar/quitar) — no el id del título en sí.
+  id: string
+  titulo_id: string
+  clave: string
+  nombre: string
+  descripcion: string
+  rareza: RarezaCosmetico
+  equipado: boolean
+}
+
+export interface PerfilJugador {
+  estudiante_id: string
+  xp: number
+  nivel: number
+  xp_para_siguiente_nivel: number | null
+  avatar_tipo: AvatarTipo
+  avatar_valor: string
+  logros: LogroPerfilItem[]
+  cosmeticos: CosmeticoPerfilItem[]
+  titulos: TituloPerfilItem[]
+}
+
+export function getPerfilGamificacion() {
+  return api<PerfilJugador>("/gamification/me/")
+}
+
+export interface CatalogoGamificacion {
+  logros: { id: string; clave: string; nombre: string; descripcion: string; rareza: RarezaCosmetico }[]
+  cosmeticos: {
+    id: string; clave: string; nombre: string; tipo: TipoCosmetico
+    rareza: RarezaCosmetico; color: string; logro_requerido_id: string
+  }[]
+  titulos: {
+    id: string; clave: string; nombre: string; descripcion: string
+    rareza: RarezaCosmetico; logro_requerido_id: string
+  }[]
+}
+
+export function getCatalogoGamificacion() {
+  return api<CatalogoGamificacion>("/gamification/catalogo/")
+}
+
+interface CosmeticoDesbloqueadoResult {
+  id: string
+  cosmetico_id: string
+  equipado: boolean
+}
+
+export function equiparCosmetico(cosmeticoDesbloqueadoId: string) {
+  return api<CosmeticoDesbloqueadoResult>(`/gamification/cosmeticos/${cosmeticoDesbloqueadoId}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ equipado: true }),
+  })
+}
+
+export function quitarCosmetico(cosmeticoDesbloqueadoId: string) {
+  return api<CosmeticoDesbloqueadoResult>(`/gamification/cosmeticos/${cosmeticoDesbloqueadoId}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ equipado: false }),
+  })
+}
+
+interface TituloDesbloqueadoResult {
+  id: string
+  titulo_id: string
+  equipado: boolean
+}
+
+export function equiparTitulo(tituloDesbloqueadoId: string) {
+  return api<TituloDesbloqueadoResult>(`/gamification/titulos/${tituloDesbloqueadoId}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ equipado: true }),
+  })
+}
+
+export function quitarTitulo(tituloDesbloqueadoId: string) {
+  return api<TituloDesbloqueadoResult>(`/gamification/titulos/${tituloDesbloqueadoId}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ equipado: false }),
+  })
+}
+
+interface AvatarResult {
+  avatar_tipo: AvatarTipo
+  avatar_valor: string
+}
+
+export function listAvatarPresets() {
+  return api<{ clave: string; nombre: string; emoji: string; color: string }[]>("/gamification/avatar-presets/")
+}
+
+export function cambiarAvatarPreset(clave: string) {
+  return api<AvatarResult>("/gamification/avatar/", { method: "PATCH", body: JSON.stringify({ clave }) })
+}
+
+export function uploadAvatar(archivo: File) {
+  const formData = new FormData()
+  formData.append("archivo", archivo)
+  return api<AvatarResult>("/gamification/avatar/upload/", { method: "POST", body: formData })
+}
+
+// ---------------------------------------------------------------------------
 // Users — /api/v1/users (mayormente solo-admin)
 // ---------------------------------------------------------------------------
 

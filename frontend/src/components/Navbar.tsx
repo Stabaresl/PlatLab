@@ -2,8 +2,10 @@ import { useState, useEffect } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 import { logout } from "../pages/api"
+import { useGamificationStore } from "../store/gamificationStore"
 import { Button } from "./ui/button"
 import StatusDot from "./StatusDot"
+import AvatarBadge from "./AvatarBadge"
 
 const ROLE_LABELS: Record<string, string> = {
   estudiante: "Estudiante",
@@ -18,11 +20,17 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
   const location = useLocation()
   const [authed, setAuthed] = useState(false)
   const [role, setRole] = useState<string | null>(null)
+  const { perfil, load: loadPerfil } = useGamificationStore()
 
   useEffect(() => {
     setAuthed(!!localStorage.getItem("token"))
     setRole(localStorage.getItem("role"))
   }, [location.pathname])
+
+  useEffect(() => {
+    if (authed && role === "estudiante" && !perfil) loadPerfil()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authed, role])
 
   return (
     <motion.header
@@ -90,6 +98,11 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
                 >
                   <StatusDot variant="online" label={ROLE_LABELS[role] || role} />
                 </span>
+              )}
+              {role === "estudiante" && (
+                <Link to="/profile" aria-label="Mi perfil" className="flex items-center">
+                  <AvatarBadge perfil={perfil} size="sm" />
+                </Link>
               )}
               <Button asChild size="sm" className="chamfer-sm font-mono text-xs uppercase tracking-wide">
                 <Link to="/dashboard">Dashboard</Link>
