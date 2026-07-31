@@ -38,6 +38,10 @@ def _uc():
 
 
 def _crear_lab(repo: LaboratorioRepository, **overrides) -> Laboratorio:
+    # `visible_en_catalogo` no lo acepta `add()` (una creación nunca nace ya
+    # visible en catálogo) — se aplica después vía `update()`, igual que
+    # `CambiarVisibilidadCatalogoUseCase`.
+    visible_en_catalogo = overrides.pop("visible_en_catalogo", None)
     defaults = dict(
         nombre="Lab Catalogo Inscribible",
         descripcion="desc",
@@ -48,6 +52,9 @@ def _crear_lab(repo: LaboratorioRepository, **overrides) -> Laboratorio:
     )
     defaults.update(overrides)
     lab = repo.add(Laboratorio(**defaults))
+    if visible_en_catalogo is not None:
+        lab.visible_en_catalogo = visible_en_catalogo
+        lab = repo.update(lab)
     repo.add_seccion(Seccion(laboratorio_id=lab.id, titulo="Uno", contenido_teorico="...", orden=1))
     repo.add_seccion(Seccion(laboratorio_id=lab.id, titulo="Dos", contenido_teorico="...", orden=2))
     return lab
@@ -100,6 +107,25 @@ def test_inscripcion_a_lab_personalizado_lanza_not_found():
                 laboratorio_id=lab.id, actor_id=uuid.uuid4(), actor_rol="estudiante"
             )
         )
+
+
+@pytest.mark.django_db
+def test_inscripcion_a_lab_personalizado_visible_en_catalogo_permitida():
+    repo = LaboratorioRepository()
+    lab = _crear_lab(
+        repo,
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+        visible_en_catalogo=True,
+    )
+
+    resultado = _uc().execute(
+        InscribirseLaboratorioDTO(
+            laboratorio_id=lab.id, actor_id=uuid.uuid4(), actor_rol="estudiante"
+        )
+    )
+
+    assert resultado.estado == "activa"
 
 
 @pytest.mark.django_db

@@ -222,6 +222,8 @@ class AssignmentViewSet(ViewSet):
                     "estado": item.estado,
                     "estudiantes_inscritos": item.estudiantes_inscritos,
                     "porcentaje_completitud_promedio": item.porcentaje_completitud_promedio,
+                    "tipo": item.tipo,
+                    "visible_en_catalogo": item.visible_en_catalogo,
                 }
                 for item in resultado
             ],

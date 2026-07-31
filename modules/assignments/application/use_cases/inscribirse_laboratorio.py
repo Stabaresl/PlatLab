@@ -34,9 +34,12 @@ class InscribirseLaboratorioUseCase(BaseUseCase[InscribirseLaboratorioDTO, Asign
     Autoinscripción directa desde el catálogo público (`/laboratorios`),
     sin invitación de instructor — a diferencia de `InvitarEstudiantesUseCase`
     (UC-06), acá el actor es el propio estudiante y solo aplica a
-    laboratorios `predeterminado` + `publicado` (los únicos que el catálogo
-    público expone, `Laboratorio.es_visible_para`; un `personalizado` sigue
-    siendo privado de su instructor y solo se asigna por invitación).
+    laboratorios visibles en el catálogo público (mismo criterio que
+    `Laboratorio.es_visible_para`): `predeterminado` + `publicado` siempre,
+    o `personalizado` + `publicado` si su instructor (o un admin) activó
+    `visible_en_catalogo` (`CambiarVisibilidadCatalogoUseCase`). Un
+    `personalizado` sin ese opt-in sigue siendo privado de su instructor y
+    solo se asigna por invitación.
 
     Regla de producto (no existía antes): un estudiante no puede tener más
     de un laboratorio "en curso" a la vez. Se considera "en curso" una
@@ -79,7 +82,10 @@ class InscribirseLaboratorioUseCase(BaseUseCase[InscribirseLaboratorioDTO, Asign
         if (
             laboratorio is None
             or laboratorio.estado != EstadoLaboratorio.PUBLICADO
-            or laboratorio.tipo != TipoLaboratorio.PREDETERMINADO
+            or not (
+                laboratorio.tipo == TipoLaboratorio.PREDETERMINADO
+                or laboratorio.visible_en_catalogo
+            )
         ):
             # Mismo criterio anti-enumeración que HV-03: nunca se confirma la
             # existencia de un laboratorio que el catálogo público no expone.

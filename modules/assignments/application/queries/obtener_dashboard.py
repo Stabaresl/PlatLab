@@ -71,4 +71,6 @@ class ObtenerDashboardQuery:
             estado=lab.estado.value,
             estudiantes_inscritos=len(activas),
             porcentaje_completitud_promedio=promedio,
+            tipo=lab.tipo.value,
+            visible_en_catalogo=lab.visible_en_catalogo,
         )

@@ -112,3 +112,5 @@ class LaboratorioDashboardItemDTO:
     estado: str
     estudiantes_inscritos: int
     porcentaje_completitud_promedio: float
+    tipo: str = "personalizado"
+    visible_en_catalogo: bool = False
