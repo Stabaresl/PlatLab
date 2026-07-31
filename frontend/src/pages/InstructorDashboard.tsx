@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   getInstructorDashboard,
@@ -9,6 +10,7 @@ import {
   type EstudianteFiltrado,
   type Asignacion,
   type EstadoAsignacion,
+  type EstadoLaboratorio,
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
@@ -33,6 +35,18 @@ const ESTADO_LABELS: Record<EstadoAsignacion, string> = {
   rechazada: "Rechazada",
   activa: "Activa",
   vencida: "Vencida",
+}
+
+const LAB_ESTADO_LABELS: Record<EstadoLaboratorio, string> = {
+  borrador: "Borrador",
+  en_revision: "En revisión",
+  publicado: "Publicado",
+}
+
+const LAB_ESTADO_COLORS: Record<EstadoLaboratorio, string> = {
+  borrador: "var(--text-muted)",
+  en_revision: "var(--signal-amber)",
+  publicado: "var(--signal-green)",
 }
 
 export default function InstructorDashboard() {
@@ -109,7 +123,7 @@ export default function InstructorDashboard() {
 
                   <div className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
                     {labs.map((lab, i) => {
-                      const isPublished = lab.estado === "publicado"
+                      const color = LAB_ESTADO_COLORS[lab.estado]
                       return (
                         <motion.div
                           key={lab.laboratorio_id}
@@ -117,7 +131,7 @@ export default function InstructorDashboard() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: i * 0.05 }}
                           className="chamfer flex flex-col p-4 sm:p-5 transition-colors"
-                          style={{ backgroundColor: "var(--surface)", border: `1px solid ${isPublished ? "var(--border-strong)" : "var(--border-default)"}` }}
+                          style={{ backgroundColor: "var(--surface)", border: `1px solid ${lab.estado === "publicado" ? "var(--border-strong)" : "var(--border-default)"}` }}
                         >
                           <div className="flex items-start justify-between mb-3">
                             <span className="text-sm sm:text-base font-bold leading-snug" style={{ color: "var(--text-heading)" }}>
@@ -126,12 +140,12 @@ export default function InstructorDashboard() {
                             <span
                               className="text-[10px] font-bold px-2 py-0.5 chamfer-sm shrink-0 ml-3 uppercase tracking-wide"
                               style={{
-                                backgroundColor: isPublished ? "rgba(51,214,159,0.12)" : "rgba(136,146,163,0.12)",
-                                color: isPublished ? "var(--signal-green)" : "var(--text-muted)",
-                                border: `1px solid ${isPublished ? "var(--signal-green-dim)" : "var(--border-default)"}`,
+                                backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
+                                color,
+                                border: `1px solid ${color}`,
                               }}
                             >
-                              {isPublished ? "Publicado" : "Borrador"}
+                              {LAB_ESTADO_LABELS[lab.estado]}
                             </span>
                           </div>
 
@@ -143,11 +157,12 @@ export default function InstructorDashboard() {
                       )
                     })}
 
-                    <button
-                      type="button"
-                      title="Próximamente"
-                      className="chamfer flex items-center justify-center p-4 sm:p-5 cursor-not-allowed transition-colors opacity-60"
+                    <Link
+                      to="/laboratorios/nuevo"
+                      className="chamfer flex items-center justify-center p-4 sm:p-5 transition-colors no-underline"
                       style={{ backgroundColor: "transparent", border: "2px dashed var(--border-default)", color: "var(--text-muted)", minHeight: "120px" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--signal-amber)"; e.currentTarget.style.color = "var(--signal-amber)" }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; e.currentTarget.style.color = "var(--text-muted)" }}
                     >
                       <div className="flex flex-col items-center gap-1">
                         <span className="text-lg font-medium">+</span>
@@ -155,7 +170,7 @@ export default function InstructorDashboard() {
                           Nuevo Laboratorio
                         </span>
                       </div>
-                    </button>
+                    </Link>
                   </div>
                 </section>
 

@@ -23,6 +23,8 @@ import CatalogPage from "./pages/CatalogPage"
 import LabDetailPage from "./pages/LabDetailPage"
 import ResolverLaboratorioPage from "./pages/ResolverLaboratorioPage"
 import SeccionMaterialPage from "./pages/SeccionMaterialPage"
+import CrearLaboratorioPage from "./pages/CrearLaboratorioPage"
+import LabPreviewPage from "./pages/LabPreviewPage"
 
 const token = () => localStorage.getItem("token")
 
@@ -60,6 +62,8 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/resolver/:assignmentId" element={<ProtectedRoute><ResolverLaboratorioPage /></ProtectedRoute>} />
         <Route path="/resolver/:assignmentId/secciones/:seccionId/material" element={<ProtectedRoute><SeccionMaterialPage /></ProtectedRoute>} />
+        <Route path="/laboratorios/nuevo" element={<ProtectedRoute><CrearLaboratorioPage /></ProtectedRoute>} />
+        <Route path="/laboratorios/:id/revision" element={<ProtectedRoute><LabPreviewPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

@@ -1,14 +1,17 @@
 import { useEffect, useState, type ReactNode } from "react"
+import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   getAdminDashboard,
   listUsers,
+  listReviewQueue,
+  ApiError,
   disableUser,
   enableUser,
-  ApiError,
   type AdminDashboard as AdminDashboardData,
   type UsuarioItem,
   type Rol,
+  type LaboratorioEnRevisionItem,
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
@@ -17,7 +20,7 @@ import SectionHeading from "../components/SectionHeading"
 import ProgressRing from "../components/ProgressRing"
 import TerminalHeader from "../components/TerminalHeader"
 import StatusDot from "../components/StatusDot"
-import { IconChart, IconUsers, IconTrophy } from "../components/icons"
+import { IconChart, IconUsers, IconTrophy, IconFlask } from "../components/icons"
 import { Skeleton } from "../components/ui/skeleton"
 
 const ROLE_LABELS: Record<Rol, string> = {
@@ -35,6 +38,7 @@ const ROLE_COLORS: Record<Rol, string> = {
 export default function AdminDashboard() {
   const [dashboard, setDashboard] = useState<AdminDashboardData | null>(null)
   const [users, setUsers] = useState<UsuarioItem[]>([])
+  const [reviewQueue, setReviewQueue] = useState<LaboratorioEnRevisionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [busyUserId, setBusyUserId] = useState<string | null>(null)
@@ -46,11 +50,12 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([getAdminDashboard(), listUsers()])
-      .then(([dashboardData, usersData]) => {
+    Promise.all([getAdminDashboard(), listUsers(), listReviewQueue()])
+      .then(([dashboardData, usersData, reviewQueueData]) => {
         if (cancelled) return
         setDashboard(dashboardData)
         setUsers(usersData)
+        setReviewQueue(reviewQueueData)
       })
       .catch((err) => {
         if (cancelled) return
@@ -139,6 +144,48 @@ export default function AdminDashboard() {
                           ))}
                         </dl>
                       </div>
+                    </div>
+                  )}
+                </section>
+
+                {/* ═══ COLA DE REVISIÓN ═══ */}
+                <section className="mb-8 sm:mb-10">
+                  <SectionHeading icon={<IconFlask />} title="Cola de Revisión" subtitle={`${reviewQueue.length} laboratorio(s) esperando aprobación`} />
+
+                  {reviewQueue.length === 0 ? (
+                    <div className="chamfer p-8 text-center" style={{ border: "1px dashed var(--border-strong)" }}>
+                      <p className="text-xs uppercase tracking-widest m-0" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                        [ Nada pendiente de revisión ]
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
+                      <AnimatePresence mode="popLayout">
+                        {reviewQueue.map((lab) => (
+                          <motion.div
+                            key={lab.id}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.25 }}
+                            className="chamfer flex flex-col p-4 sm:p-5"
+                            style={{ backgroundColor: "var(--surface)", border: "1px solid var(--signal-amber)" }}
+                          >
+                            <span className="text-sm sm:text-base font-bold mb-2" style={{ color: "var(--text-heading)" }}>{lab.nombre}</span>
+                            <span className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+                              {lab.updated_at ? new Date(lab.updated_at).toLocaleDateString() : ""}
+                            </span>
+                            <Link
+                              to={`/laboratorios/${lab.id}/revision`}
+                              className="chamfer-sm px-3 py-1.5 text-xs font-mono uppercase tracking-wide text-center mt-auto no-underline"
+                              style={{ backgroundColor: "rgba(255,176,32,0.12)", color: "var(--signal-amber)", border: "1px solid var(--border-amber)" }}
+                            >
+                              Revisar
+                            </Link>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
                     </div>
                   )}
                 </section>
