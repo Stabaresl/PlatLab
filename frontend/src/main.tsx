@@ -25,6 +25,8 @@ import ResolverLaboratorioPage from "./pages/ResolverLaboratorioPage"
 import SeccionMaterialPage from "./pages/SeccionMaterialPage"
 import CrearLaboratorioPage from "./pages/CrearLaboratorioPage"
 import LabPreviewPage from "./pages/LabPreviewPage"
+import RoadmapPage from "./pages/RoadmapPage"
+import RoadmapAdminPage from "./pages/RoadmapAdminPage"
 
 const token = () => localStorage.getItem("token")
 
@@ -56,6 +58,8 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/about" element={<AboutPage />} />
         <Route path="/laboratorios" element={<CatalogPage />} />
         <Route path="/laboratorios/:id" element={<LabDetailPage />} />
+        <Route path="/roadmap" element={<RoadmapPage />} />
+        <Route path="/roadmap/admin" element={<ProtectedRoute><RoadmapAdminPage /></ProtectedRoute>} />
         <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><SignUpPage /></PublicRoute>} />
         <Route path="/oauth/:provider/callback" element={<OAuthCallbackPage />} />
