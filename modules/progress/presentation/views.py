@@ -81,6 +81,7 @@ class ProgresoOverviewView(APIView):
                 "fecha_vencimiento": (
                     resultado.fecha_vencimiento.isoformat() if resultado.fecha_vencimiento else None
                 ),
+                "resumen_cierre": resultado.resumen_cierre,
                 "secciones": [
                     {
                         "id": str(s.id),
@@ -120,7 +121,9 @@ class ContenidoSeccionView(APIView):
                 "contenido_teorico": resultado.contenido_teorico,
                 "tiene_practica": resultado.tiene_practica,
                 "estado": resultado.estado,
-                "guia_paso_a_paso": resultado.guia_paso_a_paso,
+                "objetivos": resultado.objetivos,
+                "duracion_estimada_minutos": resultado.duracion_estimada_minutos,
+                "pasos_guia": resultado.pasos_guia,
                 "entorno_practica": resultado.entorno_practica,
                 "entorno_real_disponible": resultado.entorno_real_disponible,
             },

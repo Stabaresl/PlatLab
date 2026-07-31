@@ -1,5 +1,5 @@
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 
@@ -23,11 +23,16 @@ class ContenidoSeccionDTO:
     contenido_teorico: str
     tiene_practica: bool
     estado: str
+    # Objetivos de aprendizaje y duración estimada — encabezado estilo AWS
+    # Academy antes del contenido.
+    objetivos: list[str] = field(default_factory=list)
+    duracion_estimada_minutos: int = 15
     # Guía siempre disponible una vez desbloqueada la sección (no gatillada
     # por intentos fallidos, a diferencia de la ayuda progresiva de la Flag)
-    # — puede abrirse en una pestaña aparte y queda disponible durante la
-    # práctica (ver ResolverLaboratorioPage en el frontend).
-    guia_paso_a_paso: str = ""
+    # — pasos numerados que pueden abrirse en una pestaña aparte y quedan
+    # disponibles durante la práctica (ver ResolverLaboratorioPage en el
+    # frontend). [{"orden", "titulo", "instrucciones", "comando_sugerido"}, ...]
+    pasos_guia: list[dict] = field(default_factory=list)
     # Consola simulada (estilo HackerRank/TryHackMe, sin ejecución real) —
     # {"prompt": str, "banner": str, "comandos": [{"comando": str, "salida": str}]}
     entorno_practica: dict | None = None
@@ -180,3 +185,4 @@ class ProgresoOverviewDTO:
     intentos_examen: int
     vencido: bool = False
     fecha_vencimiento: datetime | None = None
+    resumen_cierre: str | None = None

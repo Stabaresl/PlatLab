@@ -91,4 +91,5 @@ class ObtenerProgresoQuery:
             intentos_examen=len(historial),
             vencido=vencido,
             fecha_vencimiento=fecha_vencimiento,
+            resumen_cierre=(laboratorio.resumen_cierre if laboratorio else None),
         )

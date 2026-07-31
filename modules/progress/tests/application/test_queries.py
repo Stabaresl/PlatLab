@@ -8,6 +8,7 @@ from modules.laboratories.domain.value_objects import (
     AyudaProgresiva,
     EstadoLaboratorio,
     NivelDificultad,
+    PasoGuia,
     TipoLaboratorio,
     TipoPregunta,
 )
@@ -56,6 +57,9 @@ def _crear_lab_con_seccion(tiene_practica=True, con_flag=True):
             contenido_teorico="contenido secreto",
             orden=1,
             tiene_practica=tiene_practica,
+            objetivos=["Objetivo de prueba"],
+            duracion_estimada_minutos=12,
+            pasos_guia=[PasoGuia(orden=1, titulo="Paso", instrucciones="<p>hacé esto</p>")],
         )
     )
     if con_flag:
@@ -92,6 +96,11 @@ def test_obtener_contenido_seccion_en_progreso_devuelve_contenido():
 
     assert resultado.contenido_teorico == "contenido secreto"
     assert resultado.estado == "en_progreso"
+    assert resultado.objetivos == ["Objetivo de prueba"]
+    assert resultado.duracion_estimada_minutos == 12
+    assert resultado.pasos_guia == [
+        {"orden": 1, "titulo": "Paso", "instrucciones": "<p>hacé esto</p>", "comando_sugerido": None}
+    ]
 
 
 @pytest.mark.django_db
@@ -214,6 +223,7 @@ def _crear_lab_con_dos_secciones():
             nivel_dificultad=NivelDificultad.BASICO,
             estado=EstadoLaboratorio.PUBLICADO,
             tipo=TipoLaboratorio.PREDETERMINADO,
+            resumen_cierre="<p>Buen trabajo</p>",
         )
     )
     s1 = lab_repo.add_seccion(
@@ -263,6 +273,7 @@ def test_obtener_progreso_devuelve_secciones_en_orden_con_estado():
     assert resultado.secciones[0].estado == "en_progreso"
     assert resultado.secciones[1].estado == "bloqueada"
     assert resultado.secciones_completas is False
+    assert resultado.resumen_cierre == "<p>Buen trabajo</p>"
     assert resultado.examen_disponible is False
 
 

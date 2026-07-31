@@ -11,6 +11,7 @@ from modules.laboratories.domain.value_objects import (
     EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
+    PasoGuia,
     TipoLaboratorio,
 )
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
@@ -163,7 +164,9 @@ def test_contenido_seccion_endpoint_expone_guia_y_entorno_practica():
             contenido_teorico="contenido",
             orden=1,
             tiene_practica=True,
-            guia_paso_a_paso="<p>Guia completa</p>",
+            objetivos=["Objetivo de vista"],
+            duracion_estimada_minutos=18,
+            pasos_guia=[PasoGuia(orden=1, titulo="Paso", instrucciones="<p>Guia completa</p>")],
             entorno_practica=EntornoPractica(
                 prompt="root@target:~#",
                 comandos=[ComandoSimulado(comando="ls", salida="login.php")],
@@ -177,7 +180,9 @@ def test_contenido_seccion_endpoint_expone_guia_y_entorno_practica():
     response = client.get(f"/api/v1/progress/{progreso.asignacion_id}/sections/{seccion.id}/")
 
     assert response.status_code == 200
-    assert response.data["guia_paso_a_paso"] == "<p>Guia completa</p>"
+    assert response.data["objetivos"] == ["Objetivo de vista"]
+    assert response.data["duracion_estimada_minutos"] == 18
+    assert response.data["pasos_guia"][0]["instrucciones"] == "<p>Guia completa</p>"
     assert response.data["entorno_practica"]["prompt"] == "root@target:~#"
     assert response.data["entorno_practica"]["comandos"][0]["comando"] == "ls"
 

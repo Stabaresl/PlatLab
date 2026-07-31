@@ -50,7 +50,17 @@ class ObtenerContenidoSeccionQuery:
             contenido_teorico=seccion.contenido_teorico,
             tiene_practica=seccion.tiene_practica,
             estado=progreso_seccion.estado.value,
-            guia_paso_a_paso=seccion.guia_paso_a_paso,
+            objetivos=seccion.objetivos,
+            duracion_estimada_minutos=seccion.duracion_estimada_minutos,
+            pasos_guia=[
+                {
+                    "orden": p.orden,
+                    "titulo": p.titulo,
+                    "instrucciones": p.instrucciones,
+                    "comando_sugerido": p.comando_sugerido,
+                }
+                for p in seccion.pasos_guia
+            ],
             entorno_practica=(
                 {
                     "prompt": seccion.entorno_practica.prompt,
