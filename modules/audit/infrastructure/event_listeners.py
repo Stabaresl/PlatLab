@@ -6,17 +6,26 @@ from modules.assignments.domain.events import (
 )
 from modules.audit.domain.entities import RegistroAuditoria
 from modules.audit.infrastructure.repositories import AuditoriaRepository
+from modules.gamification.domain.events import LogroDesbloqueadoEvent
 from modules.authentication.domain.events import (
     OAuthAccountLinked,
     PasswordResetRequested,
     UserLoggedIn,
     UserRegistered,
 )
-from modules.laboratories.domain.events import LaboratoryDuplicated, LaboratoryPublished
+from modules.laboratories.domain.events import (
+    LaboratoryApproved,
+    LaboratoryCatalogVisibilityChanged,
+    LaboratoryDuplicated,
+    LaboratoryPublished,
+    LaboratoryRejected,
+    LaboratoryReviewRequested,
+)
 from modules.progress.domain.events import ExamGraded, FlagValidated, LabCompleted, SectionCompleted
 from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.reports.domain.events import ReportResolved, ReportSubmitted
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
+from modules.users.domain.events import InstructorVerificationRequested, InstructorVerificationResolved
 
 _repo = AuditoriaRepository()
 
@@ -67,6 +76,54 @@ def _on_laboratory_published(event: LaboratoryPublished) -> None:
 
 def _on_laboratory_duplicated(event: LaboratoryDuplicated) -> None:
     _registrar(event.instructor_id, "laboratory_duplicated", "laboratorio", event.laboratorio_id)
+
+
+def _on_laboratory_review_requested(event: LaboratoryReviewRequested) -> None:
+    _registrar(
+        event.instructor_id, "laboratory_review_requested", "laboratorio", event.laboratorio_id
+    )
+
+
+def _on_laboratory_approved(event: LaboratoryApproved) -> None:
+    _registrar(event.admin_id, "laboratory_approved", "laboratorio", event.laboratorio_id)
+
+
+def _on_laboratory_rejected(event: LaboratoryRejected) -> None:
+    _registrar(event.admin_id, "laboratory_rejected", "laboratorio", event.laboratorio_id)
+
+
+def _on_laboratory_catalog_visibility_changed(event: LaboratoryCatalogVisibilityChanged) -> None:
+    accion = "laboratory_catalog_visibility_enabled" if event.visible else "laboratory_catalog_visibility_disabled"
+    _registrar(event.actor_id, accion, "laboratorio", event.laboratorio_id)
+
+
+# --- Gamification -----------------------------------------------------------
+
+
+def _on_logro_desbloqueado(event: LogroDesbloqueadoEvent) -> None:
+    _registrar(event.estudiante_id, "logro_desbloqueado", "logro", event.logro_id)
+
+
+# --- Users (verificación de instructor) ------------------------------------
+
+
+def _on_instructor_verification_requested(event: InstructorVerificationRequested) -> None:
+    _registrar(
+        event.user_id,
+        "instructor_verification_requested",
+        "solicitud_instructor",
+        event.solicitud_id,
+    )
+
+
+def _on_instructor_verification_resolved(event: InstructorVerificationResolved) -> None:
+    # Verificación automática (OpenAlex vía Celery) — no la ejecuta una
+    # persona, por eso `actor_id=None` (a diferencia de un admin
+    # aprobando/rechazando un laboratorio, que sí es una decisión humana).
+    accion = (
+        "instructor_verification_approved" if event.aprobada else "instructor_verification_rejected"
+    )
+    _registrar(None, accion, "solicitud_instructor", event.solicitud_id)
 
 
 # --- Progress -------------------------------------------------------------
@@ -132,6 +189,17 @@ def registrar_listeners(dispatcher: EventDispatcher) -> None:
 
     dispatcher.subscribe(LaboratoryPublished, _on_laboratory_published)
     dispatcher.subscribe(LaboratoryDuplicated, _on_laboratory_duplicated)
+    dispatcher.subscribe(LaboratoryReviewRequested, _on_laboratory_review_requested)
+    dispatcher.subscribe(LaboratoryApproved, _on_laboratory_approved)
+    dispatcher.subscribe(LaboratoryRejected, _on_laboratory_rejected)
+    dispatcher.subscribe(
+        LaboratoryCatalogVisibilityChanged, _on_laboratory_catalog_visibility_changed
+    )
+
+    dispatcher.subscribe(LogroDesbloqueadoEvent, _on_logro_desbloqueado)
+
+    dispatcher.subscribe(InstructorVerificationRequested, _on_instructor_verification_requested)
+    dispatcher.subscribe(InstructorVerificationResolved, _on_instructor_verification_resolved)
 
     dispatcher.subscribe(FlagValidated, _on_flag_validated)
     dispatcher.subscribe(SectionCompleted, _on_section_completed)
