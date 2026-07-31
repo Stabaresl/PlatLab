@@ -46,7 +46,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
       }}
     >
       <div className="mx-auto flex items-center justify-between px-4 sm:px-6 md:px-8 h-16" style={{ maxWidth: "1400px" }}>
-        <Link to="/" className="flex items-center gap-2 no-underline select-none group">
+        <Link to="/" data-tour="logo" className="flex items-center gap-2 no-underline select-none group">
           <span
             className="chamfer-sm flex items-center justify-center w-8 h-8 text-sm font-bold shrink-0"
             style={{ backgroundColor: "var(--signal-amber)", color: "#0a0700", fontFamily: "var(--font-mono)" }}
@@ -64,6 +64,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
         <nav className="flex items-center gap-2 sm:gap-3">
           <Link
             to="/laboratorios"
+            data-tour="nav-laboratorios"
             className="hidden sm:inline text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
             style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
@@ -73,6 +74,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
           </Link>
           <Link
             to="/roadmap"
+            data-tour="nav-roadmap"
             className="hidden sm:inline text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
             style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
@@ -100,14 +102,16 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
                   <StatusDot variant="online" label={ROLE_LABELS[role] || role} />
                 </span>
               )}
-              <NotificationBell />
+              <div data-tour="nav-bell" style={{ display: "contents" }}>
+                <NotificationBell />
+              </div>
               {role === "estudiante" && (
-                <Link to="/profile" aria-label="Mi perfil" className="flex items-center">
+                <Link to="/profile" aria-label="Mi perfil" data-tour="nav-avatar" className="flex items-center">
                   <AvatarBadge perfil={perfil} size="sm" />
                 </Link>
               )}
               <Button asChild size="sm" className="chamfer-sm font-mono text-xs uppercase tracking-wide">
-                <Link to="/dashboard">Dashboard</Link>
+                <Link to="/dashboard" data-tour="nav-dashboard">Dashboard</Link>
               </Button>
               <Button
                 type="button"

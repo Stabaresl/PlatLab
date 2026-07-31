@@ -48,6 +48,7 @@ export default function SignUpPage() {
       setTokens(tokens.access, tokens.refresh)
       localStorage.setItem("role", tokens.rol)
       setLocalProfile({ email: normalizedEmail, nombre_completo: name })
+      localStorage.setItem("just_registered", "true")
       navigate("/dashboard")
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo crear la cuenta.")

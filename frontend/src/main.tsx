@@ -28,6 +28,7 @@ import LabPreviewPage from "./pages/LabPreviewPage"
 import RoadmapPage from "./pages/RoadmapPage"
 import RoadmapAdminPage from "./pages/RoadmapAdminPage"
 import ProfilePage from "./pages/ProfilePage"
+import OnboardingTour from "./components/OnboardingTour"
 
 const token = () => localStorage.getItem("token")
 
@@ -51,6 +52,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <ScrollToTop />
+      <OnboardingTour />
       <Routes>
         {/* Sin PublicRoute a propósito: el logo/GA::IA del Navbar siempre
             vuelve acá, incluso con sesión iniciada — antes redirigía a
