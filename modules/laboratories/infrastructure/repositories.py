@@ -2,16 +2,26 @@ import uuid
 
 from django.db.models import Q
 
-from modules.laboratories.domain.entities import Examen, Flag, Laboratorio, Pregunta, Seccion
+from modules.laboratories.domain.entities import (
+    DockerfileSeccion,
+    Examen,
+    Flag,
+    Laboratorio,
+    Pregunta,
+    Seccion,
+)
 from modules.laboratories.infrastructure.mappers import (
+    dockerfile_seccion_to_entity,
     entorno_practica_to_dict,
     examen_to_entity,
     flag_to_entity,
     laboratorio_to_entity,
+    pasos_guia_to_list,
     pregunta_to_entity,
     seccion_to_entity,
 )
 from modules.laboratories.infrastructure.models import (
+    DockerfileSeccionModel,
     ExamenModel,
     FlagModel,
     LaboratorioModel,
@@ -63,6 +73,8 @@ class LaboratorioRepository:
         model.descripcion = laboratorio.descripcion
         model.nivel_dificultad = laboratorio.nivel_dificultad.value
         model.estado = laboratorio.estado.value
+        model.resumen_cierre = laboratorio.resumen_cierre
+        model.motivo_rechazo = laboratorio.motivo_rechazo
         model.save()
 
         temas_modelo = [
@@ -85,6 +97,7 @@ class LaboratorioRepository:
             tipo=laboratorio.tipo.value,
             origen_id=laboratorio.origen_id,
             instructor_id=laboratorio.instructor_id,
+            resumen_cierre=laboratorio.resumen_cierre,
         )
         if laboratorio.temas:
             temas_modelo = [
@@ -101,7 +114,9 @@ class LaboratorioRepository:
             contenido_teorico=seccion.contenido_teorico,
             orden=seccion.orden,
             tiene_practica=seccion.tiene_practica,
-            guia_paso_a_paso=seccion.guia_paso_a_paso,
+            objetivos=seccion.objetivos,
+            duracion_estimada_minutos=seccion.duracion_estimada_minutos,
+            pasos_guia=pasos_guia_to_list(seccion.pasos_guia),
             entorno_practica=entorno_practica_to_dict(seccion.entorno_practica),
             imagen_practica=seccion.imagen_practica,
         )
@@ -117,7 +132,9 @@ class LaboratorioRepository:
         model.contenido_teorico = seccion.contenido_teorico
         model.orden = seccion.orden
         model.tiene_practica = seccion.tiene_practica
-        model.guia_paso_a_paso = seccion.guia_paso_a_paso
+        model.objetivos = seccion.objetivos
+        model.duracion_estimada_minutos = seccion.duracion_estimada_minutos
+        model.pasos_guia = pasos_guia_to_list(seccion.pasos_guia)
         model.entorno_practica = entorno_practica_to_dict(seccion.entorno_practica)
         model.imagen_practica = seccion.imagen_practica
         model.save()
@@ -170,3 +187,26 @@ class LaboratorioRepository:
             estado=LaboratorioModel.Estado.PUBLICADO
         ).prefetch_related("temas")
         return [laboratorio_to_entity(m) for m in modelos]
+
+    def find_en_revision(self) -> list[Laboratorio]:
+        modelos = (
+            LaboratorioModel.objects.filter(estado=LaboratorioModel.Estado.EN_REVISION)
+            .prefetch_related("temas")
+            .order_by("updated_at")
+        )
+        return [laboratorio_to_entity(m) for m in modelos]
+
+    def get_dockerfile_by_seccion(self, seccion_id: uuid.UUID) -> DockerfileSeccion | None:
+        model = DockerfileSeccionModel.objects.filter(seccion_id=seccion_id).first()
+        return dockerfile_seccion_to_entity(model) if model else None
+
+    def save_dockerfile(self, dockerfile: DockerfileSeccion) -> DockerfileSeccion:
+        model, _ = DockerfileSeccionModel.objects.update_or_create(
+            seccion_id=dockerfile.seccion_id,
+            defaults={
+                "archivo_url": dockerfile.archivo_url,
+                "nombre_archivo": dockerfile.nombre_archivo,
+                "tamano_kb": dockerfile.tamano_kb,
+            },
+        )
+        return dockerfile_seccion_to_entity(model)

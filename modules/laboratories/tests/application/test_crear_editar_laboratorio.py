@@ -45,6 +45,7 @@ def test_crear_laboratorio_instructor_crea_personalizado_propio():
             nivel_dificultad="basico",
             actor_id=instructor_id,
             actor_rol="instructor",
+            resumen_cierre="<p>Cierre</p><script>alert(1)</script>",
         )
     )
 
@@ -52,6 +53,8 @@ def test_crear_laboratorio_instructor_crea_personalizado_propio():
     assert resultado.tipo == "personalizado"
     guardado = LaboratorioRepository().get_by_id(resultado.id)
     assert guardado.instructor_id == instructor_id
+    assert "<script>" not in guardado.resumen_cierre
+    assert "<p>Cierre</p>" in guardado.resumen_cierre
 
 
 @pytest.mark.django_db
@@ -120,10 +123,14 @@ def test_editar_laboratorio_instructor_dueno_actualiza_metadatos():
             actor_id=instructor_id,
             actor_rol="instructor",
             nombre="Editado",
+            resumen_cierre="<p>Nuevo cierre</p><script>x()</script>",
         )
     )
 
     assert resultado.nombre == "Editado"
+    guardado = repo.get_by_id(lab.id)
+    assert "<script>" not in guardado.resumen_cierre
+    assert "<p>Nuevo cierre</p>" in guardado.resumen_cierre
 
 
 @pytest.mark.django_db

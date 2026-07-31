@@ -19,3 +19,28 @@ class LaboratoryDuplicated(DomainEvent):
     laboratorio_id: uuid.UUID
     origen_id: uuid.UUID
     instructor_id: uuid.UUID
+
+
+@dataclass(frozen=True, kw_only=True)
+class LaboratoryReviewRequested(DomainEvent):
+    """Se dispara cuando un instructor manda su laboratorio a revisión."""
+
+    laboratorio_id: uuid.UUID
+    instructor_id: uuid.UUID
+
+
+@dataclass(frozen=True, kw_only=True)
+class LaboratoryApproved(DomainEvent):
+    """Se dispara cuando un admin aprueba un laboratorio en revisión (pasa a publicado)."""
+
+    laboratorio_id: uuid.UUID
+    instructor_id: uuid.UUID
+
+
+@dataclass(frozen=True, kw_only=True)
+class LaboratoryRejected(DomainEvent):
+    """Se dispara cuando un admin rechaza un laboratorio en revisión (vuelve a borrador)."""
+
+    laboratorio_id: uuid.UUID
+    instructor_id: uuid.UUID
+    motivo: str

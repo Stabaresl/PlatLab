@@ -1,7 +1,8 @@
 import uuid
 from dataclasses import dataclass, field
+from datetime import datetime
 
-from modules.laboratories.domain.value_objects import EntornoPractica
+from modules.laboratories.domain.value_objects import EntornoPractica, PasoGuia
 
 
 @dataclass(frozen=True)
@@ -40,13 +41,16 @@ class LaboratorioDetalleDTO:
     estado: str
     temas: list[str]
     total_secciones: int
+    motivo_rechazo: str | None = None
 
 
 @dataclass(frozen=True)
 class SeccionTOCItemDTO:
+    id: uuid.UUID
     orden: int
     titulo: str
     tiene_practica: bool
+    duracion_estimada_minutos: int
 
 
 @dataclass(frozen=True)
@@ -94,14 +98,15 @@ class CrearLaboratorioDTO:
     actor_id: uuid.UUID
     actor_rol: str
     temas: list[str] = field(default_factory=list)
+    resumen_cierre: str = ""
 
 
 @dataclass(frozen=True)
 class EditarLaboratorioDTO:
     """
     api.md §5 `PATCH /laboratories/{id}/`. Solo metadatos editables
-    (nombre/descripción/dificultad/temas) — `tipo`/`estado` cambian solo
-    vía `PublicarLaboratorioUseCase`/`DuplicarLaboratorioUseCase`.
+    (nombre/descripción/dificultad/temas/resumen_cierre) — `tipo`/`estado`
+    cambian solo vía `PublicarLaboratorioUseCase`/`DuplicarLaboratorioUseCase`.
     """
 
     laboratorio_id: uuid.UUID
@@ -111,6 +116,7 @@ class EditarLaboratorioDTO:
     descripcion: str | None = None
     nivel_dificultad: str | None = None
     temas: list[str] | None = None
+    resumen_cierre: str | None = None
 
 
 @dataclass(frozen=True)
@@ -132,7 +138,9 @@ class CrearSeccionDTO:
     actor_id: uuid.UUID
     actor_rol: str
     tiene_practica: bool = False
-    guia_paso_a_paso: str = ""
+    objetivos: list[str] = field(default_factory=list)
+    duracion_estimada_minutos: int = 15
+    pasos_guia: list[PasoGuia] = field(default_factory=list)
     entorno_practica: EntornoPractica | None = None
     imagen_practica: str | None = None
 
@@ -149,7 +157,9 @@ class EditarSeccionDTO:
     contenido_teorico: str | None = None
     orden: int | None = None
     tiene_practica: bool | None = None
-    guia_paso_a_paso: str | None = None
+    objetivos: list[str] | None = None
+    duracion_estimada_minutos: int | None = None
+    pasos_guia: list[PasoGuia] | None = None
     entorno_practica: EntornoPractica | None = None
     imagen_practica: str | None = None
 
@@ -221,3 +231,91 @@ class PreguntaResultDTO:
     enunciado: str
     tipo: str
     opciones: list[str] | None
+
+
+@dataclass(frozen=True)
+class SolicitarRevisionLaboratorioDTO:
+    """`POST /laboratories/{id}/submit-review/` — instructor manda su personalizado a revisión."""
+
+    laboratorio_id: uuid.UUID
+    actor_id: uuid.UUID
+    actor_rol: str
+
+
+@dataclass(frozen=True)
+class AprobarLaboratorioDTO:
+    """`POST /laboratories/{id}/approve/` — admin aprueba (en_revision -> publicado)."""
+
+    laboratorio_id: uuid.UUID
+    actor_id: uuid.UUID
+    actor_rol: str
+
+
+@dataclass(frozen=True)
+class RechazarLaboratorioDTO:
+    """`POST /laboratories/{id}/reject/` — admin rechaza (en_revision -> borrador + motivo)."""
+
+    laboratorio_id: uuid.UUID
+    motivo: str
+    actor_id: uuid.UUID
+    actor_rol: str
+
+
+@dataclass(frozen=True)
+class LaboratorioEnRevisionItemDTO:
+    id: uuid.UUID
+    nombre: str
+    instructor_id: uuid.UUID | None
+    updated_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class SubirDockerfileDTO:
+    """`POST /laboratories/{id}/sections/{section_id}/dockerfile/` — multipart."""
+
+    laboratorio_id: uuid.UUID
+    seccion_id: uuid.UUID
+    archivo_nombre: str
+    archivo_contenido: bytes
+    actor_id: uuid.UUID
+    actor_rol: str
+
+
+@dataclass(frozen=True)
+class DockerfileResultDTO:
+    id: uuid.UUID
+    seccion_id: uuid.UUID
+    archivo_url: str
+    nombre_archivo: str
+    tamano_kb: int
+
+
+@dataclass(frozen=True)
+class ObtenerContenidoSeccionPreviewDTO:
+    laboratorio_id: uuid.UUID
+    seccion_id: uuid.UUID
+    actor_id: uuid.UUID
+    actor_rol: str
+
+
+@dataclass(frozen=True)
+class ContenidoSeccionPreviewDTO:
+    seccion_id: uuid.UUID
+    titulo: str
+    contenido_teorico: str
+    tiene_practica: bool
+    objetivos: list[str]
+    duracion_estimada_minutos: int
+    pasos_guia: list[dict]
+    entorno_practica: dict | None
+    tiene_dockerfile: bool
+    dockerfile_url: str | None
+
+
+@dataclass(frozen=True)
+class VerificarFlagPreviewDTO:
+    laboratorio_id: uuid.UUID
+    seccion_id: uuid.UUID
+    valor: str
+    actor_id: uuid.UUID
+    actor_rol: str

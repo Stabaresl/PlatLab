@@ -1,7 +1,7 @@
 from modules.laboratories.application.dtos import CrearSeccionDTO, SeccionResultDTO
 from modules.laboratories.domain.entities import Seccion
 from modules.laboratories.domain.repositories import ILaboratorioRepository
-from modules.laboratories.domain.value_objects import TipoLaboratorio
+from modules.laboratories.domain.value_objects import PasoGuia, TipoLaboratorio
 from modules.laboratories.infrastructure.content_sanitizer import sanitizar_contenido_html
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
@@ -10,6 +10,18 @@ from modules.shared.domain.exceptions import ConflictError, ForbiddenError, NotF
 _LAB_NO_ENCONTRADO_MSG = "Laboratorio no encontrado."
 _SIN_PERMISO_MSG = "No tienes permiso para editar este laboratorio."
 _ORDEN_DUPLICADO_MSG = "Ya existe una sección con ese orden en este laboratorio."
+
+
+def _sanitizar_pasos(pasos: list[PasoGuia]) -> list[PasoGuia]:
+    return [
+        PasoGuia(
+            orden=p.orden,
+            titulo=p.titulo,
+            instrucciones=sanitizar_contenido_html(p.instrucciones),
+            comando_sugerido=p.comando_sugerido,
+        )
+        for p in pasos
+    ]
 
 
 class CrearSeccionUseCase(BaseUseCase[CrearSeccionDTO, SeccionResultDTO]):
@@ -56,7 +68,9 @@ class CrearSeccionUseCase(BaseUseCase[CrearSeccionDTO, SeccionResultDTO]):
             contenido_teorico=sanitizar_contenido_html(input_dto.contenido_teorico),
             orden=input_dto.orden,
             tiene_practica=input_dto.tiene_practica,
-            guia_paso_a_paso=sanitizar_contenido_html(input_dto.guia_paso_a_paso),
+            objetivos=input_dto.objetivos,
+            duracion_estimada_minutos=input_dto.duracion_estimada_minutos,
+            pasos_guia=_sanitizar_pasos(input_dto.pasos_guia),
             entorno_practica=input_dto.entorno_practica,
             imagen_practica=input_dto.imagen_practica,
         )

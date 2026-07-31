@@ -10,6 +10,7 @@ from modules.laboratories.domain.value_objects import (
     EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
+    PasoGuia,
     TipoLaboratorio,
 )
 
@@ -22,6 +23,7 @@ def test_duplicar_predeterminado_crea_copia_personalizado():
         estado=EstadoLaboratorio.PUBLICADO,
         tipo=TipoLaboratorio.PREDETERMINADO,
         temas=["red team"],
+        resumen_cierre="<p>Resumen original</p>",
     )
     entorno = EntornoPractica(comandos=[ComandoSimulado(comando="ls", salida="flag.txt")])
     seccion = Seccion(
@@ -30,7 +32,9 @@ def test_duplicar_predeterminado_crea_copia_personalizado():
         contenido_teorico="...",
         orden=1,
         tiene_practica=True,
-        guia_paso_a_paso="<p>Paso 1</p>",
+        objetivos=["Objetivo uno"],
+        duracion_estimada_minutos=20,
+        pasos_guia=[PasoGuia(orden=1, titulo="Paso 1", instrucciones="<p>Paso 1</p>")],
         entorno_practica=entorno,
     )
     flag = Flag(seccion_id=seccion.id, hash="hash-x")
@@ -45,13 +49,16 @@ def test_duplicar_predeterminado_crea_copia_personalizado():
     assert copia.instructor_id == instructor_id
     assert copia.origen_id == original.id
     assert copia.temas == original.temas
+    assert copia.resumen_cierre == "<p>Resumen original</p>"
     assert len(secciones_copiadas) == 1
     assert secciones_copiadas[0].laboratorio_id == copia.id
     assert secciones_copiadas[0].id != seccion.id
     assert len(flags_copiadas) == 1
     assert flags_copiadas[0].seccion_id == secciones_copiadas[0].id
     assert flags_copiadas[0].hash == flag.hash
-    assert secciones_copiadas[0].guia_paso_a_paso == "<p>Paso 1</p>"
+    assert secciones_copiadas[0].objetivos == ["Objetivo uno"]
+    assert secciones_copiadas[0].duracion_estimada_minutos == 20
+    assert secciones_copiadas[0].pasos_guia[0].titulo == "Paso 1"
     assert secciones_copiadas[0].entorno_practica.comandos[0].comando == "ls"
 
 

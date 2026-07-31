@@ -10,6 +10,7 @@ class NivelDificultad(str, Enum):
 
 class EstadoLaboratorio(str, Enum):
     BORRADOR = "borrador"
+    EN_REVISION = "en_revision"
     PUBLICADO = "publicado"
 
 
@@ -31,8 +32,8 @@ class AyudaProgresiva:
     dominio.md §2: pista y paso a paso, siempre asociados a una `Flag`.
     Ambos opcionales (el instructor puede omitir la ayuda progresiva).
     Esta ayuda se DESBLOQUEA progresivamente (5/15 intentos fallidos,
-    HE-06) — es distinta de `Seccion.guia_paso_a_paso`, que está
-    disponible desde el arranque, sin gatillo.
+    HE-06) — es distinta de `Seccion.pasos_guia`, que está disponible
+    desde el arranque, sin gatillo.
     """
 
     pista: str | None = None
@@ -67,3 +68,18 @@ class EntornoPractica:
     prompt: str = "root@lab:~#"
     banner: str = ""
     comandos: list[ComandoSimulado] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class PasoGuia:
+    """
+    Un paso numerado de la guía de una `Seccion` (estilo AWS Academy: tarea
+    1, tarea 2, ...) — reemplaza el bloque único `guia_paso_a_paso` por
+    pasos discretos, cada uno con su propio título e instrucciones, y
+    opcionalmente el comando exacto sugerido para ese paso.
+    """
+
+    orden: int
+    titulo: str
+    instrucciones: str
+    comando_sugerido: str | None = None

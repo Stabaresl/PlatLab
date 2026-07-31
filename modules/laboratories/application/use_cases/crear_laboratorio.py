@@ -6,6 +6,7 @@ from modules.laboratories.domain.value_objects import (
     NivelDificultad,
     TipoLaboratorio,
 )
+from modules.laboratories.infrastructure.content_sanitizer import sanitizar_contenido_html
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
 from modules.shared.domain.exceptions import ForbiddenError, ValidationError
@@ -58,6 +59,7 @@ class CrearLaboratorioUseCase(BaseUseCase[CrearLaboratorioDTO, LaboratorioResult
             instructor_id=(
                 input_dto.actor_id if tipo == TipoLaboratorio.PERSONALIZADO else None
             ),
+            resumen_cierre=sanitizar_contenido_html(input_dto.resumen_cierre),
         )
         guardado = self._laboratorio_repository.add(laboratorio)
 

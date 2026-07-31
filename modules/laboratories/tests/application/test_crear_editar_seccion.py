@@ -11,6 +11,7 @@ from modules.laboratories.domain.value_objects import (
     EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
+    PasoGuia,
     TipoLaboratorio,
 )
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
@@ -201,7 +202,7 @@ def test_editar_seccion_inexistente_lanza_not_found():
 
 
 @pytest.mark.django_db
-def test_crear_seccion_persiste_guia_y_entorno_practica():
+def test_crear_seccion_persiste_guia_por_pasos_objetivos_y_entorno_practica():
     instructor_id = uuid.uuid4()
     lab = _crear_lab_personalizado(instructor_id)
     entorno = EntornoPractica(
@@ -219,17 +220,60 @@ def test_crear_seccion_persiste_guia_y_entorno_practica():
             actor_id=instructor_id,
             actor_rol="instructor",
             tiene_practica=True,
-            guia_paso_a_paso="<p>Paso 1</p><script>alert(1)</script>",
+            objetivos=["Objetivo uno", "Objetivo dos"],
+            duracion_estimada_minutos=30,
+            pasos_guia=[
+                PasoGuia(
+                    orden=1,
+                    titulo="Paso 1",
+                    instrucciones="<p>Hacé esto</p><script>alert(1)</script>",
+                    comando_sugerido="ls -la",
+                ),
+            ],
             entorno_practica=entorno,
         )
     )
 
     guardada = LaboratorioRepository().get_seccion_by_id(resultado.id)
-    assert "<script>" not in guardada.guia_paso_a_paso
-    assert "<p>Paso 1</p>" in guardada.guia_paso_a_paso
+    assert guardada.objetivos == ["Objetivo uno", "Objetivo dos"]
+    assert guardada.duracion_estimada_minutos == 30
+    assert len(guardada.pasos_guia) == 1
+    assert "<script>" not in guardada.pasos_guia[0].instrucciones
+    assert "<p>Hacé esto</p>" in guardada.pasos_guia[0].instrucciones
+    assert guardada.pasos_guia[0].comando_sugerido == "ls -la"
     assert guardada.entorno_practica.prompt == "root@target:~#"
     assert guardada.entorno_practica.comandos[0].comando == "ls"
     assert guardada.entorno_practica.comandos[0].salida == "login.php"
+
+
+@pytest.mark.django_db
+def test_editar_seccion_actualiza_pasos_guia_sanitizando():
+    instructor_id = uuid.uuid4()
+    lab = _crear_lab_personalizado(instructor_id)
+    lab_repo = LaboratorioRepository()
+    seccion = lab_repo.add_seccion(
+        Seccion(laboratorio_id=lab.id, titulo="Practica", contenido_teorico="...", orden=1)
+    )
+
+    _editar_uc().execute(
+        EditarSeccionDTO(
+            laboratorio_id=lab.id,
+            seccion_id=seccion.id,
+            actor_id=instructor_id,
+            actor_rol="instructor",
+            pasos_guia=[
+                PasoGuia(
+                    orden=1,
+                    titulo="Paso nuevo",
+                    instrucciones="<p>ok</p><script>x()</script>",
+                ),
+            ],
+        )
+    )
+
+    guardada = lab_repo.get_seccion_by_id(seccion.id)
+    assert len(guardada.pasos_guia) == 1
+    assert "<script>" not in guardada.pasos_guia[0].instrucciones
 
 
 @pytest.mark.django_db

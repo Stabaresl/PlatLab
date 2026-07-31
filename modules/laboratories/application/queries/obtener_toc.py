@@ -31,10 +31,12 @@ class ObtenerTOCQuery:
         laboratorio_id: uuid.UUID,
         instructor_id: uuid.UUID | None = None,
         estudiante_id: uuid.UUID | None = None,
+        es_admin: bool = False,
     ) -> TOCDTO:
         laboratorio = self._repo.get_by_id(laboratorio_id)
         visible = laboratorio is not None and (
-            laboratorio.es_visible_para(instructor_id)
+            es_admin
+            or laboratorio.es_visible_para(instructor_id)
             or (
                 estudiante_id is not None
                 and self._inscripcion.esta_inscrito(estudiante_id, laboratorio_id)
@@ -45,7 +47,13 @@ class ObtenerTOCQuery:
 
         secciones = self._repo.get_secciones(laboratorio_id)
         items = [
-            SeccionTOCItemDTO(orden=s.orden, titulo=s.titulo, tiene_practica=s.tiene_practica)
+            SeccionTOCItemDTO(
+                id=s.id,
+                orden=s.orden,
+                titulo=s.titulo,
+                tiene_practica=s.tiene_practica,
+                duracion_estimada_minutos=s.duracion_estimada_minutos,
+            )
             for s in secciones
         ]
         return TOCDTO(laboratorio_id=laboratorio_id, secciones=items)

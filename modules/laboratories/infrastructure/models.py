@@ -24,6 +24,7 @@ class LaboratorioModel(models.Model):
 
     class Estado(models.TextChoices):
         BORRADOR = "borrador", "Borrador"
+        EN_REVISION = "en_revision", "En revisión"
         PUBLICADO = "publicado", "Publicado"
 
     class Tipo(models.TextChoices):
@@ -54,6 +55,10 @@ class LaboratorioModel(models.Model):
         related_name="copias",
     )
     instructor_id = models.UUIDField(null=True, blank=True)
+    # Cierre estilo "Conclusion" de AWS Academy, mostrado al completar
+    # todas las secciones (ver ProgresoOverviewDTO en Progress).
+    resumen_cierre = models.TextField(blank=True, default="")
+    motivo_rechazo = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -88,7 +93,12 @@ class SeccionModel(models.Model):
     contenido_teorico = models.TextField()
     orden = models.PositiveIntegerField()
     tiene_practica = models.BooleanField(default=False)
-    guia_paso_a_paso = models.TextField(blank=True, default="")
+    # Objetivos de aprendizaje (lista corta de strings) y duración
+    # estimada — encabezado estilo AWS Academy antes del contenido.
+    objetivos = models.JSONField(default=list, blank=True)
+    duracion_estimada_minutos = models.PositiveIntegerField(default=15)
+    # [{"orden": int, "titulo": str, "instrucciones": str, "comando_sugerido": str | None}, ...]
+    pasos_guia = models.JSONField(default=list, blank=True)
     # {"prompt": str, "banner": str, "comandos": [{"comando": str, "salida": str}, ...]}
     entorno_practica = models.JSONField(null=True, blank=True)
     # Imagen Docker del entorno de práctica real (lab_environments), ej.
@@ -106,6 +116,25 @@ class SeccionModel(models.Model):
 
     def __str__(self) -> str:
         return f"{self.orden}. {self.titulo}"
+
+
+class DockerfileSeccionModel(models.Model):
+    """Dockerfile/contexto de build subido por el instructor — relación 1:1 con SeccionModel."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    seccion = models.OneToOneField(
+        SeccionModel, on_delete=models.CASCADE, related_name="dockerfile"
+    )
+    archivo_url = models.CharField(max_length=500)
+    nombre_archivo = models.CharField(max_length=255)
+    tamano_kb = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "laboratories_dockerfile_seccion"
+
+    def __str__(self) -> str:
+        return f"Dockerfile de {self.seccion_id}"
 
 
 class FlagModel(models.Model):

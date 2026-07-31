@@ -76,6 +76,27 @@ def test_detalle_borrador_ajeno_lanza_not_found():
 
 
 @pytest.mark.django_db
+def test_detalle_en_revision_ajeno_visible_para_admin():
+    """
+    Regresión: un admin debe poder abrir la vista previa de un
+    `personalizado` en revisión aunque no sea suyo ni sea `predeterminado`
+    — sin `es_admin=True` esto lanzaba `NotFoundError` ("Laboratorio no
+    encontrado") y bloqueaba por completo la cola de revisión.
+    """
+    repo = LaboratorioRepository()
+    lab = _crear_lab_con_secciones(
+        repo,
+        estado=EstadoLaboratorio.EN_REVISION,
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+    )
+
+    detalle = ObtenerDetalleLaboratorioQuery(repo).execute(lab.id, es_admin=True)
+
+    assert detalle.id == lab.id
+
+
+@pytest.mark.django_db
 def test_detalle_borrador_propio_visible_para_su_instructor():
     repo = LaboratorioRepository()
     instructor_id = uuid.uuid4()
@@ -110,6 +131,7 @@ def test_toc_devuelve_solo_titulos_orden_y_tiene_practica():
     assert toc.secciones[0].titulo == "Intro"
     assert toc.secciones[0].tiene_practica is False
     assert toc.secciones[1].tiene_practica is True
+    assert toc.secciones[0].duracion_estimada_minutos == 15
     assert not hasattr(toc.secciones[0], "contenido_teorico")
 
 
@@ -125,6 +147,21 @@ def test_toc_borrador_ajeno_lanza_not_found():
 
     with pytest.raises(NotFoundError):
         ObtenerTOCQuery(repo).execute(lab.id)
+
+
+@pytest.mark.django_db
+def test_toc_en_revision_ajeno_visible_para_admin():
+    repo = LaboratorioRepository()
+    lab = _crear_lab_con_secciones(
+        repo,
+        estado=EstadoLaboratorio.EN_REVISION,
+        tipo=TipoLaboratorio.PERSONALIZADO,
+        instructor_id=uuid.uuid4(),
+    )
+
+    toc = ObtenerTOCQuery(repo).execute(lab.id, es_admin=True)
+
+    assert len(toc.secciones) == 2
 
 
 class _FakeInscripcion:

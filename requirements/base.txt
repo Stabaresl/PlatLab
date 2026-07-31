@@ -8,6 +8,7 @@ redis==5.2.1
 django-environ==0.11.2
 requests==2.32.3
 bleach==6.2.0
+Markdown==3.7
 django-cors-headers==4.7.0
 docker==7.1.0
 channels==4.1.0

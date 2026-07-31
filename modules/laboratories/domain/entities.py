@@ -7,6 +7,7 @@ from modules.laboratories.domain.value_objects import (
     EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
+    PasoGuia,
     TipoLaboratorio,
     TipoPregunta,
 )
@@ -36,6 +37,15 @@ class Laboratorio(BaseEntity):
     temas: list[str] = field(default_factory=list)
     origen_id: uuid.UUID | None = None
     instructor_id: uuid.UUID | None = None
+    # Cierre estilo "Conclusion" de AWS Academy — se muestra al estudiante
+    # una vez completadas todas las secciones (dominio.md, ver
+    # ProgresoOverviewDTO en Progress).
+    resumen_cierre: str = ""
+    # Motivo del último rechazo de un admin (`RechazarLaboratorioUseCase`) —
+    # visible para el instructor, se limpia al reenviar a revisión
+    # (`SolicitarRevisionLaboratorioUseCase`). No hay un estado `rechazado`
+    # separado: un rechazo vuelve a `borrador` con este campo poblado.
+    motivo_rechazo: str | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
@@ -71,16 +81,44 @@ class Seccion(BaseEntity):
     contenido_teorico: str
     orden: int
     tiene_practica: bool = False
+    # Objetivos de aprendizaje de la sección (lista corta, estilo AWS
+    # Academy) y duración estimada — se muestran como encabezado antes del
+    # contenido.
+    objetivos: list[str] = field(default_factory=list)
+    duracion_estimada_minutos: int = 15
     # Guía paso a paso SIEMPRE disponible (no gatillada por intentos
-    # fallidos, a diferencia de `Flag.ayuda.paso_a_paso`) — el material de
-    # referencia que el estudiante puede abrir en una pestaña aparte y
-    # dejar abierto mientras resuelve la práctica.
-    guia_paso_a_paso: str = ""
+    # fallidos, a diferencia de `Flag.ayuda.paso_a_paso`) — tareas
+    # numeradas discretas en vez de un bloque único de texto, el material
+    # de referencia que el estudiante puede dejar abierto mientras
+    # resuelve la práctica.
+    pasos_guia: list[PasoGuia] = field(default_factory=list)
     entorno_practica: EntornoPractica | None = None
     # Referencia de imagen Docker (ej. "platlab-target-sqli:latest") para el
     # entorno de práctica REAL (lab_environments) — opcional, distinto de
     # `entorno_practica` (consola simulada, siempre disponible sin infra).
     imagen_practica: str | None = None
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+
+    def __post_init__(self):
+        BaseEntity.__init__(self, id=self.id)
+
+
+@dataclass(eq=False)
+class DockerfileSeccion(BaseEntity):
+    """
+    Dockerfile/contexto de build subido por el instructor para el entorno
+    real de una `Seccion` práctica — relación 1:1. Nunca se construye
+    automáticamente (ver `infrastructure/dockerfile_storage.py`): un admin
+    lo revisa y, si confía en el contenido, hace `docker build`/`docker tag`
+    a mano fuera de la app y referencia la imagen resultante en
+    `Seccion.imagen_practica`.
+    """
+
+    seccion_id: uuid.UUID
+    archivo_url: str
+    nombre_archivo: str
+    tamano_kb: int
+    created_at: datetime = field(default_factory=datetime.utcnow)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):

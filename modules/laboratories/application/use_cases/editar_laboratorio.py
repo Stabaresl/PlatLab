@@ -2,6 +2,7 @@ from modules.laboratories.application.dtos import EditarLaboratorioDTO, Laborato
 from modules.laboratories.domain.exceptions import CannotEditPredeterminadoError
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.laboratories.domain.value_objects import NivelDificultad, TipoLaboratorio
+from modules.laboratories.infrastructure.content_sanitizer import sanitizar_contenido_html
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
 from modules.shared.domain.exceptions import ForbiddenError, NotFoundError, ValidationError
@@ -65,6 +66,8 @@ class EditarLaboratorioUseCase(BaseUseCase[EditarLaboratorioDTO, LaboratorioResu
             laboratorio.nivel_dificultad = NivelDificultad(input_dto.nivel_dificultad)
         if input_dto.temas is not None:
             laboratorio.temas = input_dto.temas
+        if input_dto.resumen_cierre is not None:
+            laboratorio.resumen_cierre = sanitizar_contenido_html(input_dto.resumen_cierre)
 
         actualizado = self._laboratorio_repository.update(laboratorio)
 

@@ -1,8 +1,36 @@
 import uuid
 
 from modules.laboratories.domain.entities import Flag, Laboratorio, Seccion
-from modules.laboratories.domain.exceptions import OrigenInvalidoParaDuplicarError
+from modules.laboratories.domain.exceptions import (
+    OrigenInvalidoParaDuplicarError,
+    PublishValidationError,
+)
 from modules.laboratories.domain.value_objects import EstadoLaboratorio, TipoLaboratorio
+
+_FLAGS_FALTANTES_MSG = "Todas las secciones con práctica necesitan una flag antes de publicar."
+
+
+def validar_laboratorio_publicable(
+    secciones: list[Seccion], flags_por_seccion: dict[uuid.UUID, Flag]
+) -> None:
+    """
+    UC-04 E2: toda sección con `tiene_practica=True` necesita una `Flag`
+    asociada. Reutilizada tanto por `PublicarLaboratorioUseCase` (admin
+    publica su propio predeterminado) como por
+    `SolicitarRevisionLaboratorioUseCase` (instructor manda a revisión) —
+    no tiene sentido dejar avanzar un laboratorio incompleto en ninguno de
+    los dos flujos.
+    """
+    faltantes = [
+        s
+        for s in secciones
+        if s.tiene_practica and flags_por_seccion.get(s.id) is None
+    ]
+    if faltantes:
+        raise PublishValidationError(
+            _FLAGS_FALTANTES_MSG,
+            details=[{"seccion_id": str(s.id), "titulo": s.titulo} for s in faltantes],
+        )
 
 
 class DuplicadorDeLaboratorio:
@@ -35,6 +63,7 @@ class DuplicadorDeLaboratorio:
             temas=list(original.temas),
             origen_id=original.id,
             instructor_id=instructor_id,
+            resumen_cierre=original.resumen_cierre,
         )
 
         secciones_copiadas = []
@@ -46,7 +75,9 @@ class DuplicadorDeLaboratorio:
                 contenido_teorico=seccion.contenido_teorico,
                 orden=seccion.orden,
                 tiene_practica=seccion.tiene_practica,
-                guia_paso_a_paso=seccion.guia_paso_a_paso,
+                objetivos=list(seccion.objetivos),
+                duracion_estimada_minutos=seccion.duracion_estimada_minutos,
+                pasos_guia=list(seccion.pasos_guia),
                 entorno_practica=seccion.entorno_practica,
                 imagen_practica=seccion.imagen_practica,
             )

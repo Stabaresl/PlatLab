@@ -14,6 +14,8 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
@@ -44,3 +46,9 @@ urlpatterns = [
     path('api/v1/audit/', include('modules.audit.presentation.urls')),
     path('api/v1/lab-environments/', include('modules.lab_environments.presentation.urls')),
 ]
+
+# Adjuntos de reportes y Dockerfiles subidos por instructores (MEDIA_ROOT)
+# — solo en dev; en producción los sirve el proveedor de almacenamiento
+# (S3/MinIO, RNF-08.1) directamente, no Django.
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

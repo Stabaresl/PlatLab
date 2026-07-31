@@ -1,30 +1,20 @@
-from modules.laboratories.application.dtos import LaboratorioResultDTO, PublicarLaboratorioDTO
-from modules.laboratories.domain.events import LaboratoryPublished
+from modules.laboratories.application.dtos import AprobarLaboratorioDTO, LaboratorioResultDTO
+from modules.laboratories.domain.events import LaboratoryApproved
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.laboratories.domain.services import validar_laboratorio_publicable
 from modules.laboratories.domain.value_objects import EstadoLaboratorio, TipoLaboratorio
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
-from modules.shared.domain.exceptions import ForbiddenError, NotFoundError
+from modules.shared.domain.exceptions import ConflictError, ForbiddenError, NotFoundError
 
 _LAB_NO_ENCONTRADO_MSG = "Laboratorio no encontrado."
-_SIN_PERMISO_MSG = "No tienes permiso para publicar este laboratorio."
-_SOLO_ADMIN_PERSONALIZADO_MSG = (
-    "Los laboratorios personalizados se publican solo tras la aprobación de un "
-    "administrador — envíalo a revisión en vez de publicarlo directamente."
-)
+_SIN_PERMISO_MSG = "Solo un administrador puede aprobar laboratorios."
+_SOLO_PERSONALIZADO_MSG = "Solo un laboratorio personalizado pasa por este flujo de aprobación."
+_ESTADO_INVALIDO_MSG = "Solo un laboratorio en revisión se puede aprobar."
 
 
-class PublicarLaboratorioUseCase(BaseUseCase[PublicarLaboratorioDTO, LaboratorioResultDTO]):
-    """
-    UC-04 paso 6 / E2, api.md §5 `POST /laboratories/{id}/publish/`:
-    `borrador` -> `publicado`, solo para un Administrador sobre su propio
-    `predeterminado` (autopublicación — el admin ya es el revisor de su
-    propio contenido). Un `personalizado` de instructor ya NO se publica
-    por acá: pasa por `SolicitarRevisionLaboratorioUseCase` +
-    `AprobarLaboratorioUseCase`. Bloquea la publicación si alguna sección
-    práctica no tiene flag asociada (indicando cuáles).
-    """
+class AprobarLaboratorioUseCase(BaseUseCase[AprobarLaboratorioDTO, LaboratorioResultDTO]):
+    """Admin, `en_revision` → `publicado`. Cierra el flujo de revisión que abre `SolicitarRevisionLaboratorioUseCase`."""
 
     def __init__(
         self,
@@ -35,18 +25,17 @@ class PublicarLaboratorioUseCase(BaseUseCase[PublicarLaboratorioDTO, Laboratorio
         super().__init__(unit_of_work, event_dispatcher)
         self._laboratorio_repository = laboratorio_repository
 
-    def _validate(self, input_dto: PublicarLaboratorioDTO) -> None:
+    def _validate(self, input_dto: AprobarLaboratorioDTO) -> None:
+        if input_dto.actor_rol != "administrador":
+            raise ForbiddenError(_SIN_PERMISO_MSG)
+
         laboratorio = self._laboratorio_repository.get_by_id(input_dto.laboratorio_id)
         if laboratorio is None:
             raise NotFoundError(_LAB_NO_ENCONTRADO_MSG)
-
-        if input_dto.actor_rol == "instructor":
-            raise ForbiddenError(_SOLO_ADMIN_PERSONALIZADO_MSG)
-        elif input_dto.actor_rol == "administrador":
-            if laboratorio.tipo != TipoLaboratorio.PREDETERMINADO:
-                raise ForbiddenError(_SIN_PERMISO_MSG)
-        else:
-            raise ForbiddenError(_SIN_PERMISO_MSG)
+        if laboratorio.tipo != TipoLaboratorio.PERSONALIZADO:
+            raise ForbiddenError(_SOLO_PERSONALIZADO_MSG)
+        if laboratorio.estado != EstadoLaboratorio.EN_REVISION:
+            raise ConflictError(_ESTADO_INVALIDO_MSG)
 
         secciones = self._laboratorio_repository.get_secciones(input_dto.laboratorio_id)
         flags_por_seccion = {
@@ -57,7 +46,7 @@ class PublicarLaboratorioUseCase(BaseUseCase[PublicarLaboratorioDTO, Laboratorio
         self._laboratorio = laboratorio
 
     def _execute_domain_logic(
-        self, input_dto: PublicarLaboratorioDTO
+        self, input_dto: AprobarLaboratorioDTO
     ) -> tuple[LaboratorioResultDTO, list[DomainEvent]]:
         laboratorio = self._laboratorio
         laboratorio.estado = EstadoLaboratorio.PUBLICADO
@@ -69,7 +58,7 @@ class PublicarLaboratorioUseCase(BaseUseCase[PublicarLaboratorioDTO, Laboratorio
             estado=actualizado.estado.value,
             tipo=actualizado.tipo.value,
         )
-        event = LaboratoryPublished(
+        event = LaboratoryApproved(
             laboratorio_id=actualizado.id, instructor_id=actualizado.instructor_id
         )
         return result, [event]

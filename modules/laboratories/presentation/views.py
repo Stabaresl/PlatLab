@@ -9,6 +9,7 @@ from rest_framework.viewsets import ViewSet
 
 from modules.laboratories.application.dtos import (
     AgregarPreguntaDTO,
+    AprobarLaboratorioDTO,
     CrearExamenDTO,
     CrearLaboratorioDTO,
     CrearSeccionDTO,
@@ -17,16 +18,33 @@ from modules.laboratories.application.dtos import (
     EditarLaboratorioDTO,
     EditarSeccionDTO,
     ListarLaboratoriosFiltroDTO,
+    ObtenerContenidoSeccionPreviewDTO,
     PublicarLaboratorioDTO,
+    RechazarLaboratorioDTO,
+    SolicitarRevisionLaboratorioDTO,
+    SubirDockerfileDTO,
+    VerificarFlagPreviewDTO,
 )
 from modules.laboratories.application.queries.listar_laboratorios import (
     ListarLaboratoriosQuery,
+)
+from modules.laboratories.application.queries.listar_laboratorios_en_revision import (
+    ListarLaboratoriosEnRevisionQuery,
+)
+from modules.laboratories.application.queries.obtener_contenido_seccion_preview import (
+    ObtenerContenidoSeccionPreviewQuery,
 )
 from modules.laboratories.application.queries.obtener_detalle_laboratorio import (
     ObtenerDetalleLaboratorioQuery,
 )
 from modules.laboratories.application.queries.obtener_toc import ObtenerTOCQuery
+from modules.laboratories.application.queries.verificar_flag_preview import (
+    VerificarFlagPreviewQuery,
+)
 from modules.laboratories.application.use_cases.agregar_pregunta import AgregarPreguntaUseCase
+from modules.laboratories.application.use_cases.aprobar_laboratorio import (
+    AprobarLaboratorioUseCase,
+)
 from modules.laboratories.application.use_cases.crear_examen import CrearExamenUseCase
 from modules.laboratories.application.use_cases.crear_laboratorio import (
     CrearLaboratorioUseCase,
@@ -43,6 +61,15 @@ from modules.laboratories.application.use_cases.editar_seccion import EditarSecc
 from modules.laboratories.application.use_cases.publicar_laboratorio import (
     PublicarLaboratorioUseCase,
 )
+from modules.laboratories.application.use_cases.rechazar_laboratorio import (
+    RechazarLaboratorioUseCase,
+)
+from modules.laboratories.application.use_cases.solicitar_revision_laboratorio import (
+    SolicitarRevisionLaboratorioUseCase,
+)
+from modules.laboratories.application.use_cases.subir_dockerfile_seccion import (
+    SubirDockerfileSeccionUseCase,
+)
 from modules.laboratories.infrastructure.asignacion_inscripcion_provider import (
     AsignacionInscripcionProvider,
 )
@@ -58,6 +85,9 @@ from modules.laboratories.presentation.serializers import (
     DefinirFlagRequestSerializer,
     EditarLaboratorioRequestSerializer,
     EditarSeccionRequestSerializer,
+    PreviewFlagRequestSerializer,
+    RechazarLaboratorioRequestSerializer,
+    SubirDockerfileRequestSerializer,
 )
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
@@ -108,6 +138,11 @@ def _resolver_ids(request) -> tuple[uuid.UUID | None, uuid.UUID | None]:
     if user.rol == "estudiante":
         return None, user.id
     return None, None
+
+
+def _es_admin(request) -> bool:
+    user = request.user
+    return bool(getattr(user, "is_authenticated", False)) and user.rol == "administrador"
 
 
 class CatalogoPagination(LimitOffsetPagination):
@@ -187,6 +222,7 @@ class LaboratorioViewSet(ViewSet):
             laboratorio_id=_parsear_uuid(pk),
             instructor_id=instructor_id,
             estudiante_id=estudiante_id,
+            es_admin=_es_admin(request),
         )
 
         return Response(
@@ -198,6 +234,7 @@ class LaboratorioViewSet(ViewSet):
                 "estado": detalle.estado,
                 "temas": detalle.temas,
                 "total_secciones": detalle.total_secciones,
+                "motivo_rechazo": detalle.motivo_rechazo,
             },
             status=status.HTTP_200_OK,
         )
@@ -209,6 +246,7 @@ class LaboratorioViewSet(ViewSet):
             laboratorio_id=_parsear_uuid(pk),
             instructor_id=instructor_id,
             estudiante_id=estudiante_id,
+            es_admin=_es_admin(request),
         )
 
         return Response(
@@ -216,9 +254,11 @@ class LaboratorioViewSet(ViewSet):
                 "laboratorio_id": str(toc.laboratorio_id),
                 "secciones": [
                     {
+                        "id": str(s.id),
                         "orden": s.orden,
                         "titulo": s.titulo,
                         "tiene_practica": s.tiene_practica,
+                        "duracion_estimada_minutos": s.duracion_estimada_minutos,
                     }
                     for s in toc.secciones
                 ],
@@ -309,6 +349,76 @@ class LaboratorioViewSet(ViewSet):
 
         return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["post"], url_path="submit-review")
+    def solicitar_revision(self, request, pk=None):
+        use_case = SolicitarRevisionLaboratorioUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            SolicitarRevisionLaboratorioDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+            )
+        )
+        return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="approve")
+    def aprobar(self, request, pk=None):
+        use_case = AprobarLaboratorioUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            AprobarLaboratorioDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+            )
+        )
+        return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="reject")
+    def rechazar(self, request, pk=None):
+        serializer = RechazarLaboratorioRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        use_case = RechazarLaboratorioUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            RechazarLaboratorioDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                **serializer.validated_data,
+            )
+        )
+        return Response(_serializar_resultado_laboratorio(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"], url_path="review-queue")
+    def cola_revision(self, request):
+        resultados = ListarLaboratoriosEnRevisionQuery(LaboratorioRepository()).execute(
+            actor_rol=request.user.rol
+        )
+        return Response(
+            [
+                {
+                    "id": str(item.id),
+                    "nombre": item.nombre,
+                    "instructor_id": str(item.instructor_id) if item.instructor_id else None,
+                    "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+                }
+                for item in resultados
+            ],
+            status=status.HTTP_200_OK,
+        )
+
     @action(detail=True, methods=["post"], url_path="duplicate")
     def duplicar(self, request, pk=None):
         use_case = DuplicarLaboratorioUseCase(
@@ -370,6 +480,84 @@ class LaboratorioViewSet(ViewSet):
         )
 
         return Response(_serializar_resultado_seccion(resultado), status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path=r"sections/(?P<seccion_pk>[^/.]+)/dockerfile")
+    def subir_dockerfile(self, request, pk=None, seccion_pk=None):
+        serializer = SubirDockerfileRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        archivo = serializer.validated_data["archivo"]
+
+        use_case = SubirDockerfileSeccionUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            laboratorio_repository=LaboratorioRepository(),
+        )
+        resultado = use_case.execute(
+            SubirDockerfileDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                seccion_id=_parsear_uuid(seccion_pk),
+                archivo_nombre=archivo.name,
+                archivo_contenido=archivo.read(),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+            )
+        )
+        return Response(
+            {
+                "id": str(resultado.id),
+                "seccion_id": str(resultado.seccion_id),
+                "archivo_url": resultado.archivo_url,
+                "nombre_archivo": resultado.nombre_archivo,
+                "tamano_kb": resultado.tamano_kb,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["get"], url_path=r"sections/(?P<seccion_pk>[^/.]+)/preview")
+    def preview_seccion(self, request, pk=None, seccion_pk=None):
+        resultado = ObtenerContenidoSeccionPreviewQuery(LaboratorioRepository()).execute(
+            ObtenerContenidoSeccionPreviewDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                seccion_id=_parsear_uuid(seccion_pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+            )
+        )
+        return Response(
+            {
+                "seccion_id": str(resultado.seccion_id),
+                "titulo": resultado.titulo,
+                "contenido_teorico": resultado.contenido_teorico,
+                "tiene_practica": resultado.tiene_practica,
+                "objetivos": resultado.objetivos,
+                "duracion_estimada_minutos": resultado.duracion_estimada_minutos,
+                "pasos_guia": resultado.pasos_guia,
+                "entorno_practica": resultado.entorno_practica,
+                "tiene_dockerfile": resultado.tiene_dockerfile,
+                "dockerfile_url": resultado.dockerfile_url,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"sections/(?P<seccion_pk>[^/.]+)/preview/check-flag",
+    )
+    def preview_check_flag(self, request, pk=None, seccion_pk=None):
+        serializer = PreviewFlagRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        correcto = VerificarFlagPreviewQuery(LaboratorioRepository()).execute(
+            VerificarFlagPreviewDTO(
+                laboratorio_id=_parsear_uuid(pk),
+                seccion_id=_parsear_uuid(seccion_pk),
+                valor=serializer.validated_data["valor"],
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+            )
+        )
+        return Response({"correcto": correcto}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"], url_path="exam")
     def crear_examen(self, request, pk=None):

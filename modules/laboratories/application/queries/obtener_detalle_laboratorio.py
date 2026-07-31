@@ -23,7 +23,11 @@ class ObtenerDetalleLaboratorioQuery:
     laboratorio (`estado_inscripcion_provider`) también puede verlo aunque
     sea `personalizado` de otro instructor — Laboratories no conoce el
     agregado Asignación directamente (dominio.md §1), por eso esto se
-    resuelve vía puerto, igual que el campo `inscrito` del catálogo.
+    resuelve vía puerto, igual que el campo `inscrito` del catálogo. Un
+    administrador (`es_admin=True`) ve cualquier laboratorio sin importar
+    dueño/estado — necesario para revisar un `personalizado` en
+    `en_revision` desde la cola de revisión, que no es ni su propio
+    laboratorio ni un `predeterminado`.
     """
 
     def __init__(
@@ -39,10 +43,12 @@ class ObtenerDetalleLaboratorioQuery:
         laboratorio_id: uuid.UUID,
         instructor_id: uuid.UUID | None = None,
         estudiante_id: uuid.UUID | None = None,
+        es_admin: bool = False,
     ) -> LaboratorioDetalleDTO:
         laboratorio = self._repo.get_by_id(laboratorio_id)
         visible = laboratorio is not None and (
-            laboratorio.es_visible_para(instructor_id)
+            es_admin
+            or laboratorio.es_visible_para(instructor_id)
             or (
                 estudiante_id is not None
                 and self._inscripcion.esta_inscrito(estudiante_id, laboratorio_id)
@@ -60,4 +66,5 @@ class ObtenerDetalleLaboratorioQuery:
             estado=laboratorio.estado.value,
             temas=laboratorio.temas,
             total_secciones=len(secciones),
+            motivo_rechazo=laboratorio.motivo_rechazo,
         )

@@ -1,7 +1,14 @@
 import uuid
 from typing import Protocol
 
-from modules.laboratories.domain.entities import Examen, Flag, Laboratorio, Pregunta, Seccion
+from modules.laboratories.domain.entities import (
+    DockerfileSeccion,
+    Examen,
+    Flag,
+    Laboratorio,
+    Pregunta,
+    Seccion,
+)
 
 
 class ILaboratorioRepository(Protocol):
@@ -75,4 +82,14 @@ class ILaboratorioRepository(Protocol):
         el dashboard admin — a diferencia de `find_catalogo()`, no
         filtra por visibilidad de un actor puntual.
         """
+        ...
+
+    def find_en_revision(self) -> list[Laboratorio]:
+        """Cola de revisión del admin: laboratorios `personalizado` en estado `en_revision`."""
+        ...
+
+    def get_dockerfile_by_seccion(self, seccion_id: uuid.UUID) -> DockerfileSeccion | None: ...
+
+    def save_dockerfile(self, dockerfile: DockerfileSeccion) -> DockerfileSeccion:
+        """Upsert por `seccion_id` (relación 1:1) — reemplaza el archivo anterior si existía."""
         ...

@@ -1,14 +1,23 @@
-from modules.laboratories.domain.entities import Examen, Flag, Laboratorio, Pregunta, Seccion
+from modules.laboratories.domain.entities import (
+    DockerfileSeccion,
+    Examen,
+    Flag,
+    Laboratorio,
+    Pregunta,
+    Seccion,
+)
 from modules.laboratories.domain.value_objects import (
     AyudaProgresiva,
     ComandoSimulado,
     EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
+    PasoGuia,
     TipoLaboratorio,
     TipoPregunta,
 )
 from modules.laboratories.infrastructure.models import (
+    DockerfileSeccionModel,
     ExamenModel,
     FlagModel,
     LaboratorioModel,
@@ -28,8 +37,21 @@ def laboratorio_to_entity(model: LaboratorioModel) -> Laboratorio:
         temas=[tema.nombre for tema in model.temas.all()],
         origen_id=model.origen_id,
         instructor_id=model.instructor_id,
+        resumen_cierre=model.resumen_cierre,
+        motivo_rechazo=model.motivo_rechazo,
         created_at=model.created_at,
         updated_at=model.updated_at,
+    )
+
+
+def dockerfile_seccion_to_entity(model: DockerfileSeccionModel) -> DockerfileSeccion:
+    return DockerfileSeccion(
+        id=model.id,
+        seccion_id=model.seccion_id,
+        archivo_url=model.archivo_url,
+        nombre_archivo=model.nombre_archivo,
+        tamano_kb=model.tamano_kb,
+        created_at=model.created_at,
     )
 
 
@@ -56,6 +78,30 @@ def entorno_practica_to_dict(entorno: EntornoPractica | None) -> dict | None:
     }
 
 
+def pasos_guia_to_entity(data: list[dict] | None) -> list[PasoGuia]:
+    return [
+        PasoGuia(
+            orden=p["orden"],
+            titulo=p["titulo"],
+            instrucciones=p["instrucciones"],
+            comando_sugerido=p.get("comando_sugerido"),
+        )
+        for p in (data or [])
+    ]
+
+
+def pasos_guia_to_list(pasos: list[PasoGuia]) -> list[dict]:
+    return [
+        {
+            "orden": p.orden,
+            "titulo": p.titulo,
+            "instrucciones": p.instrucciones,
+            "comando_sugerido": p.comando_sugerido,
+        }
+        for p in pasos
+    ]
+
+
 def seccion_to_entity(model: SeccionModel) -> Seccion:
     return Seccion(
         id=model.id,
@@ -64,7 +110,9 @@ def seccion_to_entity(model: SeccionModel) -> Seccion:
         contenido_teorico=model.contenido_teorico,
         orden=model.orden,
         tiene_practica=model.tiene_practica,
-        guia_paso_a_paso=model.guia_paso_a_paso,
+        objetivos=model.objetivos,
+        duracion_estimada_minutos=model.duracion_estimada_minutos,
+        pasos_guia=pasos_guia_to_entity(model.pasos_guia),
         entorno_practica=entorno_practica_to_entity(model.entorno_practica),
         imagen_practica=model.imagen_practica,
     )

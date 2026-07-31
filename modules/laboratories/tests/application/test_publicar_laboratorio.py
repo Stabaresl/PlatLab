@@ -28,7 +28,30 @@ def _uc():
     )
 
 
-def _crear_lab_con_seccion_practica(instructor_id: uuid.UUID) -> tuple[Laboratorio, Seccion]:
+def _crear_lab_predeterminado_con_seccion_practica() -> tuple[Laboratorio, Seccion]:
+    repo = LaboratorioRepository()
+    lab = repo.add(
+        Laboratorio(
+            nombre="Lab Publicar",
+            descripcion="desc",
+            nivel_dificultad=NivelDificultad.BASICO,
+            estado=EstadoLaboratorio.BORRADOR,
+            tipo=TipoLaboratorio.PREDETERMINADO,
+        )
+    )
+    seccion = repo.add_seccion(
+        Seccion(
+            laboratorio_id=lab.id,
+            titulo="Practica",
+            contenido_teorico="...",
+            orden=1,
+            tiene_practica=True,
+        )
+    )
+    return lab, seccion
+
+
+def _crear_lab_personalizado_con_seccion_practica(instructor_id: uuid.UUID) -> tuple[Laboratorio, Seccion]:
     repo = LaboratorioRepository()
     lab = repo.add(
         Laboratorio(
@@ -53,16 +76,15 @@ def _crear_lab_con_seccion_practica(instructor_id: uuid.UUID) -> tuple[Laborator
 
 
 @pytest.mark.django_db
-def test_publicar_laboratorio_con_todas_las_flags_exitoso():
-    instructor_id = uuid.uuid4()
-    lab, seccion = _crear_lab_con_seccion_practica(instructor_id)
+def test_publicar_laboratorio_admin_con_todas_las_flags_exitoso():
+    lab, seccion = _crear_lab_predeterminado_con_seccion_practica()
     LaboratorioRepository().save_flag(
         Flag(seccion_id=seccion.id, hash=make_password("FLAG{x}"))
     )
 
     resultado = _uc().execute(
         PublicarLaboratorioDTO(
-            laboratorio_id=lab.id, actor_id=instructor_id, actor_rol="instructor"
+            laboratorio_id=lab.id, actor_id=uuid.uuid4(), actor_rol="administrador"
         )
     )
 
@@ -70,14 +92,13 @@ def test_publicar_laboratorio_con_todas_las_flags_exitoso():
 
 
 @pytest.mark.django_db
-def test_publicar_laboratorio_seccion_practica_sin_flag_lanza_publish_validation_error():
-    instructor_id = uuid.uuid4()
-    lab, seccion = _crear_lab_con_seccion_practica(instructor_id)
+def test_publicar_laboratorio_admin_seccion_practica_sin_flag_lanza_publish_validation_error():
+    lab, seccion = _crear_lab_predeterminado_con_seccion_practica()
 
     with pytest.raises(PublishValidationError) as exc_info:
         _uc().execute(
             PublicarLaboratorioDTO(
-                laboratorio_id=lab.id, actor_id=instructor_id, actor_rol="instructor"
+                laboratorio_id=lab.id, actor_id=uuid.uuid4(), actor_rol="administrador"
             )
         )
 
@@ -85,12 +106,34 @@ def test_publicar_laboratorio_seccion_practica_sin_flag_lanza_publish_validation
 
 
 @pytest.mark.django_db
-def test_publicar_laboratorio_instructor_ajeno_lanza_forbidden():
-    lab, _ = _crear_lab_con_seccion_practica(uuid.uuid4())
+def test_publicar_laboratorio_instructor_ya_no_puede_publicar_directamente():
+    """
+    Cambio de comportamiento: un personalizado ya no se publica directo
+    por acá — pasa por `SolicitarRevisionLaboratorioUseCase` +
+    `AprobarLaboratorioUseCase`.
+    """
+    instructor_id = uuid.uuid4()
+    lab, seccion = _crear_lab_personalizado_con_seccion_practica(instructor_id)
+    LaboratorioRepository().save_flag(
+        Flag(seccion_id=seccion.id, hash=make_password("FLAG{x}"))
+    )
 
     with pytest.raises(ForbiddenError):
         _uc().execute(
             PublicarLaboratorioDTO(
-                laboratorio_id=lab.id, actor_id=uuid.uuid4(), actor_rol="instructor"
+                laboratorio_id=lab.id, actor_id=instructor_id, actor_rol="instructor"
+            )
+        )
+
+
+@pytest.mark.django_db
+def test_publicar_laboratorio_admin_no_puede_publicar_personalizado():
+    instructor_id = uuid.uuid4()
+    lab, _ = _crear_lab_personalizado_con_seccion_practica(instructor_id)
+
+    with pytest.raises(ForbiddenError):
+        _uc().execute(
+            PublicarLaboratorioDTO(
+                laboratorio_id=lab.id, actor_id=uuid.uuid4(), actor_rol="administrador"
             )
         )

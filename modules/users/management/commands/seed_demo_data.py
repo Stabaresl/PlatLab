@@ -46,14 +46,19 @@ from modules.assignments.application.use_cases.invitar_estudiantes import (
 from modules.assignments.infrastructure.repositories import AsignacionRepository
 from modules.laboratories.application.dtos import (
     AgregarPreguntaDTO,
+    AprobarLaboratorioDTO,
     CrearExamenDTO,
     CrearLaboratorioDTO,
     CrearSeccionDTO,
     DefinirFlagDTO,
     DuplicarLaboratorioDTO,
     PublicarLaboratorioDTO,
+    SolicitarRevisionLaboratorioDTO,
 )
 from modules.laboratories.application.use_cases.agregar_pregunta import AgregarPreguntaUseCase
+from modules.laboratories.application.use_cases.aprobar_laboratorio import (
+    AprobarLaboratorioUseCase,
+)
 from modules.laboratories.application.use_cases.crear_examen import CrearExamenUseCase
 from modules.laboratories.application.use_cases.crear_laboratorio import (
     CrearLaboratorioUseCase,
@@ -66,9 +71,13 @@ from modules.laboratories.application.use_cases.duplicar_laboratorio import (
 from modules.laboratories.application.use_cases.publicar_laboratorio import (
     PublicarLaboratorioUseCase,
 )
+from modules.laboratories.application.use_cases.solicitar_revision_laboratorio import (
+    SolicitarRevisionLaboratorioUseCase,
+)
 from modules.laboratories.domain.value_objects import (
     ComandoSimulado,
     EntornoPractica,
+    PasoGuia,
     TipoLaboratorio,
 )
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
@@ -157,7 +166,7 @@ class Command(BaseCommand):
         if copia:
             self.stdout.write(f"= copia del instructor ya existe: {copia.id}")
         else:
-            copia = self._crear_copia_instructor(laboratorio_repository, instructor, template)
+            copia = self._crear_copia_instructor(laboratorio_repository, instructor, admin, template)
             msg = f"+ copia del instructor creada, publicada y con examen: {copia.id}"
             self.stdout.write(self.style.SUCCESS(msg))
 
@@ -195,6 +204,22 @@ class Command(BaseCommand):
                 actor_id=admin.id,
                 actor_rol="administrador",
                 temas=["sql injection", "autenticación"],
+                resumen_cierre=(
+                    "<h3>Resumen</h3>"
+                    "<p>Explotaste una inyección SQL clásica en un formulario de login para "
+                    "saltarte la autenticación sin conocer ninguna contraseña real — el mismo "
+                    "patrón (concatenar entrada de usuario directo en una consulta SQL) sigue "
+                    "apareciendo en aplicaciones reales hoy en día.</p>"
+                    "<h3>Lo que te llevás</h3>"
+                    "<ul>"
+                    "<li>Reconocer cuándo una entrada se concatena sin sanitizar en una consulta.</li>"
+                    "<li>Construir un payload que altere la lógica <code>WHERE</code> de la "
+                    "consulta original.</li>"
+                    "<li>La defensa correcta: consultas parametrizadas / prepared statements, "
+                    "nunca concatenación de strings.</li>"
+                    "</ul>"
+                    "<p>Cuando estés listo, presentá el examen para cerrar el laboratorio.</p>"
+                ),
             )
         )
 
@@ -237,6 +262,12 @@ class Command(BaseCommand):
                 actor_id=admin.id,
                 actor_rol="administrador",
                 tiene_practica=False,
+                objetivos=[
+                    "Explicar qué es SQL Injection y por qué sigue siendo tan común.",
+                    "Identificar el patrón de código vulnerable (concatenación de strings en SQL).",
+                    "Reconocer el impacto real de una inyección exitosa.",
+                ],
+                duracion_estimada_minutos=10,
             )
         )
 
@@ -266,48 +297,82 @@ class Command(BaseCommand):
                 actor_id=admin.id,
                 actor_rol="administrador",
                 tiene_practica=True,
-                guia_paso_a_paso=(
-                    "<h3>Metodología sugerida</h3>"
-                    "<p>Este es el mismo proceso que seguirías en un engagement real de pentesting "
-                    "web, simplificado para el laboratorio.</p>"
-                    "<h4>1. Reconocimiento</h4>"
-                    "<p>Escaneá el objetivo para confirmar qué servicios están expuestos:</p>"
-                    "<pre>nmap -sV 192.168.56.10</pre>"
-                    "<h4>2. Inspeccioná el formulario</h4>"
-                    "<p>Traé el HTML de la página de login para entender los campos del "
-                    "formulario y el método de envío:</p>"
-                    "<pre>curl -s http://192.168.56.10/login.php</pre>"
-                    "<h4>3. Confirmá el punto de inyección</h4>"
-                    "<p>A veces hay pistas en archivos de backup o configuración mal protegidos:</p>"
-                    "<pre>ls\ncat config.php.bak</pre>"
-                    "<h4>4. Construí el payload</h4>"
-                    "<p>El objetivo es que la cláusula <code>WHERE</code> se evalúe siempre como "
-                    "verdadera, sin importar la contraseña. Un primer intento razonable como "
-                    "usuario sería:</p>"
-                    "<pre>' OR '1'='1</pre>"
-                    "<p>Pero ojo: el backend concatena <em>también</em> la condición de "
-                    "contraseña con <code>AND</code>, y en SQL <code>AND</code> se evalúa antes "
-                    "que <code>OR</code>. La consulta resultante queda (conceptualmente):</p>"
-                    "<pre>SELECT * FROM users WHERE username = '' OR '1'='1' "
-                    "AND password = '...'</pre>"
-                    "<p>Eso se interpreta como <code>username='' OR ('1'='1' AND "
-                    "password='...')</code> — como la contraseña que mandaste seguro no coincide, "
-                    "¡el bypass falla! Para neutralizar la comparación de contraseña, "
-                    "agregá un comentario SQL (<code>-- </code>, con un espacio después) al final "
-                    "del username: todo lo que venga después se ignora.</p>"
-                    "<pre>' OR '1'='1' -- </pre>"
-                    "<h4>5. Enviá el payload</h4>"
-                    "<pre>curl -s http://192.168.56.10/login.php "
-                    "--data-urlencode \"username=' OR '1'='1' -- \" "
-                    "--data-urlencode 'password=x'</pre>"
-                    "<h4>6. Capturá la flag</h4>"
-                    "<p>La respuesta del servidor va a incluir la flag. Copiala tal cual "
-                    "(formato <code>FLAG{...}</code>) y pegala en el campo de envío de esta "
-                    "sección.</p>"
-                    "<blockquote>Tip: si algo no funciona, revisá que estés usando comillas "
-                    "simples exactamente como se muestra — es la parte más común de errar al "
-                    "tipear el payload a mano.</blockquote>"
-                ),
+                objetivos=[
+                    "Confirmar el punto de inyección en el formulario de login.",
+                    "Construir un payload que neutralice la verificación de contraseña.",
+                    "Capturar la flag devuelta por el servidor tras el bypass exitoso.",
+                ],
+                duracion_estimada_minutos=25,
+                pasos_guia=[
+                    PasoGuia(
+                        orden=1,
+                        titulo="Reconocimiento",
+                        instrucciones=(
+                            "<p>Escaneá el objetivo para confirmar qué servicios están expuestos.</p>"
+                        ),
+                        comando_sugerido="nmap -sV 192.168.56.10",
+                    ),
+                    PasoGuia(
+                        orden=2,
+                        titulo="Inspeccioná el formulario",
+                        instrucciones=(
+                            "<p>Traé el HTML de la página de login para entender los campos del "
+                            "formulario y el método de envío.</p>"
+                        ),
+                        comando_sugerido="curl -s http://192.168.56.10/login.php",
+                    ),
+                    PasoGuia(
+                        orden=3,
+                        titulo="Confirmá el punto de inyección",
+                        instrucciones=(
+                            "<p>A veces hay pistas en archivos de backup o configuración mal "
+                            "protegidos.</p>"
+                        ),
+                        comando_sugerido="ls\ncat config.php.bak",
+                    ),
+                    PasoGuia(
+                        orden=4,
+                        titulo="Construí el payload",
+                        instrucciones=(
+                            "<p>El objetivo es que la cláusula <code>WHERE</code> se evalúe "
+                            "siempre como verdadera, sin importar la contraseña. Un primer "
+                            "intento razonable como usuario sería <code>' OR '1'='1</code>.</p>"
+                            "<p>Pero ojo: el backend concatena <em>también</em> la condición de "
+                            "contraseña con <code>AND</code>, y en SQL <code>AND</code> se evalúa "
+                            "antes que <code>OR</code>. La consulta resultante queda "
+                            "(conceptualmente) <code>SELECT * FROM users WHERE username = '' OR "
+                            "'1'='1' AND password = '...'</code>, que se interpreta como "
+                            "<code>username='' OR ('1'='1' AND password='...')</code> — como la "
+                            "contraseña que mandaste seguro no coincide, ¡el bypass falla! Para "
+                            "neutralizar la comparación de contraseña, agregá un comentario SQL "
+                            "(<code>-- </code>, con un espacio después) al final del username: "
+                            "todo lo que venga después se ignora.</p>"
+                        ),
+                        comando_sugerido="' OR '1'='1' -- ",
+                    ),
+                    PasoGuia(
+                        orden=5,
+                        titulo="Enviá el payload",
+                        instrucciones="<p>Mandá el payload construido en el paso anterior.</p>",
+                        comando_sugerido=(
+                            "curl -s http://192.168.56.10/login.php "
+                            "--data-urlencode \"username=' OR '1'='1' -- \" "
+                            "--data-urlencode 'password=x'"
+                        ),
+                    ),
+                    PasoGuia(
+                        orden=6,
+                        titulo="Capturá la flag",
+                        instrucciones=(
+                            "<p>La respuesta del servidor va a incluir la flag. Copiala tal cual "
+                            "(formato <code>FLAG{...}</code>) y pegala en el campo de envío de "
+                            "esta sección.</p>"
+                            "<blockquote>Tip: si algo no funciona, revisá que estés usando "
+                            "comillas simples exactamente como se muestra — es la parte más "
+                            "común de errar al tipear el payload a mano.</blockquote>"
+                        ),
+                    ),
+                ],
                 entorno_practica=EntornoPractica(
                     prompt="estudiante@labs:~$",
                     banner=(
@@ -422,7 +487,7 @@ class Command(BaseCommand):
         )
 
     def _crear_copia_instructor(
-        self, laboratorio_repository: LaboratorioRepository, instructor, template
+        self, laboratorio_repository: LaboratorioRepository, instructor, admin, template
     ):
         kwargs = _use_case_kwargs(laboratorio_repository)
 
@@ -432,9 +497,17 @@ class Command(BaseCommand):
             )
         )
 
-        PublicarLaboratorioUseCase(**kwargs).execute(
-            PublicarLaboratorioDTO(
+        # Un personalizado ya no se publica directo: el instructor lo manda
+        # a revisión y un admin lo aprueba (mismo flujo real que seguiría
+        # cualquier laboratorio subido por un instructor).
+        SolicitarRevisionLaboratorioUseCase(**kwargs).execute(
+            SolicitarRevisionLaboratorioDTO(
                 laboratorio_id=resultado.id, actor_id=instructor.id, actor_rol="instructor"
+            )
+        )
+        AprobarLaboratorioUseCase(**kwargs).execute(
+            AprobarLaboratorioDTO(
+                laboratorio_id=resultado.id, actor_id=admin.id, actor_rol="administrador"
             )
         )
 
