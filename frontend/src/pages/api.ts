@@ -1082,3 +1082,21 @@ export function listNotifications(params?: { leida?: boolean }) {
 export function markNotificationRead(id: string) {
   return api<Notificacion>(`/notifications/${id}/read/`, { method: "PATCH" })
 }
+
+// ---------------------------------------------------------------------------
+// Audit — /api/v1/audit (solo administrador)
+// ---------------------------------------------------------------------------
+
+export interface RegistroAuditoriaItem {
+  id: string
+  actor_id: string | null
+  accion: string
+  entidad_tipo: string | null
+  entidad_id: string | null
+  timestamp: string
+}
+
+export function listAudit(params?: { accion?: string; actor?: string; desde?: string; hasta?: string }) {
+  const qs = new URLSearchParams(params as unknown as Record<string, string>).toString()
+  return api<RegistroAuditoriaItem[]>(`/audit/${qs ? `?${qs}` : ""}`)
+}

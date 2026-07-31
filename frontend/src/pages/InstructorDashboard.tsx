@@ -5,6 +5,7 @@ import {
   getInstructorDashboard,
   listStudents,
   listAssignments,
+  setCatalogVisibility,
   ApiError,
   type InstructorDashboardItem,
   type EstudianteFiltrado,
@@ -17,7 +18,8 @@ import Footer from "../components/Footer"
 import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
 import TerminalHeader from "../components/TerminalHeader"
-import { IconFlask, IconMail, IconTrophy } from "../components/icons"
+import TiltCard from "../components/TiltCard"
+import { IconFlask, IconMail, IconTrophy, IconGlobe } from "../components/icons"
 import { Skeleton } from "../components/ui/skeleton"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table"
 
@@ -49,12 +51,19 @@ const LAB_ESTADO_COLORS: Record<EstadoLaboratorio, string> = {
   publicado: "var(--signal-green)",
 }
 
+const LAB_ESTADO_GLOW: Record<EstadoLaboratorio, string> = {
+  borrador: "136,146,163",
+  en_revision: "255,176,32",
+  publicado: "51,214,159",
+}
+
 export default function InstructorDashboard() {
   const [labs, setLabs] = useState<InstructorDashboardItem[]>([])
   const [students, setStudents] = useState<EstudianteFiltrado[]>([])
   const [assignments, setAssignments] = useState<Asignacion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [visibilityBusyId, setVisibilityBusyId] = useState<string | null>(null)
 
   const PAGE_SIZE = 4
   const [page, setPage] = useState(0)
@@ -77,6 +86,20 @@ export default function InstructorDashboard() {
       })
     return () => { cancelled = true }
   }, [])
+
+  const handleToggleVisibility = async (laboratorioId: string, next: boolean) => {
+    setVisibilityBusyId(laboratorioId)
+    try {
+      await setCatalogVisibility(laboratorioId, next)
+      setLabs((prev) =>
+        prev.map((l) => (l.laboratorio_id === laboratorioId ? { ...l, visible_en_catalogo: next } : l)),
+      )
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudo actualizar la visibilidad en el catálogo.")
+    } finally {
+      setVisibilityBusyId(null)
+    }
+  }
 
   const labName = (id: string) => labs.find((l) => l.laboratorio_id === id)?.nombre || `Lab ${id.slice(0, 8)}`
   const studentName = (estudianteId: string, laboratorioId: string) =>
@@ -130,29 +153,55 @@ export default function InstructorDashboard() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: i * 0.05 }}
-                          className="chamfer flex flex-col p-4 sm:p-5 transition-colors"
-                          style={{ backgroundColor: "var(--surface)", border: `1px solid ${lab.estado === "publicado" ? "var(--border-strong)" : "var(--border-default)"}` }}
                         >
-                          <div className="flex items-start justify-between mb-3">
-                            <span className="text-sm sm:text-base font-bold leading-snug" style={{ color: "var(--text-heading)" }}>
-                              {lab.nombre}
-                            </span>
-                            <span
-                              className="text-[10px] font-bold px-2 py-0.5 chamfer-sm shrink-0 ml-3 uppercase tracking-wide"
-                              style={{
-                                backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
-                                color,
-                                border: `1px solid ${color}`,
-                              }}
-                            >
-                              {LAB_ESTADO_LABELS[lab.estado]}
-                            </span>
-                          </div>
+                          <TiltCard
+                            glowColor={LAB_ESTADO_GLOW[lab.estado]}
+                            className="chamfer flex flex-col p-4 sm:p-5 h-full"
+                            style={{ backgroundColor: "var(--surface)", border: `1px solid ${lab.estado === "publicado" ? "var(--border-strong)" : "var(--border-default)"}` }}
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <span className="text-sm sm:text-base font-bold leading-snug" style={{ color: "var(--text-heading)" }}>
+                                {lab.nombre}
+                              </span>
+                              <span
+                                className="text-[10px] font-bold px-2 py-0.5 chamfer-sm shrink-0 ml-3 uppercase tracking-wide"
+                                style={{
+                                  backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
+                                  color,
+                                  border: `1px solid ${color}`,
+                                }}
+                              >
+                                {LAB_ESTADO_LABELS[lab.estado]}
+                              </span>
+                            </div>
 
-                          <div className="flex items-center gap-4 mt-auto text-xs font-mono" style={{ color: "var(--text-muted)" }}>
-                            <span>Estudiantes: <span style={{ color: "var(--text-base)" }}>{lab.estudiantes_inscritos}</span></span>
-                            <span>Completitud: <span style={{ color: "var(--text-base)" }}>{Math.round(lab.porcentaje_completitud_promedio)}%</span></span>
-                          </div>
+                            <div className="flex items-center gap-4 mb-3 text-xs font-mono" style={{ color: "var(--text-muted)" }}>
+                              <span>Estudiantes: <span style={{ color: "var(--text-base)" }}>{lab.estudiantes_inscritos}</span></span>
+                              <span>Completitud: <span style={{ color: "var(--text-base)" }}>{Math.round(lab.porcentaje_completitud_promedio)}%</span></span>
+                            </div>
+
+                            {lab.estado === "publicado" && (
+                              <button
+                                type="button"
+                                disabled={visibilityBusyId === lab.laboratorio_id}
+                                onClick={() => handleToggleVisibility(lab.laboratorio_id, !lab.visible_en_catalogo)}
+                                className="mt-auto flex items-center gap-2 chamfer-sm px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide cursor-pointer border transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                style={{
+                                  backgroundColor: lab.visible_en_catalogo ? "rgba(51,214,159,0.1)" : "transparent",
+                                  borderColor: lab.visible_en_catalogo ? "var(--signal-green)" : "var(--border-default)",
+                                  color: lab.visible_en_catalogo ? "var(--signal-green)" : "var(--text-muted)",
+                                  fontFamily: "var(--font-mono)",
+                                }}
+                              >
+                                <IconGlobe width={13} height={13} />
+                                {visibilityBusyId === lab.laboratorio_id
+                                  ? "Actualizando…"
+                                  : lab.visible_en_catalogo
+                                    ? "En catálogo público"
+                                    : "Publicar en catálogo"}
+                              </button>
+                            )}
+                          </TiltCard>
                         </motion.div>
                       )
                     })}
@@ -255,23 +304,23 @@ export default function InstructorDashboard() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
                               transition={{ duration: 0.25 }}
-                              className="chamfer flex flex-col p-4 sm:p-5"
-                              style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}
                             >
-                              <div className="chamfer-sm flex items-center justify-center w-10 h-10 mb-3 text-sm font-bold shrink-0" style={{ backgroundColor: "var(--surface-hover)", color: "var(--signal-amber)", fontFamily: "var(--font-mono)" }}>
-                                {s.nombre_completo.charAt(0).toUpperCase()}
-                              </div>
+                              <TiltCard glowColor="255,176,32" className="chamfer flex flex-col p-4 sm:p-5 h-full" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
+                                <div className="chamfer-sm flex items-center justify-center w-10 h-10 mb-3 text-sm font-bold shrink-0" style={{ backgroundColor: "var(--surface-hover)", color: "var(--signal-amber)", fontFamily: "var(--font-mono)" }}>
+                                  {s.nombre_completo.charAt(0).toUpperCase()}
+                                </div>
 
-                              <span className="text-sm sm:text-base font-bold" style={{ color: "var(--text-heading)" }}>{s.nombre_completo}</span>
-                              <span className="text-xs mb-3 truncate" style={{ color: "var(--text-muted)" }}>{labName(s.laboratorio_id)}</span>
+                                <span className="text-sm sm:text-base font-bold" style={{ color: "var(--text-heading)" }}>{s.nombre_completo}</span>
+                                <span className="text-xs mb-3 truncate" style={{ color: "var(--text-muted)" }}>{labName(s.laboratorio_id)}</span>
 
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>Progreso</span>
-                                <span className="text-xs font-bold" style={{ color: barColor, fontFamily: "var(--font-mono)" }}>{Math.round(s.porcentaje_completitud)}%</span>
-                              </div>
-                              <div className="w-full h-1.5 overflow-hidden" style={{ backgroundColor: "var(--surface-hover)" }}>
-                                <motion.div initial={{ width: 0 }} animate={{ width: `${s.porcentaje_completitud}%` }} transition={{ duration: 0.5, ease: "easeOut" }} className="h-full" style={{ backgroundColor: barColor }} />
-                              </div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>Progreso</span>
+                                  <span className="text-xs font-bold" style={{ color: barColor, fontFamily: "var(--font-mono)" }}>{Math.round(s.porcentaje_completitud)}%</span>
+                                </div>
+                                <div className="w-full h-1.5 overflow-hidden" style={{ backgroundColor: "var(--surface-hover)" }}>
+                                  <motion.div initial={{ width: 0 }} animate={{ width: `${s.porcentaje_completitud}%` }} transition={{ duration: 0.5, ease: "easeOut" }} className="h-full" style={{ backgroundColor: barColor }} />
+                                </div>
+                              </TiltCard>
                             </motion.div>
                           )
                         })}

@@ -20,6 +20,7 @@ import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
 import ProgressRing from "../components/ProgressRing"
 import TerminalHeader from "../components/TerminalHeader"
+import TiltCard from "../components/TiltCard"
 import { IconGauge, IconFlask, IconClock, IconRocket, IconTrophy } from "../components/icons"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -205,48 +206,48 @@ export default function StudentDashboard() {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="chamfer flex items-center justify-between p-3 sm:p-4 transition-colors"
-                            style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}
                           >
-                            <div className="flex flex-col gap-1 min-w-0 pr-2">
-                              <span className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-heading)" }}>
-                                {row.laboratorio?.nombre || `Lab ${row.assignment.laboratorio_id.slice(0, 8)}`}
-                              </span>
-                              {row.laboratorio && (
-                                <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
-                                  Dificultad: {row.laboratorio.nivel_dificultad}
+                            <TiltCard glowColor="56,214,245" intensity={3} className="chamfer flex items-center justify-between p-3 sm:p-4 transition-colors" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
+                              <div className="flex flex-col gap-1 min-w-0 pr-2">
+                                <span className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-heading)" }}>
+                                  {row.laboratorio?.nombre || `Lab ${row.assignment.laboratorio_id.slice(0, 8)}`}
                                 </span>
-                              )}
-                            </div>
+                                {row.laboratorio && (
+                                  <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
+                                    Dificultad: {row.laboratorio.nivel_dificultad}
+                                  </span>
+                                )}
+                              </div>
 
-                            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                              {row.status === "completado" && row.puntaje != null && (
-                                <span className="text-[10px] font-bold px-2 py-1 chamfer-sm font-mono" style={{ backgroundColor: "rgba(255,176,32,0.1)", color: "var(--signal-amber)", border: "1px solid var(--border-amber)" }}>
-                                  {Math.round(row.puntaje)}%
+                              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                                {row.status === "completado" && row.puntaje != null && (
+                                  <span className="text-[10px] font-bold px-2 py-1 chamfer-sm font-mono" style={{ backgroundColor: "rgba(255,176,32,0.1)", color: "var(--signal-amber)", border: "1px solid var(--border-amber)" }}>
+                                    {Math.round(row.puntaje)}%
+                                  </span>
+                                )}
+                                <span
+                                  className="text-[10px] font-bold px-2 sm:px-2.5 py-1 chamfer-sm whitespace-nowrap uppercase tracking-wide"
+                                  style={{ backgroundColor: `color-mix(in srgb, ${statusColor[row.status]} 14%, transparent)`, color: statusColor[row.status], border: `1px solid ${statusColor[row.status]}` }}
+                                >
+                                  {statusLabel[row.status]}
                                 </span>
-                              )}
-                              <span
-                                className="text-[10px] font-bold px-2 sm:px-2.5 py-1 chamfer-sm whitespace-nowrap uppercase tracking-wide"
-                                style={{ backgroundColor: `color-mix(in srgb, ${statusColor[row.status]} 14%, transparent)`, color: statusColor[row.status], border: `1px solid ${statusColor[row.status]}` }}
-                              >
-                                {statusLabel[row.status]}
-                              </span>
-                              {row.status === "pendiente" && (
-                                <>
-                                  <Button size="sm" disabled={busyId === row.assignment.id} onClick={() => handleAccept(row.assignment.id)} className="chamfer-sm font-mono text-xs uppercase">
-                                    Aceptar
+                                {row.status === "pendiente" && (
+                                  <>
+                                    <Button size="sm" disabled={busyId === row.assignment.id} onClick={() => handleAccept(row.assignment.id)} className="chamfer-sm font-mono text-xs uppercase">
+                                      Aceptar
+                                    </Button>
+                                    <Button size="sm" variant="outline" disabled={busyId === row.assignment.id} onClick={() => handleReject(row.assignment.id)} className="chamfer-sm font-mono text-xs uppercase">
+                                      Rechazar
+                                    </Button>
+                                  </>
+                                )}
+                                {(row.status === "en_progreso" || row.status === "completado") && (
+                                  <Button asChild size="sm" className="chamfer-sm font-mono text-xs uppercase">
+                                    <Link to={`/resolver/${row.assignment.id}`}>{row.status === "completado" ? "Ver" : "Continuar"}</Link>
                                   </Button>
-                                  <Button size="sm" variant="outline" disabled={busyId === row.assignment.id} onClick={() => handleReject(row.assignment.id)} className="chamfer-sm font-mono text-xs uppercase">
-                                    Rechazar
-                                  </Button>
-                                </>
-                              )}
-                              {(row.status === "en_progreso" || row.status === "completado") && (
-                                <Button asChild size="sm" className="chamfer-sm font-mono text-xs uppercase">
-                                  <Link to={`/resolver/${row.assignment.id}`}>{row.status === "completado" ? "Ver" : "Continuar"}</Link>
-                                </Button>
-                              )}
-                            </div>
+                                )}
+                              </div>
+                            </TiltCard>
                           </motion.div>
                         ))}
                       </AnimatePresence>
@@ -268,7 +269,7 @@ export default function StudentDashboard() {
                         const puntaje = row.puntaje
                         const color = puntaje == null ? "var(--text-muted)" : puntaje >= 70 ? "var(--signal-green)" : puntaje >= 40 ? "var(--signal-cyan)" : "var(--signal-red)"
                         return (
-                          <div key={row.assignment.id} className="chamfer flex items-center justify-between gap-3 p-3 sm:p-4" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
+                          <TiltCard key={row.assignment.id} glowColor="51,214,159" intensity={3} className="chamfer flex items-center justify-between gap-3 p-3 sm:p-4" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
                             <div className="flex flex-col gap-1 min-w-0 pr-2">
                               <span className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-heading)" }}>
                                 {row.laboratorio?.nombre || `Lab ${row.assignment.laboratorio_id.slice(0, 8)}`}
@@ -285,7 +286,7 @@ export default function StudentDashboard() {
                                 Ver →
                               </Link>
                             </div>
-                          </div>
+                          </TiltCard>
                         )
                       })}
                     </div>
@@ -303,7 +304,7 @@ export default function StudentDashboard() {
                   ) : (
                     <div className="flex flex-col gap-2 sm:gap-3">
                       {proximosVencimientos.map((row) => (
-                        <div key={row.assignment.id} className="chamfer flex items-center justify-between p-3 sm:p-4" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-amber)" }}>
+                        <TiltCard key={row.assignment.id} glowColor="255,176,32" intensity={3} className="chamfer flex items-center justify-between p-3 sm:p-4" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-amber)" }}>
                           <div className="flex flex-col gap-1 min-w-0 pr-2">
                             <span className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-heading)" }}>
                               {row.laboratorio?.nombre || `Lab ${row.assignment.laboratorio_id.slice(0, 8)}`}
@@ -312,7 +313,7 @@ export default function StudentDashboard() {
                               Vence: {new Date(row.assignment.fecha_vencimiento!).toLocaleDateString()}
                             </span>
                           </div>
-                        </div>
+                        </TiltCard>
                       ))}
                     </div>
                   )}
@@ -355,24 +356,37 @@ export default function StudentDashboard() {
   )
 }
 
+// Puente color de token CSS ("var(--signal-cyan)") → triplete RGB que TiltCard/MouseGlow
+// necesitan para el glow (no se puede resolver var() a RGB en JS sin getComputedStyle).
+const STAT_GLOW: Record<string, string> = {
+  "var(--signal-green)": "51,214,159",
+  "var(--signal-cyan)": "56,214,245",
+  "var(--text-muted)": "136,146,163",
+}
+
 function StatCard({ label, value, color, icon }: { label: string; value: number; color: string; icon?: ReactNode }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className="chamfer-sm flex-1 flex flex-col items-center gap-1.5 sm:gap-2 p-3 sm:p-5"
-      style={{ backgroundColor: "var(--canvas)", border: "1px solid var(--border-default)" }}
+      className="flex-1"
     >
-      {icon && (
-        <div className="chamfer-sm flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8" style={{ backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`, color }}>
-          {icon}
-        </div>
-      )}
-      <span className="text-xl sm:text-3xl font-bold text-display" style={{ color }}>
-        {value}
-      </span>
-      <span className="text-[11px] sm:text-xs font-medium text-center uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{label}</span>
+      <TiltCard
+        glowColor={STAT_GLOW[color] || "56,214,245"}
+        className="chamfer-sm flex flex-col items-center gap-1.5 sm:gap-2 p-3 sm:p-5"
+        style={{ backgroundColor: "var(--canvas)", border: "1px solid var(--border-default)" }}
+      >
+        {icon && (
+          <div className="chamfer-sm flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8" style={{ backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`, color }}>
+            {icon}
+          </div>
+        )}
+        <span className="text-xl sm:text-3xl font-bold text-display" style={{ color }}>
+          {value}
+        </span>
+        <span className="text-[11px] sm:text-xs font-medium text-center uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{label}</span>
+      </TiltCard>
     </motion.div>
   )
 }
