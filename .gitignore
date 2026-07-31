@@ -32,3 +32,6 @@ docker-compose.override.yml
 .idea/
 .DS_Store
 Thumbs.db
+
+# Claude Code (config/estado local, no del proyecto)
+.claude/
