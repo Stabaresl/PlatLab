@@ -1,4 +1,5 @@
 from modules.assignments.domain.events import AssignmentExpired, AssignmentInvited
+from modules.gamification.domain.events import LogroDesbloqueadoEvent
 from modules.laboratories.domain.events import LaboratoryApproved, LaboratoryRejected
 from modules.notifications.domain.value_objects import TipoNotificacion
 from modules.notifications.infrastructure.celery_tasks import despachar_notificacion_task
@@ -83,6 +84,16 @@ def _on_laboratory_rejected(event: LaboratoryRejected) -> None:
     )
 
 
+def _on_logro_desbloqueado(event: LogroDesbloqueadoEvent) -> None:
+    despachar_notificacion_task.delay(
+        user_id=str(event.estudiante_id),
+        tipo=TipoNotificacion.LOGRO_DESBLOQUEADO.value,
+        mensaje=f"¡Desbloqueaste el logro \"{event.nombre}\"!",
+        entidad_tipo="logro",
+        entidad_id=str(event.logro_id),
+    )
+
+
 def registrar_listeners(dispatcher: EventDispatcher) -> None:
     """
     HE-13/UC-11: suscribe los listeners de Notifications al
@@ -97,3 +108,4 @@ def registrar_listeners(dispatcher: EventDispatcher) -> None:
     dispatcher.subscribe(InstructorVerificationResolved, _on_instructor_verification_resolved)
     dispatcher.subscribe(LaboratoryApproved, _on_laboratory_approved)
     dispatcher.subscribe(LaboratoryRejected, _on_laboratory_rejected)
+    dispatcher.subscribe(LogroDesbloqueadoEvent, _on_logro_desbloqueado)
