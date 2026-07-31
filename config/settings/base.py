@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'modules.notifications',
     'modules.audit',
     'modules.lab_environments',
+    'modules.roadmap',
 ]
 
 MIDDLEWARE = [
