@@ -1,7 +1,6 @@
 from modules.assignments.domain.repositories import IAsignacionRepository
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.progress.domain.repositories import IProgresoRepository
-from modules.progress.domain.value_objects import EstadoProgresoSeccion
 from modules.shared.domain.exceptions import ForbiddenError
 from modules.users.application.dtos import (
     DashboardAdminResultDTO,
@@ -73,15 +72,8 @@ class ObtenerDashboardAdminQuery:
         )
 
     def _calcular_tasa_completitud(self, asignaciones) -> float:
-        porcentajes = []
-        for asignacion in asignaciones:
-            progreso = self._progreso_repository.get_by_asignacion(asignacion.id)
-            if progreso is None:
-                continue
-            secciones = self._progreso_repository.get_secciones(progreso.id)
-            if not secciones:
-                continue
-            completadas = sum(1 for s in secciones if s.estado == EstadoProgresoSeccion.COMPLETADA)
-            porcentajes.append(completadas / len(secciones) * 100)
-
+        completitud_por_asignacion = self._progreso_repository.get_completitud_por_asignaciones(
+            [a.id for a in asignaciones]
+        )
+        porcentajes = list(completitud_por_asignacion.values())
         return round(sum(porcentajes) / len(porcentajes), 2) if porcentajes else 0.0

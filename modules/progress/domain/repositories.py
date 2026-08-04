@@ -35,6 +35,19 @@ class IProgresoRepository(Protocol):
 
     def get_secciones(self, progreso_id: uuid.UUID) -> list[ProgresoSeccion]: ...
 
+    def get_completitud_por_asignaciones(
+        self, asignacion_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, float]:
+        """
+        Batch: % de secciones completadas, indexado por `asignacion_id`
+        — evita el N+1 de llamar `get_by_asignacion()` +
+        `get_secciones()` dentro de un loop (dashboard.md HI-06/HA-03,
+        `ObtenerDashboardQuery`/`ObtenerDashboardAdminQuery`). Una
+        asignación sin progreso o sin secciones registradas todavía no
+        aparece en el dict devuelto.
+        """
+        ...
+
     def get_seccion(
         self, progreso_id: uuid.UUID, seccion_id: uuid.UUID
     ) -> ProgresoSeccion | None: ...

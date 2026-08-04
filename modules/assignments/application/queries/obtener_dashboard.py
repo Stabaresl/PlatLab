@@ -3,7 +3,6 @@ from modules.assignments.domain.repositories import IAsignacionRepository
 from modules.assignments.domain.value_objects import EstadoAsignacion
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.progress.domain.repositories import IProgresoRepository
-from modules.progress.domain.value_objects import EstadoProgresoSeccion
 from modules.shared.domain.exceptions import ForbiddenError
 
 _SIN_PERMISO_MSG = "Solo un instructor tiene panel principal."
@@ -39,37 +38,30 @@ class ObtenerDashboardQuery:
             lab for lab in labs_visibles if lab.instructor_id == input_dto.instructor_id
         ]
         asignaciones = self._asignacion_repository.find_por_instructor(input_dto.instructor_id)
+        activas = [a for a in asignaciones if a.estado == EstadoAsignacion.ACTIVA]
+        completitud_por_asignacion = self._progreso_repository.get_completitud_por_asignaciones(
+            [a.id for a in activas]
+        )
 
         return [
-            self._a_dashboard_item(lab, asignaciones)
+            self._a_dashboard_item(lab, activas, completitud_por_asignacion)
             for lab in labs_propios
         ]
 
-    def _a_dashboard_item(self, lab, asignaciones) -> LaboratorioDashboardItemDTO:
-        activas = [
-            a
-            for a in asignaciones
-            if a.laboratorio_id == lab.id and a.estado == EstadoAsignacion.ACTIVA
+    def _a_dashboard_item(self, lab, activas, completitud_por_asignacion) -> LaboratorioDashboardItemDTO:
+        activas_del_lab = [a for a in activas if a.laboratorio_id == lab.id]
+        porcentajes = [
+            completitud_por_asignacion[a.id]
+            for a in activas_del_lab
+            if a.id in completitud_por_asignacion
         ]
-
-        porcentajes = []
-        for asignacion in activas:
-            progreso = self._progreso_repository.get_by_asignacion(asignacion.id)
-            if progreso is None:
-                continue
-            secciones = self._progreso_repository.get_secciones(progreso.id)
-            if not secciones:
-                continue
-            completadas = sum(1 for s in secciones if s.estado == EstadoProgresoSeccion.COMPLETADA)
-            porcentajes.append(completadas / len(secciones) * 100)
-
         promedio = round(sum(porcentajes) / len(porcentajes), 2) if porcentajes else 0.0
 
         return LaboratorioDashboardItemDTO(
             laboratorio_id=lab.id,
             nombre=lab.nombre,
             estado=lab.estado.value,
-            estudiantes_inscritos=len(activas),
+            estudiantes_inscritos=len(activas_del_lab),
             porcentaje_completitud_promedio=promedio,
             tipo=lab.tipo.value,
             visible_en_catalogo=lab.visible_en_catalogo,

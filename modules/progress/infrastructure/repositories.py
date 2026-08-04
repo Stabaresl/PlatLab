@@ -9,6 +9,7 @@ from modules.progress.domain.entities import (
     ProgresoSeccion,
     ResultadoExamen,
 )
+from modules.progress.domain.value_objects import EstadoProgresoSeccion
 from modules.progress.infrastructure.mappers import (
     historial_to_entity,
     intento_flag_to_entity,
@@ -55,6 +56,41 @@ class ProgresoRepository:
     def get_secciones(self, progreso_id: uuid.UUID) -> list[ProgresoSeccion]:
         modelos = ProgresoSeccionModel.objects.filter(progreso_id=progreso_id)
         return [progreso_seccion_to_entity(m) for m in modelos]
+
+    def get_completitud_por_asignaciones(
+        self, asignacion_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, float]:
+        if not asignacion_ids:
+            return {}
+
+        progreso_id_por_asignacion = dict(
+            ProgresoModel.objects.filter(asignacion_id__in=asignacion_ids).values_list(
+                "asignacion_id", "id"
+            )
+        )
+        if not progreso_id_por_asignacion:
+            return {}
+
+        total_por_progreso: dict[uuid.UUID, int] = {}
+        completadas_por_progreso: dict[uuid.UUID, int] = {}
+        secciones = ProgresoSeccionModel.objects.filter(
+            progreso_id__in=progreso_id_por_asignacion.values()
+        ).values_list("progreso_id", "estado")
+        for progreso_id, estado in secciones:
+            total_por_progreso[progreso_id] = total_por_progreso.get(progreso_id, 0) + 1
+            if estado == EstadoProgresoSeccion.COMPLETADA.value:
+                completadas_por_progreso[progreso_id] = (
+                    completadas_por_progreso.get(progreso_id, 0) + 1
+                )
+
+        resultado: dict[uuid.UUID, float] = {}
+        for asignacion_id, progreso_id in progreso_id_por_asignacion.items():
+            total = total_por_progreso.get(progreso_id, 0)
+            if total == 0:
+                continue
+            completadas = completadas_por_progreso.get(progreso_id, 0)
+            resultado[asignacion_id] = completadas / total * 100
+        return resultado
 
     def get_seccion(
         self, progreso_id: uuid.UUID, seccion_id: uuid.UUID
