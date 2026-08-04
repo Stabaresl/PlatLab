@@ -33,7 +33,11 @@
   --text-heading: #f4f7fb;
   --text-base: #c9d2de;
   --text-muted: #8892a3;
-  --text-dim: #565f6d;
+  /* WCAG 1.4.3 — #565f6d sobre --canvas (#08090c) daba ~3.09:1, por
+     debajo del mínimo AA (4.5:1) para texto normal. #737c8a mantiene el
+     mismo tono frío (más oscuro que --text-muted, conserva la
+     jerarquía) mientras sube a ~4.72:1. */
+  --text-dim: #737c8a;
 
   /* ---- Señal (un solo acento dominante + 3 de estado) ---- */
   --signal-amber: #ffb020;
