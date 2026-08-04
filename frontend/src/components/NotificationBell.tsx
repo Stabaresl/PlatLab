@@ -107,6 +107,14 @@ export default function NotificationBell() {
 
   return (
     <div className="relative">
+      {/* WCAG 4.1.3 — el conteo de no-leídas cambia con cada poll (60s)
+          sin que nada lo anuncie; el texto solo cambia de verdad cuando
+          `unread` cambia, así que esto no spamea el lector de pantalla
+          en cada poll sin novedades. */}
+      <span className="sr-only" role="status" aria-live="polite">
+        {unread > 0 ? `${unread} notificación${unread === 1 ? "" : "es"} sin leer` : ""}
+      </span>
+
       <button
         ref={buttonRef}
         type="button"

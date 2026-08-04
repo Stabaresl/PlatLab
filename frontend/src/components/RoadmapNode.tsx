@@ -96,6 +96,8 @@ function RoadmapNode({
       style={{ cursor: bloqueado ? "default" : "pointer" }}
       onMouseEnter={openTooltip}
       onMouseLeave={closeTooltip}
+      onFocus={openTooltip}
+      onBlur={closeTooltip}
       onClick={handleActivate}
       role={!bloqueado ? "button" : undefined}
       tabIndex={!bloqueado ? 0 : undefined}
