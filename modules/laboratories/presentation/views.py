@@ -2,7 +2,6 @@ import uuid
 
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
@@ -101,6 +100,7 @@ from modules.laboratories.presentation.serializers import (
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
+from modules.shared.presentation.pagination import ListaPagination
 
 _ID_INVALIDO_MSG = "Laboratorio no encontrado."
 
@@ -155,17 +155,10 @@ def _es_admin(request) -> bool:
     return bool(getattr(user, "is_authenticated", False)) and user.rol == "administrador"
 
 
-class CatalogoPagination(LimitOffsetPagination):
-    """
-    `ListarLaboratoriosQuery` ya devuelve una lista materializada de DTOs
-    (Application no expone el queryset del ORM a Presentation, backend.md
-    §2) — `CursorPagination` de DRF necesita un queryset real (llama
-    `.order_by()` sobre él), por lo que no aplica aquí. `LimitOffsetPagination`
-    sí funciona sobre listas ya ordenadas (el orden por `nombre` ya lo
-    aplica `LaboratorioRepository.find_catalogo` a nivel de query).
-    """
-
-    default_limit = 20
+# Alias histórico — la paginación en sí ahora es compartida (ver
+# modules/shared/presentation/pagination.py, usada también por
+# audit/users/notifications/assignments).
+CatalogoPagination = ListaPagination
 
 
 class LaboratorioViewSet(ViewSet):

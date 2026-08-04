@@ -125,7 +125,7 @@ def test_listar_asignaciones_endpoint_estudiante_ve_las_suyas():
     response = client.get("/api/v1/assignments/")
 
     assert response.status_code == 200
-    assert len(response.data) == 1
+    assert len(response.data["results"]) == 1
 
 
 @pytest.mark.django_db

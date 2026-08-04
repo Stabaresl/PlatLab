@@ -12,6 +12,7 @@ from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
+from modules.shared.presentation.pagination import ListaPagination
 from modules.users.application.dtos import (
     ActualizarUsuarioDTO,
     DeshabilitarUsuarioDTO,
@@ -81,9 +82,10 @@ class UserViewSet(ViewSet):
         resultado = ListarUsuariosQuery(UserRepository()).execute(
             ListarUsuariosDTO(actor_rol=request.user.rol, **query_serializer.validated_data)
         )
-        return Response(
-            [_serializar_usuario(item) for item in resultado], status=status.HTTP_200_OK
-        )
+        serializados = [_serializar_usuario(item) for item in resultado]
+        paginator = ListaPagination()
+        pagina = paginator.paginate_queryset(serializados, request, view=self)
+        return paginator.get_paginated_response(pagina)
 
     def retrieve(self, request, pk=None):
         resultado = ObtenerUsuarioQuery(UserRepository()).execute(

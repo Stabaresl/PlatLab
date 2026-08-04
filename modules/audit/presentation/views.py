@@ -1,12 +1,11 @@
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from modules.audit.application.dtos import ConsultarAuditoriaDTO
 from modules.audit.application.queries.consultar_auditoria import ConsultarAuditoriaQuery
 from modules.audit.infrastructure.repositories import AuditoriaRepository
 from modules.audit.presentation.serializers import ConsultarAuditoriaQuerySerializer
+from modules.shared.presentation.pagination import ListaPagination
 
 
 def _serializar(item) -> dict:
@@ -39,4 +38,7 @@ class AuditViewSet(ViewSet):
                 hasta=datos.get("hasta"),
             )
         )
-        return Response([_serializar(item) for item in resultado], status=status.HTTP_200_OK)
+        serializados = [_serializar(item) for item in resultado]
+        paginator = ListaPagination()
+        pagina = paginator.paginate_queryset(serializados, request, view=self)
+        return paginator.get_paginated_response(pagina)

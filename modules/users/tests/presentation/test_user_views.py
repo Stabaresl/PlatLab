@@ -60,7 +60,7 @@ def test_list_endpoint_sin_filtro_activo_no_oculta_usuarios_activos():
 
     response = client.get("/api/v1/users/")
 
-    ids = [item["id"] for item in response.data]
+    ids = [item["id"] for item in response.data["results"]]
     assert str(usuario.id) in ids
 
 
@@ -71,7 +71,7 @@ def test_list_endpoint_filtro_activo_false_excluye_activos():
 
     response = client.get("/api/v1/users/?activo=false")
 
-    ids = [item["id"] for item in response.data]
+    ids = [item["id"] for item in response.data["results"]]
     assert str(usuario_activo.id) not in ids
 
 

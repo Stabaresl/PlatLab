@@ -39,6 +39,7 @@ from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
+from modules.shared.presentation.pagination import ListaPagination
 from modules.users.infrastructure.repositories import UserRepository
 
 _ID_INVALIDO_MSG = "Invitación no encontrada."
@@ -135,22 +136,22 @@ class AssignmentViewSet(ViewSet):
         resultado = ListarAsignacionesQuery(AsignacionRepository()).execute(
             ListarAsignacionesDTO(actor_id=request.user.id, actor_rol=request.user.rol)
         )
-        return Response(
-            [
-                {
-                    "id": str(item.id),
-                    "estudiante_id": str(item.estudiante_id),
-                    "laboratorio_id": str(item.laboratorio_id),
-                    "estado": item.estado,
-                    "fecha_invitacion": item.fecha_invitacion.isoformat(),
-                    "fecha_vencimiento": (
-                        item.fecha_vencimiento.isoformat() if item.fecha_vencimiento else None
-                    ),
-                }
-                for item in resultado
-            ],
-            status=status.HTTP_200_OK,
-        )
+        serializados = [
+            {
+                "id": str(item.id),
+                "estudiante_id": str(item.estudiante_id),
+                "laboratorio_id": str(item.laboratorio_id),
+                "estado": item.estado,
+                "fecha_invitacion": item.fecha_invitacion.isoformat(),
+                "fecha_vencimiento": (
+                    item.fecha_vencimiento.isoformat() if item.fecha_vencimiento else None
+                ),
+            }
+            for item in resultado
+        ]
+        paginator = ListaPagination()
+        pagina = paginator.paginate_queryset(serializados, request, view=self)
+        return paginator.get_paginated_response(pagina)
 
     @action(detail=False, methods=["post"], url_path="enroll")
     def enroll(self, request):

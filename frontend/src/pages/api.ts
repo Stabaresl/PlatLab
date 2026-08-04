@@ -520,7 +520,7 @@ export interface Asignacion {
 }
 
 export function listAssignments() {
-  return api<Asignacion[]>("/assignments/")
+  return api<PaginatedResponse<Asignacion>>("/assignments/").then((res) => res.results)
 }
 
 export function inviteStudents(body: { laboratorio_id: string; estudiantes: string[]; fecha_vencimiento?: string | null }) {
@@ -810,8 +810,11 @@ export interface UsuarioItem {
 }
 
 export function listUsers(params?: { rol?: Rol; is_active?: boolean }) {
-  const qs = new URLSearchParams(params as unknown as Record<string, string>).toString()
-  return api<UsuarioItem[]>(`/users/${qs ? `?${qs}` : ""}`)
+  // limit=100 (el máximo que acepta el backend, ver ListaPagination) —
+  // AdminDashboard pagina la lista completa client-side, necesita el
+  // padrón entero, no solo la primera página por defecto (20).
+  const qs = new URLSearchParams({ limit: "100", ...params } as unknown as Record<string, string>).toString()
+  return api<PaginatedResponse<UsuarioItem>>(`/users/${qs ? `?${qs}` : ""}`).then((res) => res.results)
 }
 
 export function getUser(id: string) {
@@ -1075,8 +1078,11 @@ export interface Notificacion {
 }
 
 export function listNotifications(params?: { leida?: boolean }) {
-  const qs = new URLSearchParams(params as unknown as Record<string, string>).toString()
-  return api<Notificacion[]>(`/notifications/${qs ? `?${qs}` : ""}`)
+  // limit=50 — el badge de no-leídas se calcula sobre esta misma
+  // respuesta (NotificationBell.tsx); el default de paginación (20)
+  // podría subcontar si hay más de 20 sin leer.
+  const qs = new URLSearchParams({ limit: "50", ...params } as unknown as Record<string, string>).toString()
+  return api<PaginatedResponse<Notificacion>>(`/notifications/${qs ? `?${qs}` : ""}`).then((res) => res.results)
 }
 
 export function markNotificationRead(id: string) {
@@ -1097,6 +1103,8 @@ export interface RegistroAuditoriaItem {
 }
 
 export function listAudit(params?: { accion?: string; actor?: string; desde?: string; hasta?: string }) {
+  // AdminDashboard solo muestra los 10 más recientes — el default de
+  // paginación (20) alcanza de sobra.
   const qs = new URLSearchParams(params as unknown as Record<string, string>).toString()
-  return api<RegistroAuditoriaItem[]>(`/audit/${qs ? `?${qs}` : ""}`)
+  return api<PaginatedResponse<RegistroAuditoriaItem>>(`/audit/${qs ? `?${qs}` : ""}`).then((res) => res.results)
 }
