@@ -50,6 +50,8 @@ export default function RoadmapAdminPage() {
   const [showNewCategory, setShowNewCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState("")
   const [busy, setBusy] = useState(false)
+  const [liveMessage, setLiveMessage] = useState("")
+  const [poolTarget, setPoolTarget] = useState<Record<string, string>>({})
 
   const load = () => {
     setLoading(true)
@@ -127,6 +129,38 @@ export default function RoadmapAdminPage() {
     }
   }
 
+  // Alternativa de teclado al drag-and-drop (WCAG 2.1.1) — mismas
+  // llamadas que ya dispara handleDrop/handleDropOnEmptyLane, solo que
+  // gatilladas por un botón/select en vez de un evento de mouse.
+  const handleMoveNodo = async (nodo: RoadmapCategoria["nodos"][number], categoriaId: string, posicion: number, anuncio: string) => {
+    setBusy(true)
+    setError("")
+    try {
+      await reorderRoadmapNodo(nodo.id, { categoria_id: categoriaId, posicion })
+      setLiveMessage(anuncio)
+      load()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudo mover el laboratorio.")
+      setBusy(false)
+    }
+  }
+
+  const handleAddFromPool = async (lab: LaboratorioSinRoadmap) => {
+    const categoriaId = poolTarget[lab.id]
+    if (!categoriaId) return
+    const categoria = categorias.find((c) => c.id === categoriaId)
+    setBusy(true)
+    setError("")
+    try {
+      await addRoadmapNodo({ categoria_id: categoriaId, laboratorio_id: lab.id, posicion: categoria?.nodos.length ?? 0 })
+      setLiveMessage(`${lab.nombre} agregado a ${categoria?.nombre ?? "la pista"}.`)
+      load()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudo agregar el laboratorio.")
+      setBusy(false)
+    }
+  }
+
   const handleRemove = async (nodoId: string) => {
     setBusy(true)
     setError("")
@@ -170,6 +204,8 @@ export default function RoadmapAdminPage() {
             }
           />
 
+          <span className="sr-only" role="status" aria-live="polite">{liveMessage}</span>
+
           <AnimatePresence>
             {error && (
               <motion.p initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-sm mb-6 px-3 py-2 chamfer-sm" style={{ color: "var(--signal-red)", backgroundColor: "rgba(255,71,87,0.08)", border: "1px solid var(--signal-red-dim)" }} role="alert">
@@ -203,6 +239,31 @@ export default function RoadmapAdminPage() {
                       >
                         <span className="text-xs font-bold block truncate" style={{ color: "var(--text-heading)" }}>{lab.nombre}</span>
                         <span className="text-[10px] uppercase" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{lab.nivel_dificultad}</span>
+                        {/* Alternativa de teclado a arrastrar el card hacia una pista (WCAG 2.1.1). */}
+                        <div className="flex items-center gap-1 mt-2">
+                          <label className="sr-only" htmlFor={`pool-target-${lab.id}`}>Pista para {lab.nombre}</label>
+                          <select
+                            id={`pool-target-${lab.id}`}
+                            value={poolTarget[lab.id] ?? ""}
+                            onChange={(e) => setPoolTarget((prev) => ({ ...prev, [lab.id]: e.target.value }))}
+                            className="chamfer-sm text-[10px] flex-1 min-w-0"
+                            style={{ backgroundColor: "var(--canvas)", border: "1px solid var(--border-default)", color: "var(--text-base)" }}
+                          >
+                            <option value="">Elegir pista…</option>
+                            {categorias.map((c) => (
+                              <option key={c.id} value={c.id}>{c.nombre}</option>
+                            ))}
+                          </select>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={busy || !poolTarget[lab.id]}
+                            onClick={() => handleAddFromPool(lab)}
+                            className="chamfer-sm font-mono text-[10px] uppercase shrink-0"
+                          >
+                            Agregar
+                          </Button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -282,16 +343,61 @@ export default function RoadmapAdminPage() {
                               style={{ width: 140, backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}
                             >
                               <span className="text-[10px] font-mono block mb-1" style={{ color: "var(--signal-amber)" }}>#{nodo.posicion + 1}</span>
-                              <span className="text-[11px] font-bold block leading-tight" style={{ color: "var(--text-heading)" }}>{nodo.nombre}</span>
+                              <span className="text-[11px] font-bold block leading-tight mb-1.5" style={{ color: "var(--text-heading)" }}>{nodo.nombre}</span>
                               <button
                                 type="button"
                                 onClick={() => handleRemove(nodo.id)}
                                 aria-label="Quitar del roadmap"
-                                className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center text-xs cursor-pointer border-none opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center text-xs cursor-pointer border-none opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                                 style={{ backgroundColor: "rgba(255,71,87,0.15)", color: "var(--signal-red)" }}
                               >
                                 ×
                               </button>
+
+                              {/* Alternativa de teclado al drag-and-drop (WCAG 2.1.1) */}
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  disabled={busy || i === 0}
+                                  onClick={() => handleMoveNodo(nodo, categoria.id, i - 1, `${nodo.nombre} movido a la posición ${i}.`)}
+                                  aria-label={`Mover ${nodo.nombre} antes`}
+                                  className="chamfer-sm w-5 h-5 flex items-center justify-center text-[10px] cursor-pointer border disabled:opacity-30 disabled:cursor-not-allowed"
+                                  style={{ backgroundColor: "var(--canvas)", borderColor: "var(--border-default)", color: "var(--text-base)" }}
+                                >
+                                  ←
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={busy || i === categoria.nodos.length - 1}
+                                  onClick={() => handleMoveNodo(nodo, categoria.id, i + 1, `${nodo.nombre} movido a la posición ${i + 2}.`)}
+                                  aria-label={`Mover ${nodo.nombre} después`}
+                                  className="chamfer-sm w-5 h-5 flex items-center justify-center text-[10px] cursor-pointer border disabled:opacity-30 disabled:cursor-not-allowed"
+                                  style={{ backgroundColor: "var(--canvas)", borderColor: "var(--border-default)", color: "var(--text-base)" }}
+                                >
+                                  →
+                                </button>
+                                {categorias.length > 1 && (
+                                  <>
+                                    <label className="sr-only" htmlFor={`nodo-pista-${nodo.id}`}>Pista de {nodo.nombre}</label>
+                                    <select
+                                      id={`nodo-pista-${nodo.id}`}
+                                      value={categoria.id}
+                                      disabled={busy}
+                                      onChange={(e) => {
+                                        const destino = categorias.find((c) => c.id === e.target.value)
+                                        if (!destino || destino.id === categoria.id) return
+                                        handleMoveNodo(nodo, destino.id, destino.nodos.length, `${nodo.nombre} movido a ${destino.nombre}.`)
+                                      }}
+                                      className="chamfer-sm text-[9px] flex-1 min-w-0"
+                                      style={{ backgroundColor: "var(--canvas)", border: "1px solid var(--border-default)", color: "var(--text-base)" }}
+                                    >
+                                      {categorias.map((c) => (
+                                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                                      ))}
+                                    </select>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}
