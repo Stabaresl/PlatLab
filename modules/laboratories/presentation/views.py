@@ -83,6 +83,7 @@ from modules.laboratories.infrastructure.asignacion_inscripcion_provider import 
 from modules.laboratories.infrastructure.cached_laboratorio_repository import (
     CachedLaboratorioRepository,
 )
+from modules.laboratories.infrastructure.dockerfile_storage import verificar_tamano_declarado
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.laboratories.presentation.serializers import (
     AgregarPreguntaRequestSerializer,
@@ -538,6 +539,7 @@ class LaboratorioViewSet(ViewSet):
         serializer = SubirDockerfileRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         archivo = serializer.validated_data["archivo"]
+        verificar_tamano_declarado(archivo.size)
 
         use_case = SubirDockerfileSeccionUseCase(
             unit_of_work=BaseUnitOfWork(),

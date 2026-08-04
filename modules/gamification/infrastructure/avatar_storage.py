@@ -24,6 +24,18 @@ def _detectar_mime(contenido: bytes) -> str:
     raise ValidationError(_TIPO_NO_PERMITIDO_MSG)
 
 
+def verificar_tamano_declarado(size_bytes: int) -> None:
+    """
+    Chequea el tamaño que ya declaró el cliente (`UploadedFile.size`, sale
+    de la parte multipart, no hace falta leer nada) ANTES de llamar
+    `.read()` en la vista — evita bufferizar en memoria un archivo que ya
+    se sabe que va a ser rechazado. `guardar_avatar` mantiene su propio
+    chequeo como fuente de verdad una vez leído.
+    """
+    if size_bytes // 1024 > _LIMITE_TAMANO_KB:
+        raise ValidationError(_TAMANO_EXCEDIDO_MSG)
+
+
 def guardar_avatar(nombre_archivo: str, contenido: bytes) -> tuple[str, int]:
     """Valida y guarda una imagen de avatar subida por el estudiante. Devuelve `(archivo_url, tamano_kb)`."""
     tamano_kb = len(contenido) // 1024

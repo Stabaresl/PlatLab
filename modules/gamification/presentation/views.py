@@ -23,6 +23,7 @@ from modules.gamification.application.use_cases.quitar_cosmetico import QuitarCo
 from modules.gamification.application.use_cases.quitar_titulo import QuitarTituloUseCase
 from modules.gamification.application.use_cases.subir_avatar import SubirAvatarUseCase
 from modules.gamification.domain.entities import AVATAR_PRESETS
+from modules.gamification.infrastructure.avatar_storage import verificar_tamano_declarado
 from modules.gamification.infrastructure.repositories import (
     CosmeticoDesbloqueadoRepository,
     CosmeticoRepository,
@@ -216,6 +217,7 @@ class GamificationViewSet(ViewSet):
         serializer = SubirAvatarRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         archivo = serializer.validated_data["archivo"]
+        verificar_tamano_declarado(archivo.size)
 
         use_case = SubirAvatarUseCase(
             unit_of_work=BaseUnitOfWork(),

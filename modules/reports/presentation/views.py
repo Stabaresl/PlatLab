@@ -21,6 +21,7 @@ from modules.reports.application.use_cases.cambiar_estado_reporte import (
 )
 from modules.reports.application.use_cases.crear_reporte import CrearReporteUseCase
 from modules.reports.infrastructure.repositories import ReporteRepository
+from modules.reports.infrastructure.storage_adapter import verificar_tamano_declarado
 from modules.reports.presentation.serializers import (
     CambiarEstadoReporteRequestSerializer,
     CrearReporteRequestSerializer,
@@ -70,6 +71,8 @@ class ReportViewSet(ViewSet):
         serializer.is_valid(raise_exception=True)
         datos = serializer.validated_data
         adjunto = datos.get("adjunto")
+        if adjunto is not None:
+            verificar_tamano_declarado(adjunto.size)
 
         use_case = CrearReporteUseCase(
             unit_of_work=BaseUnitOfWork(),

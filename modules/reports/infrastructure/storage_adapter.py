@@ -29,6 +29,16 @@ def _detectar_mime(contenido: bytes) -> str:
     raise ValidationError(_TIPO_NO_PERMITIDO_MSG)
 
 
+def verificar_tamano_declarado(size_bytes: int) -> None:
+    """
+    Mismo criterio que `gamification/infrastructure/avatar_storage.py` —
+    chequea el tamaño declarado (`UploadedFile.size`) antes de leer el
+    archivo completo a memoria en la vista.
+    """
+    if size_bytes // 1024 > _LIMITE_TAMANO_KB:
+        raise ValidationError(_TAMANO_EXCEDIDO_MSG)
+
+
 def guardar_adjunto(nombre_archivo: str, contenido: bytes) -> tuple[str, int]:
     """
     HE-12/HA-05: valida el adjunto de un reporte (MIME real + límite de

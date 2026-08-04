@@ -137,6 +137,14 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='no-reply@platlab.local')
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# seguridad.md — techo global de memoria por request. El límite real por
+# tipo de archivo lo aplican los storage adapters (avatar_storage.py,
+# storage_adapter.py, dockerfile_storage.py, el mayor es 5MB), esto es
+# un resguardo adicional a nivel de Django: por encima de este tamaño,
+# Django corta el parseo del request en vez de bufferizarlo entero.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024  # 6 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024  # 6 MB
+
 
 # OAuth2 (Google / GitHub) — Authorization Code + PKCE (seguridad.md §3)
 # client_secret siempre vía variable de entorno, nunca en código fuente.

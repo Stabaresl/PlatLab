@@ -9,6 +9,16 @@ _LIMITE_TAMANO_KB = 3 * 1024  # 3 MB — Dockerfile suelto o .zip de contexto de
 _TAMANO_EXCEDIDO_MSG = f"El archivo supera el límite de {_LIMITE_TAMANO_KB} KB."
 
 
+def verificar_tamano_declarado(size_bytes: int) -> None:
+    """
+    Mismo criterio que `gamification/infrastructure/avatar_storage.py` —
+    chequea el tamaño declarado (`UploadedFile.size`) antes de leer el
+    archivo completo a memoria en la vista.
+    """
+    if size_bytes // 1024 > _LIMITE_TAMANO_KB:
+        raise ValidationError(_TAMANO_EXCEDIDO_MSG)
+
+
 def guardar_dockerfile(nombre_archivo: str, contenido: bytes) -> tuple[str, int]:
     """
     Guarda el Dockerfile/contexto de build que sube un instructor para el
