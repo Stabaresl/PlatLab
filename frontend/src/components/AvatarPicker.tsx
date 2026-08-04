@@ -48,13 +48,20 @@ export default function AvatarPicker({ perfil }: { perfil: PerfilJugador }) {
 
   return (
     <div>
-      <div className="grid gap-2 sm:gap-3 mb-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))" }}>
+      <div
+        role="radiogroup"
+        aria-label="Avatar predeterminado"
+        className="grid gap-2 sm:gap-3 mb-4"
+        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))" }}
+      >
         {AVATAR_PRESETS.map((p) => {
           const activo = perfil.avatar_tipo === "preset" && perfil.avatar_valor === p.clave
           return (
             <button
               key={p.clave}
               type="button"
+              role="radio"
+              aria-checked={activo}
               disabled={busy}
               onClick={() => handlePreset(p.clave)}
               title={p.nombre}

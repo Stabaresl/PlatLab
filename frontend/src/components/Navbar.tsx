@@ -61,36 +61,41 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
           </span>
         </Link>
 
-        <nav className="flex items-center gap-2 sm:gap-3">
-          <Link
-            to="/laboratorios"
-            data-tour="nav-laboratorios"
-            className="hidden sm:inline text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
-            style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
-          >
-            Laboratorios
-          </Link>
-          <Link
-            to="/roadmap"
-            data-tour="nav-roadmap"
-            className="hidden sm:inline text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
-            style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
-          >
-            Roadmap
-          </Link>
-          <Link
-            to="/about"
-            className="hidden sm:inline text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
-            style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
-          >
-            Sobre PlatLAB
-          </Link>
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Landmark de navegación acotado a los links reales — antes
+              incluía también botones de acción (Salir, Dashboard, la
+              campana), mezclando dos cosas distintas bajo un mismo <nav>. */}
+          <nav aria-label="Principal" className="hidden sm:flex items-center gap-2 sm:gap-3">
+            <Link
+              to="/laboratorios"
+              data-tour="nav-laboratorios"
+              className="text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
+              style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
+            >
+              Laboratorios
+            </Link>
+            <Link
+              to="/roadmap"
+              data-tour="nav-roadmap"
+              className="text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
+              style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
+            >
+              Roadmap
+            </Link>
+            <Link
+              to="/about"
+              className="text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
+              style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
+            >
+              Sobre PlatLAB
+            </Link>
+          </nav>
 
           {authed ? (
             <>
@@ -138,7 +143,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
               </Button>
             </>
           )}
-        </nav>
+        </div>
       </div>
     </motion.header>
   )
