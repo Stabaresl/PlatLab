@@ -1,6 +1,8 @@
+import io
 import uuid
 
 import pytest
+from PIL import Image
 
 from modules.gamification.application.dtos import SubirAvatarDTO
 from modules.gamification.application.use_cases.subir_avatar import SubirAvatarUseCase
@@ -8,6 +10,18 @@ from modules.gamification.infrastructure.repositories import PerfilJugadorReposi
 from modules.shared.domain.exceptions import ForbiddenError, ValidationError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
+
+
+def _png_valido() -> bytes:
+    """
+    avatar_storage.py ahora decodifica la imagen de verdad para
+    redimensionarla (ver _redimensionar) — a diferencia del resto de la
+    suite, acá no alcanza con las firmas mágicas solas.
+    """
+    buffer = io.BytesIO()
+    Image.new("RGB", (20, 20), color="red").save(buffer, format="PNG")
+    return buffer.getvalue()
+
 
 _PNG_MAGIC_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
 
@@ -27,7 +41,7 @@ def test_sube_avatar_valido_y_actualiza_perfil():
     resultado = _uc().execute(
         SubirAvatarDTO(
             archivo_nombre="foto.png",
-            archivo_contenido=_PNG_MAGIC_BYTES,
+            archivo_contenido=_png_valido(),
             actor_id=estudiante_id,
             actor_rol="estudiante",
         )

@@ -351,5 +351,14 @@ class Command(BaseCommand):
             )
             self.stdout.write(self.style.SUCCESS(f"+ título creado: {data['nombre']}"))
 
+        # find_todos() de los tres repos de arriba cachea 5min (ver
+        # simple_cache.py) — sin esto, re-sembrar con nombres/descripciones
+        # cambiadas tardaría hasta 5min en reflejarse.
+        from modules.shared.infrastructure.redis_client import RedisClient
+
+        redis = RedisClient().raw
+        for clave in ("gamification:logros", "gamification:cosmeticos", "gamification:titulos"):
+            redis.delete(clave)
+
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("Listo — catálogo de gamificación sembrado."))

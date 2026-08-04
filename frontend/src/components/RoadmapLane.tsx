@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { motion } from "framer-motion"
 import RoadmapNode from "./RoadmapNode"
 import type { RoadmapCategoria } from "../pages/api"
@@ -9,7 +10,7 @@ const OFFSET_Y = 34
 // un conector simple entre cada par consecutivo — sin SVG ni medición
 // de posiciones vía DOM, solo CSS/transform (más fácil de mantener,
 // ver plan). El scroll horizontal cubre categorías con muchos nodos.
-export default function RoadmapLane({
+function RoadmapLane({
   categoria,
   authed,
   isEstudiante,
@@ -88,3 +89,5 @@ export default function RoadmapLane({
     </div>
   )
 }
+
+export default memo(RoadmapLane)

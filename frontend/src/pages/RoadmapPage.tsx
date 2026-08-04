@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { getRoadmap, enrollRoadmapNode, ApiError, type RoadmapCategoria } from "./api"
@@ -33,7 +33,7 @@ export default function RoadmapPage() {
 
   useEffect(() => { load() }, [])
 
-  const handleEnroll = async (nodoId: string) => {
+  const handleEnroll = useCallback(async (nodoId: string) => {
     setBusyNodoId(nodoId)
     setError("")
     try {
@@ -49,7 +49,7 @@ export default function RoadmapPage() {
       }
       setBusyNodoId(null)
     }
-  }
+  }, [navigate])
 
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--canvas)", color: "var(--text-base)" }}>

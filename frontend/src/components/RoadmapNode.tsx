@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { memo, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Link, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
@@ -37,7 +37,7 @@ const ESTADO_GLOW = {
 // horizontal deja de ser `visible`), lo que además tapaba el único
 // botón de "Inscribirme" — por eso el nodo entero también es
 // clickeable directamente, no depende únicamente del tooltip.
-export default function RoadmapNode({
+function RoadmapNode({
   nodo,
   authed,
   isEstudiante,
@@ -222,3 +222,9 @@ export default function RoadmapNode({
     </div>
   )
 }
+
+// RoadmapLane re-renderiza sus nodos cada vez que busyNodoId cambia (se
+// inscribe alguien en cualquier nodo de la pista) — memo evita que los
+// nodos que no cambiaron (mismo nodo/busy/authed) vuelvan a montar el
+// tooltip en portal y recalcular su posición.
+export default memo(RoadmapNode)

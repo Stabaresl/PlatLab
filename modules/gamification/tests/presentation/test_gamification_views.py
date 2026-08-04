@@ -1,6 +1,8 @@
+import io
 import uuid
 
 import pytest
+from PIL import Image
 from rest_framework.test import APIClient
 
 from modules.authentication.infrastructure.jwt_service import JWTService
@@ -21,6 +23,13 @@ from modules.gamification.infrastructure.repositories import (
 )
 
 _PNG_MAGIC_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+
+
+def _png_valido() -> bytes:
+    """avatar_storage.py decodifica la imagen de verdad para redimensionarla — acá no alcanza con las firmas mágicas solas."""
+    buffer = io.BytesIO()
+    Image.new("RGB", (20, 20), color="blue").save(buffer, format="PNG")
+    return buffer.getvalue()
 
 
 def _client_autenticado(user_id: uuid.UUID, rol: str) -> APIClient:
@@ -153,7 +162,7 @@ def test_subir_avatar_via_http():
     from django.core.files.uploadedfile import SimpleUploadedFile
 
     client = _client_autenticado(uuid.uuid4(), "estudiante")
-    archivo = SimpleUploadedFile("foto.png", _PNG_MAGIC_BYTES, content_type="image/png")
+    archivo = SimpleUploadedFile("foto.png", _png_valido(), content_type="image/png")
 
     response = client.post("/api/v1/gamification/avatar/upload/", {"archivo": archivo}, format="multipart")
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -104,6 +104,19 @@ export default function AdminDashboard() {
   const [page, setPage] = useState(0)
   const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE))
   const visible = users.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  // Ordenar+mapear el log completo es lo único realmente caro acá — sin
+  // memo, cambiar de página o togglear un usuario (busyUserId,
+  // visibilityBusyId) volvía a ordenar todo el historial de auditoría
+  // en cada render aunque auditLog no hubiera cambiado.
+  const actividadReciente = useMemo(
+    () =>
+      [...auditLog]
+        .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+        .slice(0, 10)
+        .map(auditToItem),
+    [auditLog],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -230,10 +243,7 @@ export default function AdminDashboard() {
                   <SectionHeading icon={<IconActivity />} title="Actividad Reciente" subtitle="Últimas operaciones registradas en la plataforma" />
                   <div className="chamfer p-4 sm:p-5" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
                     <ActivityTimeline
-                      items={[...auditLog]
-                        .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-                        .slice(0, 10)
-                        .map(auditToItem)}
+                      items={actividadReciente}
                       emptyLabel="Todavía no hay actividad registrada"
                     />
                   </div>

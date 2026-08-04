@@ -30,6 +30,7 @@ from modules.gamification.infrastructure.models import (
     TituloModel,
     XpOtorgadoModel,
 )
+from modules.shared.infrastructure.simple_cache import cachear
 
 
 class PerfilJugadorRepository:
@@ -86,7 +87,10 @@ class XpOtorgadoRepository:
 
 class LogroRepository:
     def find_todos(self) -> list[Logro]:
-        return [logro_to_entity(m) for m in LogroModel.objects.all()]
+        # Catálogo casi-estático (solo cambia por seed_gamification_
+        # catalog, ver simple_cache.py) — se pega en cada carga de perfil
+        # y de catálogo de gamificación.
+        return cachear("gamification:logros", lambda: [logro_to_entity(m) for m in LogroModel.objects.all()])
 
     def get_by_id(self, logro_id: uuid.UUID) -> Logro | None:
         model = LogroModel.objects.filter(id=logro_id).first()
@@ -131,7 +135,9 @@ class LogroDesbloqueadoRepository:
 
 class CosmeticoRepository:
     def find_todos(self) -> list[Cosmetico]:
-        return [cosmetico_to_entity(m) for m in CosmeticoModel.objects.all()]
+        return cachear(
+            "gamification:cosmeticos", lambda: [cosmetico_to_entity(m) for m in CosmeticoModel.objects.all()]
+        )
 
     def get_by_id(self, cosmetico_id: uuid.UUID) -> Cosmetico | None:
         model = CosmeticoModel.objects.filter(id=cosmetico_id).first()
@@ -189,7 +195,7 @@ class CosmeticoDesbloqueadoRepository:
 
 class TituloRepository:
     def find_todos(self) -> list[Titulo]:
-        return [titulo_to_entity(m) for m in TituloModel.objects.all()]
+        return cachear("gamification:titulos", lambda: [titulo_to_entity(m) for m in TituloModel.objects.all()])
 
     def get_by_id(self, titulo_id: uuid.UUID) -> Titulo | None:
         model = TituloModel.objects.filter(id=titulo_id).first()
