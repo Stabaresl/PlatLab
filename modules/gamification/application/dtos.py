@@ -175,3 +175,16 @@ class TituloDesbloqueadoResultDTO:
     id: uuid.UUID
     titulo_id: uuid.UUID
     equipado: bool
+
+
+@dataclass(frozen=True)
+class CompletarOnboardingDTO:
+    """`POST /gamification/onboarding/completar/` — se llama al terminar el tour, no al saltarlo."""
+
+    actor_id: uuid.UUID
+    actor_rol: str
+
+
+@dataclass(frozen=True)
+class CompletarOnboardingResultDTO:
+    logro_desbloqueado: LogroDesbloqueadoResultDTO | None

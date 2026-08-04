@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
-import { logout } from "../pages/api"
+import { logout, type PerfilJugador } from "../pages/api"
 import { useGamificationStore } from "../store/gamificationStore"
+import { xpProgress } from "../lib/nivelUmbrales"
 import { Button } from "./ui/button"
 import StatusDot from "./StatusDot"
 import NotificationBell from "./NotificationBell"
@@ -111,8 +112,9 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
                 <NotificationBell />
               </div>
               {role === "estudiante" && (
-                <Link to="/profile" aria-label="Mi perfil" data-tour="nav-avatar" className="flex items-center">
+                <Link to="/profile" aria-label="Mi perfil" data-tour="nav-avatar" className="flex items-center gap-2">
                   <AvatarBadge perfil={perfil} size="sm" />
+                  {perfil && <OperatorReadout perfil={perfil} />}
                 </Link>
               )}
               <Button asChild size="sm" className="chamfer-sm font-mono text-xs uppercase tracking-wide">
@@ -146,5 +148,38 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
         </div>
       </div>
     </motion.header>
+  )
+}
+
+// HUD de operador — rango + barra de XP siempre visibles junto al
+// avatar, en vez de tener que entrar a /profile para ver dónde vas
+// parado (idea sacada de Codédex: la progresión se ve todo el tiempo,
+// no solo en una pantalla de perfil aparte). La barra se tiñe del color
+// del marco equipado si hay uno — mismo mecanismo de "tu elección de
+// cosmético cambia la interfaz", acotado a este único elemento en vez
+// de recolorear toda la app.
+function OperatorReadout({ perfil }: { perfil: PerfilJugador }) {
+  const tituloEquipado = perfil.titulos.find((t) => t.equipado)
+  const marco = perfil.cosmeticos.find((c) => c.equipado && c.tipo === "marco")
+  const acento = marco ? `rgb(${marco.color})` : "var(--signal-amber)"
+  const { percent } = xpProgress(perfil.xp, perfil.xp_para_siguiente_nivel)
+
+  return (
+    <div className="hidden md:flex flex-col gap-0.5" style={{ width: 64 }}>
+      <span className="text-[9px] font-mono uppercase tracking-wide truncate leading-none" style={{ color: acento }}>
+        {tituloEquipado ? tituloEquipado.nombre : `Nivel ${perfil.nivel}`}
+      </span>
+      <div
+        className="h-1 w-full overflow-hidden"
+        role="progressbar"
+        aria-label="Progreso al siguiente nivel"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        style={{ backgroundColor: "var(--surface-hover)" }}
+      >
+        <div className="h-full transition-all" style={{ width: `${percent}%`, backgroundColor: acento }} />
+      </div>
+    </div>
   )
 }

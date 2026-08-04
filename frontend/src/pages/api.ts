@@ -797,6 +797,15 @@ export function uploadAvatar(archivo: File) {
   return api<AvatarResult>("/gamification/avatar/upload/", { method: "POST", body: formData })
 }
 
+// Se llama al TERMINAR el tour de bienvenida (OnboardingTour.tsx), no al
+// saltarlo — desbloquea el logro/título "Recluta" server-side.
+export function completarOnboarding() {
+  return api<{ logro_desbloqueado: { logro_id: string; nombre: string } | null }>(
+    "/gamification/onboarding/completar/",
+    { method: "POST" },
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Users — /api/v1/users (mayormente solo-admin)
 // ---------------------------------------------------------------------------

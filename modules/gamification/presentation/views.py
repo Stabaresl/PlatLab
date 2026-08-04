@@ -8,6 +8,7 @@ from rest_framework.viewsets import ViewSet
 
 from modules.gamification.application.dtos import (
     CambiarAvatarDTO,
+    CompletarOnboardingDTO,
     EquiparCosmeticoDTO,
     EquiparTituloDTO,
     QuitarCosmeticoDTO,
@@ -17,6 +18,7 @@ from modules.gamification.application.dtos import (
 from modules.gamification.application.queries.listar_catalogo import ListarCatalogoQuery
 from modules.gamification.application.queries.obtener_perfil import ObtenerPerfilQuery
 from modules.gamification.application.use_cases.cambiar_avatar import CambiarAvatarUseCase
+from modules.gamification.application.use_cases.completar_onboarding import CompletarOnboardingUseCase
 from modules.gamification.application.use_cases.equipar_cosmetico import EquiparCosmeticoUseCase
 from modules.gamification.application.use_cases.equipar_titulo import EquiparTituloUseCase
 from modules.gamification.application.use_cases.quitar_cosmetico import QuitarCosmeticoUseCase
@@ -234,6 +236,27 @@ class GamificationViewSet(ViewSet):
         )
         return Response(
             {"avatar_tipo": resultado.avatar_tipo, "avatar_valor": resultado.avatar_valor},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["post"], url_path="onboarding/completar")
+    def completar_onboarding(self, request):
+        use_case = CompletarOnboardingUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            logro_repository=LogroRepository(),
+            logro_desbloqueado_repository=LogroDesbloqueadoRepository(),
+            cosmetico_repository=CosmeticoRepository(),
+            cosmetico_desbloqueado_repository=CosmeticoDesbloqueadoRepository(),
+            titulo_repository=TituloRepository(),
+            titulo_desbloqueado_repository=TituloDesbloqueadoRepository(),
+        )
+        resultado = use_case.execute(
+            CompletarOnboardingDTO(actor_id=request.user.id, actor_rol=request.user.rol)
+        )
+        logro = resultado.logro_desbloqueado
+        return Response(
+            {"logro_desbloqueado": {"logro_id": str(logro.logro_id), "nombre": logro.nombre} if logro else None},
             status=status.HTTP_200_OK,
         )
 

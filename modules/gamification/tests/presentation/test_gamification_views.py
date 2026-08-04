@@ -208,3 +208,31 @@ def test_equipar_y_quitar_titulo_via_http():
     )
     assert quitar.status_code == 200
     assert quitar.data["equipado"] is False
+
+
+@pytest.mark.django_db
+def test_completar_onboarding_via_http_desbloquea_logro():
+    logro = LogroRepository().add(
+        Logro(
+            clave="primeros_pasos",
+            nombre="Primeros Pasos",
+            descripcion="desc",
+            tipo_criterio=TipoCriterioLogro.TOUR_COMPLETADO,
+            rareza=RarezaCosmetico.COMUN,
+        )
+    )
+    client = _client_autenticado(uuid.uuid4(), "estudiante")
+
+    response = client.post("/api/v1/gamification/onboarding/completar/", {}, format="json")
+
+    assert response.status_code == 200
+    assert response.data["logro_desbloqueado"]["logro_id"] == str(logro.id)
+
+
+@pytest.mark.django_db
+def test_completar_onboarding_via_http_administrador_retorna_403():
+    client = _client_autenticado(uuid.uuid4(), "administrador")
+
+    response = client.post("/api/v1/gamification/onboarding/completar/", {}, format="json")
+
+    assert response.status_code == 403

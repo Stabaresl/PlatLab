@@ -28,6 +28,16 @@ _CATEGORIAS_ROADMAP = {
 
 _LOGROS = [
     {
+        "clave": "primeros_pasos",
+        "nombre": "Primeros Pasos",
+        "descripcion": "Completaste el recorrido de bienvenida de PlatLAB.",
+        # No lo evalúa ProcesarCompletitudLaboratorio — lo desbloquea
+        # CompletarOnboardingUseCase al terminar el tour, no un laboratorio.
+        "tipo_criterio": TipoCriterioLogro.TOUR_COMPLETADO,
+        "criterio_valor": None,
+        "rareza": RarezaCosmetico.COMUN,
+    },
+    {
         "clave": "primer_laboratorio",
         "nombre": "Primer Hackeo",
         "descripcion": "Completaste tu primer laboratorio en PlatLAB.",
@@ -211,6 +221,13 @@ _COSMETICOS = [
 
 # cada título apunta a la `clave` del logro que lo desbloquea
 _TITULOS = [
+    {
+        "clave": "recluta",
+        "nombre": "Recluta",
+        "descripcion": "Otorgado al terminar el tour de bienvenida.",
+        "rareza": RarezaCosmetico.COMUN,
+        "logro_clave": "primeros_pasos",
+    },
     {
         "clave": "aprendiz_hacking",
         "nombre": "Aprendiz de Hacking",

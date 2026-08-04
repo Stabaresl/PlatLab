@@ -3,6 +3,8 @@ import { createPortal } from "react-dom"
 import { useLocation } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import useReducedMotion from "../hooks/useReducedMotion"
+import { completarOnboarding } from "../pages/api"
+import { useGamificationStore } from "../store/gamificationStore"
 import { Button } from "./ui/button"
 
 interface TourStep {
@@ -107,13 +109,27 @@ export default function OnboardingTour() {
     return () => window.removeEventListener("resize", onReposition)
   }, [active, stepIndex, steps])
 
-  const finish = () => {
+  // `completado` distingue terminar el tour de saltarlo — la recompensa
+  // real (logro/título "Recluta", ver CompletarOnboardingUseCase) es
+  // solo para quien lo termina. Fire-and-forget: si falla, no vale la
+  // pena bloquear ni avisar, el tour ya cerró igual.
+  const finish = (completado: boolean) => {
     localStorage.setItem(FLAG_ONBOARDING_SEEN, "true")
     setActive(false)
+    if (completado && role === "estudiante") {
+      completarOnboarding()
+        .then((res) => {
+          // Si desbloqueó el título "Recluta", refresca el store para
+          // que el HUD del Navbar (ver OperatorReadout) lo muestre ya
+          // mismo, sin esperar a la próxima carga de página.
+          if (res.logro_desbloqueado) useGamificationStore.getState().load()
+        })
+        .catch(() => {})
+    }
   }
 
   const next = () => {
-    if (stepIndex >= steps.length - 1) finish()
+    if (stepIndex >= steps.length - 1) finish(true)
     else setStepIndex((i) => i + 1)
   }
   const prev = () => setStepIndex((i) => Math.max(0, i - 1))
@@ -134,7 +150,7 @@ export default function OnboardingTour() {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault()
-        finish()
+        finish(false)
         return
       }
       if (e.key !== "Tab" || !dialogRef.current) return
@@ -168,7 +184,7 @@ export default function OnboardingTour() {
   return createPortal(
     <div style={{ position: "fixed", inset: 0, zIndex: 2000 }}>
       <div
-        onClick={finish}
+        onClick={() => finish(false)}
         aria-hidden="true"
         style={{ position: "fixed", inset: 0, backgroundColor: "rgba(5,6,8,0.72)" }}
       />
@@ -228,7 +244,7 @@ export default function OnboardingTour() {
             </div>
             <button
               type="button"
-              onClick={finish}
+              onClick={() => finish(false)}
               className="text-[10px] uppercase tracking-wide cursor-pointer border-none bg-transparent px-0"
               style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
             >

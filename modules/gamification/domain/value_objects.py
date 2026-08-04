@@ -10,6 +10,11 @@ class TipoCriterioLogro(str, Enum):
     PRIMER_LABORATORIO = "primer_laboratorio"
     N_LABORATORIOS = "n_laboratorios"
     CATEGORIA_ROADMAP_COMPLETA = "categoria_roadmap_completa"
+    # `ProcesarCompletitudLaboratorio._cumple_criterio` nunca evalúa este
+    # tipo (cae al `return False` por defecto) — el único logro con este
+    # criterio se desbloquea desde `CompletarOnboardingUseCase`, disparado
+    # al terminar el tour de bienvenida, no al completar un laboratorio.
+    TOUR_COMPLETADO = "tour_completado"
 
 
 class RarezaCosmetico(str, Enum):
