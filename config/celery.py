@@ -11,6 +11,23 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.dev')
 
 app = Celery('platlab')
 app.config_from_object('django.conf:settings', namespace='CELERY')
+
+# RNF estabilidad: sin límites, una tarea colgada (ej. una llamada a
+# Docker que nunca responde en el reaper) ocupa ese worker para siempre.
+# `acks_late` + `reject_on_worker_lost` hacen que una tarea que estaba
+# corriendo cuando el worker murió se reencole en otro worker en vez de
+# perderse — seguro acá porque todas las tareas son idempotentes
+# (reintentar "aprovisionar"/"reap" un entorno que ya se resolvió no hace
+# nada, ver los guard clauses en cada caso de uso). Cada tarea puede
+# pisar `task_time_limit` si necesita algo más corto (ver
+# aprovisionar_entorno_task).
+app.conf.update(
+    task_time_limit=300,
+    task_soft_time_limit=240,
+    task_acks_late=True,
+    task_reject_on_worker_lost=True,
+)
+
 app.autodiscover_tasks()
 # `autodiscover_tasks()` sin argumentos solo busca `<app>.tasks` en la
 # raíz de cada app instalada — nuestros módulos de tareas viven en
