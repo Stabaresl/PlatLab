@@ -143,9 +143,11 @@ export default function CatalogPage() {
                             {DIFICULTAD_LABEL[lab.nivel_dificultad]}
                           </span>
                         </div>
-                        <h3 className="text-sm sm:text-base font-bold mb-1.5" style={{ color: "var(--text-heading)" }}>
+                        {/* h2, no h3 — el h1 de TerminalHeader no tiene ningún h2 de sección
+                            entre medio en esta página, saltar directo a h3 rompía la jerarquía. */}
+                        <h2 className="text-sm sm:text-base font-bold mb-1.5 m-0" style={{ color: "var(--text-heading)" }}>
                           {lab.nombre}
-                        </h3>
+                        </h2>
                         <p className="text-xs sm:text-sm leading-relaxed mb-3 flex-1" style={{ color: "var(--text-muted)" }}>
                           {lab.descripcion.length > 110 ? `${lab.descripcion.slice(0, 110)}…` : lab.descripcion}
                         </p>
