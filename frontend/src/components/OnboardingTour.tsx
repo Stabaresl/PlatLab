@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useLocation } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
@@ -73,6 +73,7 @@ export default function OnboardingTour() {
   const [active, setActive] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
   const [rect, setRect] = useState<DOMRect | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   const role = localStorage.getItem("role")
   const steps = STEPS.filter((s) => !s.roleRequerido || s.roleRequerido === role)
@@ -117,6 +118,45 @@ export default function OnboardingTour() {
   }
   const prev = () => setStepIndex((i) => Math.max(0, i - 1))
 
+  // WCAG 2.4.3 — foco inicial al abrir el tour y cada vez que cambia de
+  // paso (el contenido remonta por la key={stepIndex} de abajo).
+  useEffect(() => {
+    if (!active) return
+    dialogRef.current?.focus()
+  }, [active, stepIndex])
+
+  // WCAG 2.1.2 / 4.1.2 — sin esto, Escape no hacía nada y Tab seguía
+  // llegando a elementos detrás del overlay (el fondo nunca queda
+  // inert). Trampa de foco manual: cicla solo entre los elementos
+  // enfocables del propio diálogo.
+  useEffect(() => {
+    if (!active) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault()
+        finish()
+        return
+      }
+      if (e.key !== "Tab" || !dialogRef.current) return
+      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => document.removeEventListener("keydown", onKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, stepIndex])
+
   if (!active || steps.length === 0) return null
 
   const step = steps[stepIndex]
@@ -154,6 +194,11 @@ export default function OnboardingTour() {
       <AnimatePresence mode="wait">
         <motion.div
           key={stepIndex}
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="onboarding-tour-title"
+          tabIndex={-1}
           initial={reduced ? { opacity: 0 } : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
@@ -168,6 +213,7 @@ export default function OnboardingTour() {
             backgroundColor: "var(--canvas-raised)",
             border: "1px solid var(--border-amber)",
             boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
+            outline: "none",
           }}
         >
           <div className="flex items-center justify-between mb-3">
@@ -190,7 +236,7 @@ export default function OnboardingTour() {
             </button>
           </div>
 
-          <h3 className="text-sm font-bold uppercase tracking-wide mb-1.5 m-0" style={{ color: "var(--text-heading)" }}>
+          <h3 id="onboarding-tour-title" className="text-sm font-bold uppercase tracking-wide mb-1.5 m-0" style={{ color: "var(--text-heading)" }}>
             {step.title}
           </h3>
           <p className="text-xs leading-relaxed mb-4" style={{ color: "var(--text-muted)" }}>
