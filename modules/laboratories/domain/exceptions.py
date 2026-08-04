@@ -23,3 +23,13 @@ class OrigenInvalidoParaDuplicarError(BusinessRuleViolationError):
     solo se puede duplicar un laboratorio `predeterminado` — un
     `personalizado` no es un origen válido.
     """
+
+
+class ImagenPracticaNoPermitidaError(BusinessRuleViolationError):
+    """
+    seguridad.md — `imagen_practica` no puede ser texto libre: se pasa
+    directo a `containers.run()` (lab_environments/docker_provider.py) al
+    arrancar el entorno de un estudiante. Una cuenta de instructor
+    comprometida no puede apuntar una sección a una imagen arbitraria —
+    solo a las que ya están en `IMAGENES_PRACTICA_PERMITIDAS`.
+    """

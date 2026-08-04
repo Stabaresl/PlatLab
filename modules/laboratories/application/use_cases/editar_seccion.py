@@ -1,5 +1,6 @@
 from modules.laboratories.application.dtos import EditarSeccionDTO, SeccionResultDTO
 from modules.laboratories.domain.repositories import ILaboratorioRepository
+from modules.laboratories.domain.services import validar_imagen_practica_permitida
 from modules.laboratories.domain.value_objects import PasoGuia, TipoLaboratorio
 from modules.laboratories.infrastructure.content_sanitizer import sanitizar_contenido_html
 from modules.shared.application.base_use_case import BaseUseCase
@@ -61,6 +62,9 @@ class EditarSeccionUseCase(BaseUseCase[EditarSeccionDTO, SeccionResultDTO]):
         if input_dto.orden is not None and input_dto.orden != seccion.orden:
             if any(s.orden == input_dto.orden for s in secciones if s.id != seccion.id):
                 raise ConflictError(_ORDEN_DUPLICADO_MSG)
+
+        if input_dto.imagen_practica is not None:
+            validar_imagen_practica_permitida(input_dto.imagen_practica)
 
         self._seccion = seccion
 

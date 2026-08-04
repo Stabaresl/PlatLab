@@ -2,12 +2,30 @@ import uuid
 
 from modules.laboratories.domain.entities import Flag, Laboratorio, Seccion
 from modules.laboratories.domain.exceptions import (
+    ImagenPracticaNoPermitidaError,
     OrigenInvalidoParaDuplicarError,
     PublishValidationError,
 )
-from modules.laboratories.domain.value_objects import EstadoLaboratorio, TipoLaboratorio
+from modules.laboratories.domain.value_objects import (
+    IMAGENES_PRACTICA_PERMITIDAS,
+    EstadoLaboratorio,
+    TipoLaboratorio,
+)
 
 _FLAGS_FALTANTES_MSG = "Todas las secciones con práctica necesitan una flag antes de publicar."
+_IMAGEN_NO_PERMITIDA_MSG = "Esa imagen de práctica no está permitida."
+
+
+def validar_imagen_practica_permitida(imagen: str | None) -> None:
+    """
+    Llamada desde `CrearSeccionUseCase`/`EditarSeccionUseCase` antes de
+    guardar. `None` es válido (una sección sin práctica no necesita
+    imagen) — lo que se rechaza es un valor que no está en la allowlist.
+    """
+    if imagen is not None and imagen not in IMAGENES_PRACTICA_PERMITIDAS:
+        raise ImagenPracticaNoPermitidaError(
+            _IMAGEN_NO_PERMITIDA_MSG, details=[{"imagen_practica": imagen}]
+        )
 
 
 def validar_laboratorio_publicable(

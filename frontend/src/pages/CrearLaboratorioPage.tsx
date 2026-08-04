@@ -24,6 +24,14 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from ".
 
 const STEPS = ["Datos generales", "Secciones", "Examen", "Cierre", "Revisar y enviar"]
 
+// Debe reflejar exactamente IMAGENES_PRACTICA_PERMITIDAS en
+// modules/laboratories/domain/value_objects.py — el backend rechaza
+// cualquier otro valor con 422 (imagen_practica ya no es texto libre,
+// va directo a containers.run() al arrancar el entorno del estudiante).
+const IMAGENES_PRACTICA_DISPONIBLES = [
+  { value: "platlab-target-sqli:latest", label: "SQL Injection: Bypass de Login" },
+]
+
 interface PasoGuiaForm {
   titulo: string
   instrucciones: string
@@ -509,11 +517,27 @@ function SeccionEditor({
           {/* Entorno real */}
           <div className="flex flex-col gap-2">
             <FieldLabel>Entorno real (opcional)</FieldLabel>
-            <Input value={seccion.imagen_practica} onChange={(e) => onChange({ imagen_practica: e.target.value })} placeholder="Nombre de la imagen Docker (la asigna un admin tras revisar el Dockerfile)" className="chamfer-sm h-9 font-mono" />
+            <Select
+              value={seccion.imagen_practica || "none"}
+              onValueChange={(v) => onChange({ imagen_practica: v === "none" ? "" : v })}
+            >
+              <SelectTrigger className="chamfer-sm w-full h-9 font-mono">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sin entorno real (solo consola simulada)</SelectItem>
+                {IMAGENES_PRACTICA_DISPONIBLES.map((img) => (
+                  <SelectItem key={img.value} value={img.value}>{img.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <label className="chamfer-sm px-3 py-2 text-xs uppercase font-mono cursor-pointer border self-start" style={{ borderColor: "var(--border-default)", color: "var(--text-muted)" }}>
-              {seccion.dockerfile ? `Dockerfile: ${seccion.dockerfile.name}` : "Subir Dockerfile / contexto (.zip)"}
+              {seccion.dockerfile ? `Dockerfile: ${seccion.dockerfile.name}` : "Proponer un entorno nuevo — subir Dockerfile / contexto (.zip)"}
               <input type="file" className="hidden" onChange={(e) => onChange({ dockerfile: e.target.files?.[0] || null })} />
             </label>
+            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+              Solo se puede elegir un entorno ya revisado y publicado por un administrador. Si subís un Dockerfile propio, quedará disponible acá una vez aprobado.
+            </p>
           </div>
         </div>
       )}

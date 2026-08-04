@@ -1,6 +1,7 @@
 from modules.laboratories.application.dtos import CrearSeccionDTO, SeccionResultDTO
 from modules.laboratories.domain.entities import Seccion
 from modules.laboratories.domain.repositories import ILaboratorioRepository
+from modules.laboratories.domain.services import validar_imagen_practica_permitida
 from modules.laboratories.domain.value_objects import PasoGuia, TipoLaboratorio
 from modules.laboratories.infrastructure.content_sanitizer import sanitizar_contenido_html
 from modules.shared.application.base_use_case import BaseUseCase
@@ -58,6 +59,8 @@ class CrearSeccionUseCase(BaseUseCase[CrearSeccionDTO, SeccionResultDTO]):
         secciones = self._laboratorio_repository.get_secciones(input_dto.laboratorio_id)
         if any(s.orden == input_dto.orden for s in secciones):
             raise ConflictError(_ORDEN_DUPLICADO_MSG)
+
+        validar_imagen_practica_permitida(input_dto.imagen_practica)
 
     def _execute_domain_logic(
         self, input_dto: CrearSeccionDTO

@@ -2,6 +2,24 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 
+IMAGENES_PRACTICA_PERMITIDAS: frozenset[str] = frozenset(
+    {
+        "platlab-target-sqli:latest",
+    }
+)
+"""
+seguridad.md — allowlist de las únicas imágenes que una `Seccion` puede
+usar como `imagen_practica`. No es una tabla en base de datos a propósito
+(mismo criterio que `NIVEL_UMBRALES` en gamification): agregar una imagen
+nueva implica construir y publicar el Dockerfile en `docker/targets/`
+primero, así que su disponibilidad ya es un cambio de código, no un dato
+de negocio que un instructor deba poder tocar. Ver
+`ImagenPracticaNoPermitidaError` y `validar_imagen_practica_permitida`
+(domain/services.py) — sin esto, `imagen_practica` era texto libre pasado
+directo a `containers.run()`.
+"""
+
+
 class NivelDificultad(str, Enum):
     BASICO = "basico"
     INTERMEDIO = "intermedio"

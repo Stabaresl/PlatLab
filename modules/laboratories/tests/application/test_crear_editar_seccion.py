@@ -14,6 +14,7 @@ from modules.laboratories.domain.value_objects import (
     PasoGuia,
     TipoLaboratorio,
 )
+from modules.laboratories.domain.exceptions import ImagenPracticaNoPermitidaError
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.shared.domain.exceptions import ConflictError, ForbiddenError, NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
@@ -319,5 +320,66 @@ def test_editar_seccion_administrador_no_puede_editar_personalizado():
                 actor_id=uuid.uuid4(),
                 actor_rol="administrador",
                 titulo="x",
+            )
+        )
+
+
+@pytest.mark.django_db
+def test_crear_seccion_rechaza_imagen_practica_fuera_de_la_allowlist():
+    instructor_id = uuid.uuid4()
+    lab = _crear_lab_personalizado(instructor_id)
+
+    with pytest.raises(ImagenPracticaNoPermitidaError):
+        _crear_uc().execute(
+            CrearSeccionDTO(
+                laboratorio_id=lab.id,
+                titulo="Practica",
+                contenido_teorico="...",
+                orden=1,
+                actor_id=instructor_id,
+                actor_rol="instructor",
+                imagen_practica="cualquier/imagen-arbitraria:latest",
+            )
+        )
+
+
+@pytest.mark.django_db
+def test_crear_seccion_acepta_imagen_practica_de_la_allowlist():
+    instructor_id = uuid.uuid4()
+    lab = _crear_lab_personalizado(instructor_id)
+
+    resultado = _crear_uc().execute(
+        CrearSeccionDTO(
+            laboratorio_id=lab.id,
+            titulo="Practica",
+            contenido_teorico="...",
+            orden=1,
+            actor_id=instructor_id,
+            actor_rol="instructor",
+            imagen_practica="platlab-target-sqli:latest",
+        )
+    )
+
+    guardada = LaboratorioRepository().get_seccion_by_id(resultado.id)
+    assert guardada.imagen_practica == "platlab-target-sqli:latest"
+
+
+@pytest.mark.django_db
+def test_editar_seccion_rechaza_imagen_practica_fuera_de_la_allowlist():
+    instructor_id = uuid.uuid4()
+    lab = _crear_lab_personalizado(instructor_id)
+    lab_repo = LaboratorioRepository()
+    seccion = lab_repo.add_seccion(
+        Seccion(laboratorio_id=lab.id, titulo="Practica", contenido_teorico="...", orden=1)
+    )
+
+    with pytest.raises(ImagenPracticaNoPermitidaError):
+        _editar_uc().execute(
+            EditarSeccionDTO(
+                laboratorio_id=lab.id,
+                seccion_id=seccion.id,
+                actor_id=instructor_id,
+                actor_rol="instructor",
+                imagen_practica="otra/imagen-cualquiera:v1",
             )
         )
