@@ -238,6 +238,11 @@ export default function StudentDashboard() {
                                     {DIFICULTAD_LABEL[row.laboratorio.nivel_dificultad]}
                                   </span>
                                 )}
+                                {row.assignment.instructor_nombre && (
+                                  <span className="text-[11px] truncate" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
+                                    Invitado por {row.assignment.instructor_nombre}
+                                  </span>
+                                )}
                               </div>
 
                               <div className="flex items-center gap-2 sm:gap-3 shrink-0">

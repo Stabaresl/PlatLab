@@ -76,6 +76,9 @@ class AsignacionListItemDTO:
     estado: str
     fecha_invitacion: datetime
     fecha_vencimiento: datetime | None
+    # None cuando la asignación nace de autoinscripción (sin invitación de
+    # por medio, ver InscribirseLaboratorioUseCase) — no hay "quién invitó".
+    instructor_nombre: str | None = None
 
 
 @dataclass(frozen=True)

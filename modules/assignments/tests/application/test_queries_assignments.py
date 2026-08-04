@@ -50,7 +50,7 @@ def test_listar_asignaciones_instructor_ve_las_que_creo():
         Asignacion(estudiante_id=uuid.uuid4(), laboratorio_id=lab.id, instructor_id=instructor_id)
     )
 
-    resultado = ListarAsignacionesQuery(AsignacionRepository()).execute(
+    resultado = ListarAsignacionesQuery(AsignacionRepository(), UserRepository()).execute(
         ListarAsignacionesDTO(actor_id=instructor_id, actor_rol="instructor")
     )
 
@@ -58,23 +58,43 @@ def test_listar_asignaciones_instructor_ve_las_que_creo():
 
 
 @pytest.mark.django_db
-def test_listar_asignaciones_estudiante_ve_las_suyas():
-    instructor_id = uuid.uuid4()
+def test_listar_asignaciones_estudiante_ve_las_suyas_con_nombre_del_instructor():
+    instructor = UserRepository().add(
+        User(email=Email("invita@uni.edu"), nombre_completo="Instructor Invitador")
+    )
     estudiante_id = uuid.uuid4()
-    lab = _crear_lab(instructor_id)
+    lab = _crear_lab(instructor.id)
     AsignacionRepository().add(
-        Asignacion(estudiante_id=estudiante_id, laboratorio_id=lab.id, instructor_id=instructor_id)
+        Asignacion(estudiante_id=estudiante_id, laboratorio_id=lab.id, instructor_id=instructor.id)
     )
     AsignacionRepository().add(
-        Asignacion(estudiante_id=uuid.uuid4(), laboratorio_id=lab.id, instructor_id=instructor_id)
+        Asignacion(estudiante_id=uuid.uuid4(), laboratorio_id=lab.id, instructor_id=instructor.id)
     )
 
-    resultado = ListarAsignacionesQuery(AsignacionRepository()).execute(
+    resultado = ListarAsignacionesQuery(AsignacionRepository(), UserRepository()).execute(
         ListarAsignacionesDTO(actor_id=estudiante_id, actor_rol="estudiante")
     )
 
     assert len(resultado) == 1
     assert resultado[0].estudiante_id == estudiante_id
+    assert resultado[0].instructor_nombre == "Instructor Invitador"
+
+
+@pytest.mark.django_db
+def test_listar_asignaciones_sin_instructor_id_no_falla():
+    """Autoinscripción (InscribirseLaboratorioUseCase) no setea instructor_id."""
+    estudiante_id = uuid.uuid4()
+    lab = _crear_lab(uuid.uuid4())
+    AsignacionRepository().add(
+        Asignacion(estudiante_id=estudiante_id, laboratorio_id=lab.id, instructor_id=None)
+    )
+
+    resultado = ListarAsignacionesQuery(AsignacionRepository(), UserRepository()).execute(
+        ListarAsignacionesDTO(actor_id=estudiante_id, actor_rol="estudiante")
+    )
+
+    assert len(resultado) == 1
+    assert resultado[0].instructor_nombre is None
 
 
 @pytest.mark.django_db

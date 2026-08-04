@@ -517,6 +517,8 @@ export interface Asignacion {
   estado: EstadoAsignacion
   fecha_invitacion: string
   fecha_vencimiento: string | null
+  // null en autoinscripción (sin invitación de instructor de por medio).
+  instructor_nombre: string | null
 }
 
 export function listAssignments() {

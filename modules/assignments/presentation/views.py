@@ -133,7 +133,7 @@ class AssignmentViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
-        resultado = ListarAsignacionesQuery(AsignacionRepository()).execute(
+        resultado = ListarAsignacionesQuery(AsignacionRepository(), UserRepository()).execute(
             ListarAsignacionesDTO(actor_id=request.user.id, actor_rol=request.user.rol)
         )
         serializados = [
@@ -146,6 +146,7 @@ class AssignmentViewSet(ViewSet):
                 "fecha_vencimiento": (
                     item.fecha_vencimiento.isoformat() if item.fecha_vencimiento else None
                 ),
+                "instructor_nombre": item.instructor_nombre,
             }
             for item in resultado
         ]

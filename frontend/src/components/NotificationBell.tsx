@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
+import { useNavigate } from "react-router-dom"
 import { listNotifications, markNotificationRead, ApiError, type Notificacion } from "../pages/api"
 import { relativeTime, TONE_COLOR, type ActivityTone } from "./ActivityTimeline"
 import { IconBell } from "./icons"
@@ -21,6 +22,32 @@ const POLL_INTERVAL_MS = 60_000
 const PANEL_WIDTH = 340
 const VIEWPORT_MARGIN = 16
 
+// A dónde navegar al hacer click, según el tipo de notificación — no
+// alcanza con entidad_tipo solo: "invitacion" y "acceso_vencido" comparten
+// entidad_tipo="asignacion", pero una invitación pendiente todavía no
+// tiene Progreso creado (se crea recién al aceptar, ver
+// AceptarInvitacionUseCase) — /resolver/:id fallaría con 404 para esa.
+function rutaDeNotificacion(n: Notificacion): string | null {
+  switch (n.tipo) {
+    case "acceso_vencido":
+      return n.entidad_id ? `/resolver/${n.entidad_id}` : "/dashboard"
+    case "invitacion":
+    case "reporte_resuelto":
+    case "instructor_aprobado":
+    case "instructor_rechazado":
+      return "/dashboard"
+    case "laboratorio_aprobado":
+    case "laboratorio_rechazado":
+      return n.entidad_id ? `/laboratorios/${n.entidad_id}/revision` : "/dashboard"
+    case "laboratorio_publicado":
+      return "/laboratorios"
+    case "logro_desbloqueado":
+      return "/profile"
+    default:
+      return null
+  }
+}
+
 // Campana de notificaciones — conecta `listNotifications`/
 // `markNotificationRead` (ya existían en api.ts, sin ningún componente
 // que los llamara) a la UI. Sin esto, notificaciones reales como
@@ -36,6 +63,7 @@ const VIEWPORT_MARGIN = 16
 // "cortado". Mismo patrón ya usado en `RoadmapNode.tsx` para el mismo
 // tipo de problema.
 export default function NotificationBell() {
+  const navigate = useNavigate()
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
@@ -96,12 +124,19 @@ export default function NotificationBell() {
   }, [open])
 
   const handleClick = async (n: Notificacion) => {
-    if (n.leida) return
-    try {
-      const updated = await markNotificationRead(n.id)
-      setItems((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
-    } catch {
-      // No es crítico si falla marcar como leída — se reintentará en el próximo poll.
+    if (!n.leida) {
+      try {
+        const updated = await markNotificationRead(n.id)
+        setItems((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
+      } catch {
+        // No es crítico si falla marcar como leída — se reintentará en el próximo poll.
+      }
+    }
+
+    const ruta = rutaDeNotificacion(n)
+    if (ruta) {
+      setOpen(false)
+      navigate(ruta)
     }
   }
 
@@ -120,21 +155,30 @@ export default function NotificationBell() {
         type="button"
         onClick={toggleOpen}
         aria-label={unread > 0 ? `Notificaciones — ${unread} sin leer` : "Notificaciones"}
-        className="relative chamfer-sm flex items-center justify-center w-8 h-8 cursor-pointer border transition-colors"
+        className="chamfer-sm flex items-center justify-center w-8 h-8 cursor-pointer border transition-colors"
         style={{ backgroundColor: open ? "var(--surface-hover)" : "transparent", borderColor: "var(--border-default)", color: "var(--text-muted)" }}
         onMouseEnter={(e) => { if (!open) e.currentTarget.style.color = "var(--text-heading)" }}
         onMouseLeave={(e) => { if (!open) e.currentTarget.style.color = "var(--text-muted)" }}
       >
         <IconBell width={16} height={16} />
-        {unread > 0 && (
-          <span
-            className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 text-[9px] font-bold rounded-full"
-            style={{ backgroundColor: "var(--signal-red)", color: "#1a0505", fontFamily: "var(--font-mono)" }}
-          >
-            {unread > 9 ? "9+" : unread}
-          </span>
-        )}
       </button>
+      {/* Badge fuera del <button> a propósito: el botón tiene su propio
+          clip-path (chamfer-sm) — un hijo posicionado afuera de su caja
+          (para "flotar" sobre la esquina) queda recortado por ESE
+          clip-path, no solo por overflow. Como hermano en este wrapper
+          (sin clip-path propio) se ve completo. chamfer-sm en vez de
+          rounded-full: es la única badge circular de toda la plataforma,
+          el resto (roles, dificultad, estados) usa el mismo chip
+          angular — un borde de 2px del color del fondo la "recorta" del
+          botón de abajo en vez de superponerse sin transición. */}
+      {unread > 0 && (
+        <span
+          className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[17px] h-[17px] px-1 text-[9px] font-bold chamfer-sm pointer-events-none"
+          style={{ backgroundColor: "var(--signal-red)", color: "#1a0505", fontFamily: "var(--font-mono)", border: "2px solid var(--canvas)" }}
+        >
+          {unread > 9 ? "9+" : unread}
+        </span>
+      )}
 
       {open && panelPos &&
         createPortal(
