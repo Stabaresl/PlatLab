@@ -13,6 +13,7 @@ import {
   type Asignacion,
   type LaboratorioDetalle,
   type SolicitudInstructor,
+  type NivelDificultad,
 } from "./api"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
@@ -52,6 +53,19 @@ const statusLabel: Record<LabStatus, string> = {
   pendiente: "Invitación pendiente",
   vencida: "Vencido",
   rechazada: "Rechazado",
+}
+
+// Mismo mapeo que CatalogPage/RoadmapNode — la dificultad siempre se lee
+// con el mismo color en toda la plataforma.
+const DIFICULTAD_LABEL: Record<NivelDificultad, string> = {
+  basico: "Básico",
+  intermedio: "Intermedio",
+  avanzado: "Avanzado",
+}
+const DIFICULTAD_COLOR: Record<NivelDificultad, string> = {
+  basico: "var(--signal-green)",
+  intermedio: "var(--signal-amber)",
+  avanzado: "var(--signal-red)",
 }
 
 export default function StudentDashboard() {
@@ -208,13 +222,20 @@ export default function StudentDashboard() {
                             exit={{ opacity: 0, height: 0 }}
                           >
                             <TiltCard glowColor="56,214,245" intensity={3} className="chamfer flex items-center justify-between p-3 sm:p-4 transition-colors" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
-                              <div className="flex flex-col gap-1 min-w-0 pr-2">
+                              <div className="flex flex-col gap-1.5 min-w-0 pr-2">
                                 <span className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-heading)" }}>
                                   {row.laboratorio?.nombre || `Lab ${row.assignment.laboratorio_id.slice(0, 8)}`}
                                 </span>
                                 {row.laboratorio && (
-                                  <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
-                                    Dificultad: {row.laboratorio.nivel_dificultad}
+                                  <span
+                                    className="text-[9px] font-bold px-1.5 py-0.5 chamfer-sm self-start uppercase tracking-wide"
+                                    style={{
+                                      backgroundColor: `color-mix(in srgb, ${DIFICULTAD_COLOR[row.laboratorio.nivel_dificultad]} 12%, transparent)`,
+                                      color: DIFICULTAD_COLOR[row.laboratorio.nivel_dificultad],
+                                      border: `1px solid ${DIFICULTAD_COLOR[row.laboratorio.nivel_dificultad]}`,
+                                    }}
+                                  >
+                                    {DIFICULTAD_LABEL[row.laboratorio.nivel_dificultad]}
                                   </span>
                                 )}
                               </div>
@@ -270,16 +291,25 @@ export default function StudentDashboard() {
                         const color = puntaje == null ? "var(--text-muted)" : puntaje >= 70 ? "var(--signal-green)" : puntaje >= 40 ? "var(--signal-cyan)" : "var(--signal-red)"
                         return (
                           <TiltCard key={row.assignment.id} glowColor="51,214,159" intensity={3} className="chamfer flex items-center justify-between gap-3 p-3 sm:p-4" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
-                            <div className="flex flex-col gap-1 min-w-0 pr-2">
+                            <div className="flex flex-col gap-1.5 min-w-0 pr-2">
                               <span className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-heading)" }}>
                                 {row.laboratorio?.nombre || `Lab ${row.assignment.laboratorio_id.slice(0, 8)}`}
                               </span>
                               {row.laboratorio && (
-                                <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>Dificultad: {row.laboratorio.nivel_dificultad}</span>
+                                <span
+                                  className="text-[9px] font-bold px-1.5 py-0.5 chamfer-sm self-start uppercase tracking-wide"
+                                  style={{
+                                    backgroundColor: `color-mix(in srgb, ${DIFICULTAD_COLOR[row.laboratorio.nivel_dificultad]} 12%, transparent)`,
+                                    color: DIFICULTAD_COLOR[row.laboratorio.nivel_dificultad],
+                                    border: `1px solid ${DIFICULTAD_COLOR[row.laboratorio.nivel_dificultad]}`,
+                                  }}
+                                >
+                                  {DIFICULTAD_LABEL[row.laboratorio.nivel_dificultad]}
+                                </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-3 shrink-0">
-                              <span className="text-xl sm:text-2xl font-bold text-display" style={{ color }}>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <span className="text-xl sm:text-2xl font-bold text-display leading-none" style={{ color }}>
                                 {puntaje != null ? `${Math.round(puntaje)}%` : "—"}
                               </span>
                               <Link to={`/resolver/${row.assignment.id}`} className="text-xs font-semibold no-underline uppercase tracking-wide" style={{ color: "var(--signal-cyan)", fontFamily: "var(--font-mono)" }}>
@@ -303,18 +333,35 @@ export default function StudentDashboard() {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2 sm:gap-3">
-                      {proximosVencimientos.map((row) => (
-                        <TiltCard key={row.assignment.id} glowColor="255,176,32" intensity={3} className="chamfer flex items-center justify-between p-3 sm:p-4" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-amber)" }}>
-                          <div className="flex flex-col gap-1 min-w-0 pr-2">
-                            <span className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-heading)" }}>
-                              {row.laboratorio?.nombre || `Lab ${row.assignment.laboratorio_id.slice(0, 8)}`}
-                            </span>
-                            <span className="text-xs font-mono" style={{ color: "var(--signal-red)" }}>
-                              Vence: {new Date(row.assignment.fecha_vencimiento!).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </TiltCard>
-                      ))}
+                      {proximosVencimientos.map((row) => {
+                        const diasRestantes = Math.ceil(
+                          (new Date(row.assignment.fecha_vencimiento!).getTime() - Date.now()) / 86_400_000,
+                        )
+                        return (
+                          <TiltCard key={row.assignment.id} glowColor="255,71,87" intensity={3} className="chamfer flex items-center justify-between gap-3 p-3 sm:p-4" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-amber)" }}>
+                            <div className="flex flex-col gap-1.5 min-w-0 pr-2">
+                              <span className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-heading)" }}>
+                                {row.laboratorio?.nombre || `Lab ${row.assignment.laboratorio_id.slice(0, 8)}`}
+                              </span>
+                              <span className="flex items-center gap-1.5 text-xs font-mono" style={{ color: "var(--text-muted)" }}>
+                                <IconClock width={12} height={12} style={{ color: "var(--signal-red)" }} />
+                                Vence el {new Date(row.assignment.fecha_vencimiento!).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span
+                                className="text-[10px] font-bold px-2 py-1 chamfer-sm whitespace-nowrap uppercase tracking-wide"
+                                style={{ backgroundColor: "rgba(255,71,87,0.12)", color: "var(--signal-red)", border: "1px solid var(--signal-red)" }}
+                              >
+                                {diasRestantes <= 0 ? "Vence hoy" : `${diasRestantes} día${diasRestantes === 1 ? "" : "s"}`}
+                              </span>
+                              <Link to={`/resolver/${row.assignment.id}`} className="hidden sm:inline text-xs font-semibold no-underline uppercase tracking-wide" style={{ color: "var(--signal-cyan)", fontFamily: "var(--font-mono)" }}>
+                                Continuar →
+                              </Link>
+                            </div>
+                          </TiltCard>
+                        )
+                      })}
                     </div>
                   )}
                 </section>

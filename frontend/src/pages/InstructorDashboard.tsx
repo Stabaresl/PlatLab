@@ -6,6 +6,7 @@ import {
   listStudents,
   listAssignments,
   setCatalogVisibility,
+  inviteStudents,
   ApiError,
   type InstructorDashboardItem,
   type EstudianteFiltrado,
@@ -19,9 +20,15 @@ import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
 import TerminalHeader from "../components/TerminalHeader"
 import TiltCard from "../components/TiltCard"
-import { IconFlask, IconMail, IconTrophy, IconGlobe } from "../components/icons"
+import { IconFlask, IconMail, IconTrophy, IconGlobe, IconUsers, IconGauge } from "../components/icons"
+import { Button } from "../components/ui/button"
+import { Input } from "../components/ui/input"
+import { Label } from "../components/ui/label"
+import { Textarea } from "../components/ui/textarea"
 import { Skeleton } from "../components/ui/skeleton"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select"
 
 const ESTADO_COLORS: Record<EstadoAsignacion, string> = {
   pendiente: "var(--signal-cyan)",
@@ -64,12 +71,26 @@ export default function InstructorDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [visibilityBusyId, setVisibilityBusyId] = useState<string | null>(null)
+  const [showInviteModal, setShowInviteModal] = useState(false)
 
   const PAGE_SIZE = 4
   const [page, setPage] = useState(0)
 
+  const loadData = () => {
+    return Promise.all([getInstructorDashboard(), listStudents(), listAssignments()])
+      .then(([labsData, studentsData, assignmentsData]) => {
+        setLabs(labsData)
+        setStudents(studentsData)
+        setAssignments(assignmentsData)
+      })
+      .catch((err) => {
+        setError(err instanceof ApiError ? err.message : "No se pudo cargar el panel.")
+      })
+  }
+
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
     Promise.all([getInstructorDashboard(), listStudents(), listAssignments()])
       .then(([labsData, studentsData, assignmentsData]) => {
         if (cancelled) return
@@ -86,6 +107,8 @@ export default function InstructorDashboard() {
       })
     return () => { cancelled = true }
   }, [])
+
+  const labsPublicados = useMemo(() => labs.filter((l) => l.estado === "publicado"), [labs])
 
   const handleToggleVisibility = async (laboratorioId: string, next: boolean) => {
     setVisibilityBusyId(laboratorioId)
@@ -126,7 +149,20 @@ export default function InstructorDashboard() {
         <Navbar />
         <main className="flex-1">
           <div className="mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10" style={{ maxWidth: "1200px" }}>
-            <TerminalHeader title="Panel del Instructor" subtitle="Gestiona tus laboratorios y estudiantes" prompt="whoami → instructor" />
+            <TerminalHeader
+              title="Panel del Instructor"
+              subtitle="Gestiona tus laboratorios y estudiantes"
+              prompt="whoami → instructor"
+              right={
+                <Button
+                  onClick={() => setShowInviteModal(true)}
+                  className="chamfer-sm font-mono text-xs uppercase tracking-wide"
+                >
+                  <IconMail width={14} height={14} />
+                  Invitar estudiantes
+                </Button>
+              }
+            />
 
             <AnimatePresence>
               {error && (
@@ -159,12 +195,12 @@ export default function InstructorDashboard() {
                             className="chamfer flex flex-col p-4 sm:p-5 h-full"
                             style={{ backgroundColor: "var(--surface)", border: `1px solid ${lab.estado === "publicado" ? "var(--border-strong)" : "var(--border-default)"}` }}
                           >
-                            <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-start justify-between gap-3 mb-4">
                               <span className="text-sm sm:text-base font-bold leading-snug" style={{ color: "var(--text-heading)" }}>
                                 {lab.nombre}
                               </span>
                               <span
-                                className="text-[10px] font-bold px-2 py-0.5 chamfer-sm shrink-0 ml-3 uppercase tracking-wide"
+                                className="text-[10px] font-bold px-2 py-0.5 chamfer-sm shrink-0 uppercase tracking-wide"
                                 style={{
                                   backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
                                   color,
@@ -175,9 +211,42 @@ export default function InstructorDashboard() {
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-4 mb-3 text-xs font-mono" style={{ color: "var(--text-muted)" }}>
-                              <span>Estudiantes: <span style={{ color: "var(--text-base)" }}>{lab.estudiantes_inscritos}</span></span>
-                              <span>Completitud: <span style={{ color: "var(--text-base)" }}>{Math.round(lab.porcentaje_completitud_promedio)}%</span></span>
+                            <div
+                              className="grid grid-cols-2 gap-3 pt-3 mb-4"
+                              style={{ borderTop: "1px solid var(--border-hairline)" }}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div
+                                  className="chamfer-sm flex items-center justify-center w-7 h-7 shrink-0"
+                                  style={{ backgroundColor: "var(--surface-hover)", color: "var(--signal-cyan)" }}
+                                >
+                                  <IconUsers width={13} height={13} />
+                                </div>
+                                <div className="flex flex-col leading-tight min-w-0">
+                                  <span className="text-sm font-bold truncate" style={{ color: "var(--text-heading)" }}>
+                                    {lab.estudiantes_inscritos}
+                                  </span>
+                                  <span className="text-[9px] uppercase tracking-wide truncate" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
+                                    Estudiantes
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div
+                                  className="chamfer-sm flex items-center justify-center w-7 h-7 shrink-0"
+                                  style={{ backgroundColor: "var(--surface-hover)", color: "var(--signal-green)" }}
+                                >
+                                  <IconGauge width={13} height={13} />
+                                </div>
+                                <div className="flex flex-col leading-tight min-w-0 flex-1">
+                                  <span className="text-sm font-bold truncate" style={{ color: "var(--text-heading)" }}>
+                                    {Math.round(lab.porcentaje_completitud_promedio)}%
+                                  </span>
+                                  <span className="text-[9px] uppercase tracking-wide truncate" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
+                                    Completitud
+                                  </span>
+                                </div>
+                              </div>
                             </div>
 
                             {lab.estado === "publicado" && (
@@ -185,7 +254,7 @@ export default function InstructorDashboard() {
                                 type="button"
                                 disabled={visibilityBusyId === lab.laboratorio_id}
                                 onClick={() => handleToggleVisibility(lab.laboratorio_id, !lab.visible_en_catalogo)}
-                                className="mt-auto flex items-center gap-2 chamfer-sm px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide cursor-pointer border transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                className="mt-auto flex items-center justify-center gap-2 chamfer-sm px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide cursor-pointer border transition-colors disabled:opacity-50 disabled:cursor-wait"
                                 style={{
                                   backgroundColor: lab.visible_en_catalogo ? "rgba(51,214,159,0.1)" : "transparent",
                                   borderColor: lab.visible_en_catalogo ? "var(--signal-green)" : "var(--border-default)",
@@ -334,6 +403,13 @@ export default function InstructorDashboard() {
         </main>
         <Footer />
       </div>
+
+      <InviteStudentsModal
+        open={showInviteModal}
+        labs={labsPublicados}
+        onClose={() => setShowInviteModal(false)}
+        onInvited={loadData}
+      />
     </div>
   )
 }
@@ -345,6 +421,191 @@ function SkeletonBlock() {
         <Skeleton key={i} className="chamfer h-28" style={{ backgroundColor: "var(--surface)" }} />
       ))}
     </div>
+  )
+}
+
+const RESULTADO_COPY: Record<string, { label: string; color: string }> = {
+  invitado: { label: "Invitado", color: "var(--signal-green)" },
+  ya_vigente: { label: "Ya tenía invitación vigente", color: "var(--signal-amber)" },
+  no_encontrado: { label: "No encontrado", color: "var(--signal-red)" },
+}
+
+interface InvitacionResultado {
+  identificador: string
+  resultado: string
+}
+
+function InviteStudentsModal({
+  open,
+  labs,
+  onClose,
+  onInvited,
+}: {
+  open: boolean
+  labs: InstructorDashboardItem[]
+  onClose: () => void
+  onInvited: () => void
+}) {
+  const [laboratorioId, setLaboratorioId] = useState("")
+  const [emailsTexto, setEmailsTexto] = useState("")
+  const [fechaVencimiento, setFechaVencimiento] = useState("")
+  const [enviando, setEnviando] = useState(false)
+  const [error, setError] = useState("")
+  const [resultados, setResultados] = useState<InvitacionResultado[] | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setLaboratorioId("")
+    setEmailsTexto("")
+    setFechaVencimiento("")
+    setError("")
+    setResultados(null)
+  }, [open])
+
+  const identificadores = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          emailsTexto
+            .split(/[\n,]/)
+            .map((s) => s.trim())
+            .filter(Boolean),
+        ),
+      ),
+    [emailsTexto],
+  )
+
+  const handleSubmit = async () => {
+    if (!laboratorioId || identificadores.length === 0) return
+    setEnviando(true)
+    setError("")
+    try {
+      const res = await inviteStudents({
+        laboratorio_id: laboratorioId,
+        estudiantes: identificadores,
+        fecha_vencimiento: fechaVencimiento ? new Date(fechaVencimiento).toISOString() : null,
+      })
+      setResultados(res.invitaciones)
+      onInvited()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudieron enviar las invitaciones.")
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}>
+      <DialogContent className="chamfer sm:max-w-lg" style={{ backgroundColor: "var(--canvas-raised)", border: "1px solid var(--border-default)" }}>
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold uppercase tracking-wide" style={{ color: "var(--text-heading)" }}>
+            Invitar Estudiantes
+          </DialogTitle>
+          {!resultados && (
+            <DialogDescription>
+              Elegí un laboratorio publicado y pegá uno o más emails (separados por coma o salto de línea).
+              Un estudiante que ya tenga una invitación vigente o no exista todavía no bloquea al resto.
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
+        {resultados ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              {resultados.map((r, i) => {
+                const copy = RESULTADO_COPY[r.resultado] || { label: r.resultado, color: "var(--text-muted)" }
+                return (
+                  <div
+                    key={`${r.identificador}-${i}`}
+                    className="flex items-center justify-between gap-3 chamfer-sm px-3 py-2"
+                    style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}
+                  >
+                    <span className="text-sm truncate" style={{ color: "var(--text-base)" }}>{r.identificador}</span>
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 chamfer-sm shrink-0 uppercase tracking-wide"
+                      style={{ backgroundColor: `color-mix(in srgb, ${copy.color} 14%, transparent)`, color: copy.color, border: `1px solid ${copy.color}` }}
+                    >
+                      {copy.label}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            <DialogFooter className="chamfer-t" style={{ backgroundColor: "var(--surface)" }}>
+              <Button variant="outline" onClick={() => setResultados(null)} className="chamfer-sm font-mono text-xs uppercase">Invitar más</Button>
+              <Button onClick={onClose} className="chamfer-sm font-mono text-xs uppercase">Listo</Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                  Laboratorio <span style={{ color: "var(--signal-red)" }}>*</span>
+                </Label>
+                {labs.length === 0 ? (
+                  <p className="text-xs" style={{ color: "var(--signal-amber)" }}>
+                    No tenés ningún laboratorio publicado todavía — publicá uno antes de invitar estudiantes.
+                  </p>
+                ) : (
+                  <Select value={laboratorioId} onValueChange={setLaboratorioId}>
+                    <SelectTrigger className="chamfer-sm w-full h-10">
+                      <SelectValue placeholder="Elegí un laboratorio publicado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {labs.map((l) => (
+                        <SelectItem key={l.laboratorio_id} value={l.laboratorio_id}>{l.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                  Emails <span style={{ color: "var(--signal-red)" }}>*</span>
+                </Label>
+                <Textarea
+                  value={emailsTexto}
+                  onChange={(e) => setEmailsTexto(e.target.value)}
+                  placeholder={"ana@uni.edu, luis@uni.edu\no uno por línea"}
+                  rows={4}
+                  className="chamfer-sm resize-none font-mono text-sm"
+                />
+                <span className="text-[11px] font-mono" style={{ color: "var(--text-dim)" }}>
+                  {identificadores.length} estudiante{identificadores.length === 1 ? "" : "s"} a invitar
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                  Vencimiento (opcional)
+                </Label>
+                <Input
+                  type="date"
+                  value={fechaVencimiento}
+                  onChange={(e) => setFechaVencimiento(e.target.value)}
+                  className="chamfer-sm h-10 font-mono"
+                />
+              </div>
+
+              {error && <p className="text-sm" style={{ color: "var(--signal-red)" }}>{error}</p>}
+            </div>
+
+            <DialogFooter className="chamfer-t" style={{ backgroundColor: "var(--surface)" }}>
+              <Button variant="outline" onClick={onClose} className="chamfer-sm font-mono text-xs uppercase">Cancelar</Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={!laboratorioId || identificadores.length === 0 || enviando}
+                className="chamfer-sm font-mono text-xs uppercase"
+              >
+                {enviando ? "Enviando…" : "Enviar invitaciones"}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 

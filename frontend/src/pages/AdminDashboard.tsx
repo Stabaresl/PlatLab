@@ -27,7 +27,7 @@ import TerminalHeader from "../components/TerminalHeader"
 import StatusDot from "../components/StatusDot"
 import TiltCard from "../components/TiltCard"
 import ActivityTimeline, { type ActivityItem, type ActivityTone } from "../components/ActivityTimeline"
-import { IconChart, IconUsers, IconTrophy, IconFlask, IconActivity, IconGlobe } from "../components/icons"
+import { IconChart, IconUsers, IconTrophy, IconFlask, IconActivity, IconGlobe, IconClock } from "../components/icons"
 import { Skeleton } from "../components/ui/skeleton"
 
 const AUDIT_LABELS: Record<string, { title: string; tone: ActivityTone }> = {
@@ -195,11 +195,23 @@ export default function AdminDashboard() {
                       <ProgressRing percent={Math.round(dashboard.tasa_completitud_promedio * 100)} size={104} color="var(--signal-green)" label="completitud promedio" />
                       <div className="flex-1 w-full grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
                         <TiltCard glowColor="56,214,245" className="chamfer-sm">
-                          <StatCard label="Laboratorios activos" value={dashboard.laboratorios_activos} delay={0} />
+                          <StatCard
+                            label="Laboratorios activos"
+                            value={dashboard.laboratorios_activos}
+                            delay={0}
+                            accent="var(--signal-cyan)"
+                            icon={<IconFlask width={16} height={16} />}
+                          />
                         </TiltCard>
                         {Object.entries(dashboard.usuarios_por_rol).map(([rol, cantidad], i) => (
                           <TiltCard key={rol} glowColor={ROLE_GLOW[rol as Rol] || "56,214,245"} className="chamfer-sm">
-                            <StatCard label={ROLE_LABELS[rol as Rol] || rol} value={cantidad} delay={0.1 + i * 0.05} accent={ROLE_COLORS[rol as Rol]} />
+                            <StatCard
+                              label={ROLE_LABELS[rol as Rol] || rol}
+                              value={cantidad}
+                              delay={0.1 + i * 0.05}
+                              accent={ROLE_COLORS[rol as Rol]}
+                              icon={<IconUsers width={16} height={16} />}
+                            />
                           </TiltCard>
                         ))}
                       </div>
@@ -276,15 +288,23 @@ export default function AdminDashboard() {
                               className="chamfer flex flex-col p-4 sm:p-5 h-full"
                               style={{ backgroundColor: "var(--surface)", border: "1px solid var(--signal-amber)" }}
                             >
-                              <span className="text-sm sm:text-base font-bold mb-2" style={{ color: "var(--text-heading)" }}>{lab.nombre}</span>
-                              <span className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-                                {lab.updated_at ? new Date(lab.updated_at).toLocaleDateString() : ""}
+                              <span
+                                className="text-[10px] font-bold px-2 py-0.5 chamfer-sm self-start mb-2.5 uppercase tracking-wide"
+                                style={{ backgroundColor: "rgba(255,176,32,0.12)", color: "var(--signal-amber)", border: "1px solid var(--signal-amber)" }}
+                              >
+                                Pendiente
+                              </span>
+                              <span className="text-sm sm:text-base font-bold mb-2 leading-snug" style={{ color: "var(--text-heading)" }}>{lab.nombre}</span>
+                              <span className="flex items-center gap-1.5 text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+                                <IconClock width={12} height={12} />
+                                {lab.updated_at ? `Enviado el ${new Date(lab.updated_at).toLocaleDateString()}` : "Fecha no disponible"}
                               </span>
                               <Link
                                 to={`/laboratorios/${lab.id}/revision`}
-                                className="chamfer-sm px-3 py-1.5 text-xs font-mono uppercase tracking-wide text-center mt-auto no-underline"
+                                className="flex items-center justify-center gap-2 chamfer-sm px-3 py-1.5 text-xs font-mono uppercase tracking-wide text-center mt-auto no-underline transition-colors"
                                 style={{ backgroundColor: "rgba(255,176,32,0.12)", color: "var(--signal-amber)", border: "1px solid var(--border-amber)" }}
                               >
+                                <IconFlask width={13} height={13} />
                                 Revisar
                               </Link>
                             </TiltCard>
@@ -419,19 +439,27 @@ export default function AdminDashboard() {
   )
 }
 
-function StatCard({ label, value, delay, accent }: { label: string; value: string | number; delay: number; accent?: string }) {
+function StatCard({ label, value, delay, accent, icon }: { label: string; value: string | number; delay: number; accent?: string; icon?: ReactNode }) {
+  const color = accent || "var(--text-heading)"
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
-      className="chamfer-sm p-4"
+      className="chamfer-sm flex items-center gap-3 p-4"
       style={{ backgroundColor: "var(--canvas)", border: "1px solid var(--border-default)" }}
     >
-      <div className="text-2xl font-bold text-display" style={{ color: accent || "var(--text-heading)" }}>
-        {value}
+      {icon && (
+        <div className="chamfer-sm flex items-center justify-center w-9 h-9 shrink-0" style={{ backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`, color }}>
+          {icon}
+        </div>
+      )}
+      <div className="flex flex-col min-w-0">
+        <span className="text-xl sm:text-2xl font-bold text-display leading-tight" style={{ color }}>
+          {value}
+        </span>
+        <span className="text-[11px] uppercase tracking-wide truncate" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{label}</span>
       </div>
-      <div className="text-xs mt-1 uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{label}</div>
     </motion.div>
   )
 }
