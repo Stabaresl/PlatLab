@@ -32,7 +32,15 @@ class DetenerEntornoUseCase:
             raise NotFoundError(_NO_ENCONTRADO_MSG)
 
         with self._uow:
-            self._contenedor_provider.detener(entorno.container_id)
+            # `container_id` puede estar vacío todavía si el estudiante
+            # detiene mientras el entorno sigue `iniciando` (el
+            # aprovisionamiento es asíncrono, ver
+            # AprovisionarEntornoUseCase) — nada que apagar en Docker en
+            # ese caso; marcarlo detenido alcanza, y cuando la tarea de
+            # Celery corra encontrará el entorno ya no-`iniciando` y no
+            # hará nada.
+            if entorno.container_id:
+                self._contenedor_provider.detener(entorno.container_id)
             entorno.marcar_detenido()
             self._entorno_repository.update(entorno)
             self._uow.commit()

@@ -44,7 +44,12 @@ class ReapEntornosInactivosUseCase:
                 continue
 
             with self._uow:
-                self._contenedor_provider.detener(entorno.container_id)
+                # Mismo caso borde que en DetenerEntornoUseCase: un
+                # entorno puede seguir `iniciando` (sin container_id
+                # todavía) si el aprovisionamiento asíncrono no alcanzó a
+                # correr — nada que apagar en Docker en ese caso.
+                if entorno.container_id:
+                    self._contenedor_provider.detener(entorno.container_id)
                 entorno.marcar_detenido()
                 self._entorno_repository.update(entorno)
                 self._uow.commit()

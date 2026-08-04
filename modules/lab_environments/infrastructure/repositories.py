@@ -41,6 +41,11 @@ class EntornoRepository:
     def update(self, entorno: EntornoActivo) -> EntornoActivo:
         model = EntornoActivoModel.objects.get(id=entorno.id)
         model.estado = entorno.estado.value
+        # `container_id` nace vacío (`iniciando`, ver IniciarEntornoUseCase)
+        # y lo completa AprovisionarEntornoUseCase una vez que Docker
+        # responde — a diferencia de `estado`, antes era inmutable después
+        # de crear el registro, por eso `update()` nunca lo tocaba.
+        model.container_id = entorno.container_id
         model.save()
         return entorno_to_entity(model)
 

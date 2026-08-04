@@ -329,12 +329,44 @@ function SeccionPanel({
     setEntornoError("")
     try {
       const resultado = await startLabEnvironment(assignmentId, seccionId)
-      setEntornoReal({ activo: true, ...resultado })
+      if (resultado.estado === "activo") {
+        // Reconexión a un entorno que ya estaba corriendo — sin espera.
+        setEntornoReal({ activo: true, ...resultado })
+        return
+      }
+      // El arranque real del contenedor es asíncrono (RNF rendimiento —
+      // ver IniciarEntornoUseCase): el POST devuelve "iniciando" de
+      // inmediato y una tarea de Celery arranca Docker en segundo plano.
+      // Hay que esperar a que /status/ confirme "activo" antes de abrir
+      // la terminal — si se abriera ya, el contenedor todavía no existe.
+      await pollHastaActivoOError()
     } catch (err) {
       setEntornoError(err instanceof ApiError ? err.message : "No se pudo iniciar el entorno.")
     } finally {
       setEntornoBusy(false)
     }
+  }
+
+  const pollHastaActivoOError = async () => {
+    const POLL_INTERVAL_MS = 1500
+    const POLL_MAX_INTENTOS = 30 // ~45s — de sobra para el ~10s típico de containers.run() + healthcheck
+
+    for (let intento = 0; intento < POLL_MAX_INTENTOS; intento++) {
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
+      const estado = await getLabEnvironmentStatus(assignmentId, seccionId)
+      if (estado.activo && estado.estado === "activo") {
+        setEntornoReal(estado)
+        return
+      }
+      if (!estado.activo) {
+        // get_activo_por_seccion ya no lo encuentra — pasó a `error`
+        // (o alguien más lo detuvo mientras tanto).
+        setEntornoError("No se pudo iniciar el entorno de práctica. Reintentá en unos minutos.")
+        return
+      }
+      // sigue "iniciando" — reintenta.
+    }
+    setEntornoError("El entorno está tardando más de lo esperado. Reintentá en unos minutos.")
   }
 
   const handleDetenerEntorno = async () => {

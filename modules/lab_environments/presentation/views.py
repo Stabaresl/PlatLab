@@ -58,7 +58,6 @@ class EntornoStartView(APIView):
             entorno_repository=EntornoRepository(),
             progreso_repository=ProgresoRepository(),
             laboratorio_repository=LaboratorioRepository(),
-            contenedor_provider=DockerContenedorProvider(),
             max_concurrentes=settings.LAB_ENV_MAX_CONCURRENTES,
             idle_timeout_minutos=settings.LAB_ENV_IDLE_MINUTES,
             max_lifetime_minutos=settings.LAB_ENV_MAX_LIFETIME_MINUTES,

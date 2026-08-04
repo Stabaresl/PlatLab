@@ -16,7 +16,3 @@ class EntornoNoDisponibleError(RateLimitedError):
     se rechaza el nuevo pedido con una señal clara de "reintentá en unos
     minutos" (mapea a 429, igual que el rate limiting de flags).
     """
-
-
-class EntornoProviderError(BusinessRuleViolationError):
-    """El motor de contenedores (Docker) falló al iniciar/detener un entorno."""
