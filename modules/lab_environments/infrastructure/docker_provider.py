@@ -1,16 +1,22 @@
 """
 Implementación real de `IContenedorProvider` sobre el motor de Docker del
 host (Docker-outside-of-Docker: el contenedor `web`/`worker` habla con el
-Docker del host vía el socket montado en `/var/run/docker.sock`, ver
-docker-compose.yml). Cada entorno es un contenedor descartable, aislado de
-red (`network_disabled`) y con límites de CPU/memoria/PIDs — un estudiante
-no puede degradar a los demás ni salir a Internet desde el contenedor.
+Docker del host, no directo por el socket sino a través del servicio
+`docker-proxy` — ver docker-compose.yml — que solo expone las llamadas de
+API que este módulo necesita). Cada entorno es un contenedor descartable,
+aislado de red (`network_disabled`) y con límites de CPU/memoria/PIDs — un
+estudiante no puede degradar a los demás ni salir a Internet desde el
+contenedor.
 
-Nota de seguridad (documentada también en el PR/README): montar el socket
-de Docker le da al proceso que lo usa control equivalente a root sobre el
-host Docker. Aceptable para desarrollo/pruebas en una máquina propia; antes
-de exponer esto a estudiantes reales por Internet hace falta un ejecutor
-separado del backend (host/VM dedicado) y sandboxing más fuerte
+`docker.from_env()` recoge `DOCKER_HOST=tcp://docker-proxy:2375` del
+entorno automáticamente — no hay nada Docker-específico que resolver acá.
+
+Nota de seguridad: el proxy reduce la superficie de API alcanzable, pero no
+valida el *contenido* de las llamadas que sí deja pasar (un `POST
+/containers/create` con `privileged: true` seguiría siendo posible con
+acceso directo al proxy). Aceptable para desarrollo/pruebas en una máquina
+propia; antes de exponer esto a estudiantes reales por Internet hace falta
+un ejecutor separado del backend (host/VM dedicado) y sandboxing más fuerte
 (gVisor/Kata) — no resuelto en esta iteración.
 """
 

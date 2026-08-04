@@ -28,6 +28,52 @@ services:
       timeout: 3s
       retries: 5
 
+  # Único punto de contacto con el Docker del host. En vez de montar
+  # /var/run/docker.sock directo en web/worker (control root-equivalente
+  # sobre el host completo si el proceso Django/Celery se compromete), el
+  # backend habla con este proxy vía DOCKER_HOST=tcp://docker-proxy:2375 —
+  # que solo reenvía las llamadas de la API que
+  # lab_environments/docker_provider.py realmente usa (crear/listar/parar
+  # contenedores, exec interactivo, pull de imagen). Todo lo demás
+  # (secrets, swarm, configs, build, plugins, /info del host, redes,
+  # volúmenes) queda bloqueado a nivel de API, incluso con RCE en el backend.
+  #
+  # Límite real de este mitigante: el proxy no valida el *contenido* de las
+  # llamadas que sí deja pasar — un POST /containers/create con
+  # `privileged: true` o un bind-mount de "/" seguiría siendo posible para
+  # quien llegue directo a este proxy con acceso de red. Reduce la
+  # superficie de ataque de forma significativa, pero no reemplaza separar
+  # el ejecutor a un host/VM dedicado (pendiente, ver docker_provider.py).
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      IMAGES: 1
+      EXEC: 1
+      POST: 1
+      VERSION: 1
+      PING: 1
+      EVENTS: 0
+      INFO: 0
+      NETWORKS: 0
+      VOLUMES: 0
+      SERVICES: 0
+      SWARM: 0
+      SYSTEM: 0
+      TASKS: 0
+      NODES: 0
+      PLUGINS: 0
+      SECRETS: 0
+      CONFIGS: 0
+      BUILD: 0
+      COMMIT: 0
+      DISTRIBUTION: 0
+      AUTH: 0
+      SESSION: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   web:
     build:
       context: .
@@ -35,17 +81,12 @@ services:
         REQUIREMENTS_FILE: requirements/dev.txt
     restart: unless-stopped
     env_file: .env
+    environment:
+      # docker.from_env() (docker_provider.py) lee esta variable sola —
+      # no hace falta tocar código, solo dejar de montar el socket crudo.
+      DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       - .:/app
-      # Docker-outside-of-Docker: le permite al backend crear/parar
-      # contenedores hermanos (lab_environments) hablando con el Docker del
-      # host. ADVERTENCIA DE SEGURIDAD: esto le da a este contenedor control
-      # equivalente a root sobre el host Docker — aceptable para desarrollo
-      # en una máquina propia, pero antes de exponer el servicio a
-      # estudiantes reales por Internet hace falta separar el ejecutor de
-      # contenedores del backend (host/VM dedicado) y reforzar el
-      # aislamiento (gVisor/Kata) — ver modules/lab_environments/infrastructure/docker_provider.py.
-      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8000:8000"
     depends_on:
@@ -53,6 +94,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      docker-proxy:
+        condition: service_started
     # Daphne sirve HTTP + WebSocket en un solo proceso ASGI (config/asgi.py)
     # — reemplaza a `runserver`, que no entiende WebSockets.
     command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
@@ -64,17 +107,20 @@ services:
         REQUIREMENTS_FILE: requirements/dev.txt
     restart: unless-stopped
     env_file: .env
+    environment:
+      # El reaper de entornos inactivos (Celery Beat -> este worker)
+      # también habla con Docker solo a través del proxy — mismo motivo
+      # que en `web`.
+      DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       - .:/app
-      # El reaper de entornos inactivos (Celery Beat -> este worker) también
-      # necesita poder parar contenedores — mismo trade-off de seguridad que
-      # en `web` (ver comentario arriba).
-      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      docker-proxy:
+        condition: service_started
     command: ["celery", "-A", "config", "worker", "-l", "info"]
 
   beat:
