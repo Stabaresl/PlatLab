@@ -41,6 +41,7 @@ from modules.authentication.infrastructure.oauth_state_store import OAuthStateSt
 from modules.authentication.infrastructure.password_reset_store import (
     PasswordResetTokenStore,
 )
+from modules.authentication.infrastructure.rate_limiter import AuthRateLimiter
 from modules.authentication.infrastructure.refresh_token_store import RefreshTokenStore
 from modules.authentication.presentation.serializers import (
     ConfirmarRecuperacionRequestSerializer,
@@ -68,12 +69,27 @@ def _resolve_adapter(proveedor: str):
     return adapter_cls()
 
 
+def _client_ip(request) -> str:
+    """
+    En prod hay un proxy delante (ver config/settings/prod.py) que agrega
+    X-Forwarded-For; en dev/tests no hay proxy y REMOTE_ADDR ya es la IP
+    real. Se toma el primer valor de X-Forwarded-For (el cliente original)
+    cuando está presente.
+    """
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "unknown")
+
+
 class RegisterView(APIView):
     """POST /api/v1/auth/register/ — UC-01 flujo principal (HV-04)."""
 
     permission_classes = [AllowAny]
 
     def post(self, request):
+        AuthRateLimiter().verificar(accion="register", ip=_client_ip(request))
+
         serializer = RegistroRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -101,6 +117,8 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        AuthRateLimiter().verificar(accion="login", ip=_client_ip(request))
+
         serializer = LoginRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -130,6 +148,8 @@ class RefreshTokenView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        AuthRateLimiter().verificar(accion="refresh", ip=_client_ip(request))
+
         serializer = RefreshRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -158,6 +178,8 @@ class PasswordResetView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        AuthRateLimiter().verificar(accion="password_reset", ip=_client_ip(request))
+
         serializer = SolicitarRecuperacionRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -183,6 +205,8 @@ class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        AuthRateLimiter().verificar(accion="password_reset_confirm", ip=_client_ip(request))
+
         serializer = ConfirmarRecuperacionRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
