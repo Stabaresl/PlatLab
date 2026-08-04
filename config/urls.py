@@ -24,7 +24,7 @@ from rest_framework.permissions import AllowAny
 from config.views import HealthCheckView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path(settings.DJANGO_ADMIN_URL, admin.site.urls),
     path('api/v1/health/', HealthCheckView.as_view(), name='health'),
     path(
         'api/v1/schema/',

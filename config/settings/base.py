@@ -32,6 +32,12 @@ DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
+# seguridad.md — la ruta del admin de Django es configurable por env var
+# para no quedar en el path por defecto que cualquier scanner prueba
+# primero. Default 'admin/' en dev por comodidad; en prod se espera
+# DJANGO_ADMIN_URL con un slug no adivinable.
+DJANGO_ADMIN_URL = env('DJANGO_ADMIN_URL', default='admin/')
+
 
 # Application definition
 
