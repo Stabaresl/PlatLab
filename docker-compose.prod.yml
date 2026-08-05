@@ -1,0 +1,69 @@
+# Override de producción — usar SIEMPRE junto con docker-compose.yml, nunca solo:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Qué cambia respecto a dev:
+#   - build con requirements/prod.txt (gunicorn en vez de nada extra; el
+#     resto de dependencias son las mismas).
+#   - sin bind-mount de ".:/app": el código corre desde la imagen ya
+#     construida, no desde el working tree del host (evita servir código
+#     sin buildear y evita pisar site-packages instalados en la imagen).
+#   - DJANGO_SETTINGS_MODULE=config.settings.prod (DEBUG=False, cookies
+#     seguras, HSTS — ver config/settings/prod.py).
+#   - postgres/redis dejan de publicar puerto al host: siguen siendo
+#     alcanzables por los demás servicios vía DNS interno de compose
+#     (postgres:5432/redis:6379), pero ya no quedan expuestos a la red
+#     pública de la VPS.
+#   - web ya no publica el 8000 directo: todo el tráfico externo entra
+#     por Caddy (única puerta HTTPS pública, certificado automático vía
+#     Let's Encrypt).
+
+services:
+  postgres:
+    ports: !reset []
+
+  redis:
+    ports: !reset []
+
+  web:
+    build:
+      args:
+        REQUIREMENTS_FILE: requirements/prod.txt
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    volumes: !reset []
+    ports: !reset []
+
+  worker:
+    build:
+      args:
+        REQUIREMENTS_FILE: requirements/prod.txt
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    volumes: !reset []
+
+  beat:
+    build:
+      args:
+        REQUIREMENTS_FILE: requirements/prod.txt
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    volumes: !reset []
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      PUBLIC_HOSTNAME: ${PUBLIC_HOSTNAME}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:

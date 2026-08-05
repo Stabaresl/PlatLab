@@ -1,0 +1,8 @@
+# Reverse proxy con HTTPS automático (Let's Encrypt) — Caddy renueva el
+# certificado solo, no hace falta certbot ni tocar esto de nuevo.
+# PUBLIC_HOSTNAME se define en .env (ver .env.example) — con sslip.io es
+# algo como "203-0-113-10.sslip.io"; con dominio propio, "api.tudominio.com".
+
+{$PUBLIC_HOSTNAME} {
+	reverse_proxy web:8000
+}
