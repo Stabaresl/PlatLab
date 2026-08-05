@@ -11,4 +11,8 @@ fi
 
 python manage.py migrate --noinput
 
+if [ "$DJANGO_SETTINGS_MODULE" = "config.settings.prod" ]; then
+  python manage.py collectstatic --noinput
+fi
+
 exec "$@"
