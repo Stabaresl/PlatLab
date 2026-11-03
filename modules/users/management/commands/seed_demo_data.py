@@ -90,6 +90,8 @@ from modules.users.domain.value_objects import Email, Rol
 from modules.users.infrastructure.repositories import UserRepository
 
 _LAB_NOMBRE = "SQL Injection: Bypass de Login"
+# Hash inutilizable (prefijo "!", convención de Django): ninguna contraseña lo valida.
+_SIN_PASSWORD = "!desactivada-por-el-instalador"
 
 _DEMO_USERS = [
     {
@@ -124,8 +126,37 @@ def _use_case_kwargs(laboratorio_repository):
 class Command(BaseCommand):
     help = "Crea usuarios demo (admin/instructor/estudiante) y un laboratorio de ejemplo."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--desactivar-cuentas-demo",
+            action="store_true",
+            help=(
+                "Crea el contenido igual (el laboratorio necesita autor), pero deja las tres "
+                "cuentas demo deshabilitadas y sin contraseña utilizable — sus contraseñas "
+                "están publicadas en el repo. Lo usa el instalador en modo red/aula."
+            ),
+        )
+
     def handle(self, *args, **options):
         user_repository = UserRepository()
+        self._crear_contenido(user_repository)
+
+        if options["desactivar_cuentas_demo"]:
+            for data in _DEMO_USERS:
+                usuario = user_repository.get_by_email(data["email"])
+                if usuario and (usuario.is_active or usuario.password_hash != _SIN_PASSWORD):
+                    usuario.is_active = False
+                    usuario.password_hash = _SIN_PASSWORD
+                    user_repository.update(usuario)
+            self.stdout.write(self.style.WARNING("Cuentas demo deshabilitadas (modo red/aula)."))
+            return
+
+        self.stdout.write("")
+        self.stdout.write(self.style.SUCCESS("Listo. Credenciales de prueba:"))
+        for data in _DEMO_USERS:
+            self.stdout.write(f"  {data['rol'].value:<14} {data['email']:<28} {data['password']}")
+
+    def _crear_contenido(self, user_repository: UserRepository):
 
         usuarios = {}
         for data in _DEMO_USERS:
@@ -171,11 +202,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(msg))
 
         self._asignar_a_estudiante(instructor, estudiante, copia.id)
-
-        self.stdout.write("")
-        self.stdout.write(self.style.SUCCESS("Listo. Credenciales de prueba:"))
-        for data in _DEMO_USERS:
-            self.stdout.write(f"  {data['rol'].value:<14} {data['email']:<28} {data['password']}")
 
     # -- plantilla (predeterminado, admin) ----------------------------------
 
@@ -497,20 +523,6 @@ class Command(BaseCommand):
             )
         )
 
-        # Un personalizado ya no se publica directo: el instructor lo manda
-        # a revisión y un admin lo aprueba (mismo flujo real que seguiría
-        # cualquier laboratorio subido por un instructor).
-        SolicitarRevisionLaboratorioUseCase(**kwargs).execute(
-            SolicitarRevisionLaboratorioDTO(
-                laboratorio_id=resultado.id, actor_id=instructor.id, actor_rol="instructor"
-            )
-        )
-        AprobarLaboratorioUseCase(**kwargs).execute(
-            AprobarLaboratorioDTO(
-                laboratorio_id=resultado.id, actor_id=admin.id, actor_rol="administrador"
-            )
-        )
-
         CrearExamenUseCase(**kwargs).execute(
             CrearExamenDTO(
                 laboratorio_id=resultado.id, actor_id=instructor.id, actor_rol="instructor"
@@ -582,6 +594,23 @@ class Command(BaseCommand):
                     "Porque el password se envía sin cifrar",
                     "Porque el servidor no tiene certificado HTTPS",
                 ],
+            )
+        )
+
+        # El examen se arma ANTES de mandar a revisión: un personalizado en
+        # revisión o publicado ya no admite cambios de contenido
+        # (validar_contenido_editable), igual que en el flujo real.
+        # Un personalizado ya no se publica directo: el instructor lo manda
+        # a revisión y un admin lo aprueba (mismo flujo real que seguiría
+        # cualquier laboratorio subido por un instructor).
+        SolicitarRevisionLaboratorioUseCase(**kwargs).execute(
+            SolicitarRevisionLaboratorioDTO(
+                laboratorio_id=resultado.id, actor_id=instructor.id, actor_rol="instructor"
+            )
+        )
+        AprobarLaboratorioUseCase(**kwargs).execute(
+            AprobarLaboratorioDTO(
+                laboratorio_id=resultado.id, actor_id=admin.id, actor_rol="administrador"
             )
         )
 

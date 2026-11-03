@@ -1,0 +1,70 @@
+# Override de instalación local / aula — lo usan platlab.ps1 y platlab.sh:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#
+# Qué cambia respecto a dev:
+#   - el código corre desde la imagen (sin bind-mount de ".:/app"), con
+#     requirements/prod.txt y DJANGO_SETTINGS_MODULE=config.settings.local
+#     (DEBUG apagado, sobre HTTP en la red local).
+#   - web deja de publicar el 8000: todo entra por `gateway` (Caddy), que
+#     sirve la SPA ya compilada y hace de proxy a la API y al WebSocket.
+#   - los archivos subidos viven en el volumen `media_data` (compartido con
+#     el gateway, que los sirve aislados).
+#   - PLATLAB_BIND decide quién puede entrar: 127.0.0.1 (solo este
+#     computador, modo "local") o 0.0.0.0 (cualquiera en la red, modo "red").
+#
+# `environment` se combina clave a clave con docker-compose.yml (DOCKER_HOST,
+# RUN_MIGRATIONS, etc. se heredan); `volumes: !override` reemplaza la lista.
+
+services:
+  web:
+    build:
+      args:
+        REQUIREMENTS_FILE: requirements/prod.txt
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    volumes: !override
+      - media_data:/app/media
+    ports: !reset []
+
+  worker:
+    build:
+      args:
+        REQUIREMENTS_FILE: requirements/prod.txt
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    volumes: !override
+      - media_data:/app/media
+
+  worker-entornos:
+    build:
+      args:
+        REQUIREMENTS_FILE: requirements/prod.txt
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    volumes: !override
+      - media_data:/app/media
+
+  beat:
+    build:
+      args:
+        REQUIREMENTS_FILE: requirements/prod.txt
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    volumes: !reset []
+
+  gateway:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    environment:
+      DJANGO_ADMIN_URL: ${DJANGO_ADMIN_URL:-admin/}
+    ports:
+      - "${PLATLAB_BIND:-127.0.0.1}:${PLATLAB_PORT:-8080}:80"
+    volumes:
+      - media_data:/srv/media:ro
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  media_data:

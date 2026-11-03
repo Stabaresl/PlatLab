@@ -13,10 +13,10 @@ Uso:
         --instructor-email instructor@tudominio.com
 
 Si una cuenta con ese email ya existe, por defecto NO se toca (para no
-resetear por accidente una contraseña que ya está en uso). Pasá
---reset-password si de verdad querés rotarla.
+resetear por accidente una contraseña que ya está en uso). Pasa
+--reset-password si de verdad quieres rotarla.
 
-Copiá las contraseñas impresas a un gestor de contraseñas de inmediato:
+Copia las contraseñas impresas a un gestor de contraseñas de inmediato:
 no se vuelven a mostrar (se guardan solo como hash, como cualquier
 contraseña normal del sistema).
 """
@@ -45,7 +45,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--admin-email", required=True)
         parser.add_argument("--admin-nombre", default="Administrador")
-        parser.add_argument("--instructor-email", required=True)
+        parser.add_argument(
+            "--instructor-email",
+            default=None,
+            help="Opcional: sin él solo se crea el admin (el instalador local lo usa así).",
+        )
         parser.add_argument("--instructor-nombre", default="Instructor")
         parser.add_argument(
             "--reset-password",
@@ -56,10 +60,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         user_repository = UserRepository()
 
-        cuentas = [
-            (options["admin_email"], options["admin_nombre"], Rol.ADMINISTRADOR),
-            (options["instructor_email"], options["instructor_nombre"], Rol.INSTRUCTOR),
-        ]
+        cuentas = [(options["admin_email"], options["admin_nombre"], Rol.ADMINISTRADOR)]
+        if options["instructor_email"]:
+            cuentas.append((options["instructor_email"], options["instructor_nombre"], Rol.INSTRUCTOR))
 
         try:
             emails_validados = [(Email(email), nombre, rol) for email, nombre, rol in cuentas]
@@ -87,7 +90,7 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.WARNING(
                         f"= {email} ya existe ({existente.rol.value}) — no se tocó. "
-                        "Usá --reset-password si querés rotarla."
+                        "Usa --reset-password si quieres rotarla."
                     )
                 )
                 continue
@@ -102,7 +105,7 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("=" * 60))
-        self.stdout.write(self.style.SUCCESS("CREDENCIALES — guardalas ahora, no se vuelven a mostrar:"))
+        self.stdout.write(self.style.SUCCESS("CREDENCIALES — guárdalas ahora, no se vuelven a mostrar:"))
         self.stdout.write(self.style.SUCCESS("=" * 60))
         for email, rol, password, accion in resultados:
             self.stdout.write(f"  [{accion}] {rol:<14} {email}")

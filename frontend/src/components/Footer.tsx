@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom"
 import StatusDot from "./StatusDot"
+import { API_ORIGIN } from "../pages/api"
 import logoGaia from "../assets/logo-gaia.png"
 
 const GAIA_URL = "https://gaia.manizales.unal.edu.co/grupo_inv/grupo-de-investigacion-en-ambientes-inteligentes-adaptativos-gaia/"
@@ -63,7 +64,7 @@ export default function Footer() {
               Recursos
             </span>
             <a
-              href="http://localhost:8000/api/v1/docs/"
+              href={`${API_ORIGIN}/api/v1/docs/`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs sm:text-sm no-underline transition-colors hover:underline"

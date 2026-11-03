@@ -17,3 +17,16 @@ htmlcov/
 # puede romper el build por symlinks/archivos que Docker no puede leer.
 frontend/node_modules/
 frontend/dist/
+
+# Nada de esto va en la imagen del backend: el frontend tiene su propia
+# imagen (frontend/Dockerfile), los archivos subidos viven en un volumen y el
+# resto son artefactos locales.
+frontend/
+media/
+staticfiles/
+loadtests/
+celerybeat-schedule
+.env.*
+!.env.example
+Documentación/
+*.log

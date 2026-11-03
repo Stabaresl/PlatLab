@@ -1,0 +1,57 @@
+# Gateway HTTP de la instalación local / aula. TLS no aplica: en una red
+# local no hay dominio para pedir certificado (para internet, ver el
+# Caddyfile de la raíz + docker-compose.prod.yml).
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	encode zstd gzip
+
+	# Avatares (10 MB), Dockerfiles y adjuntos de reportes — por encima de
+	# esto se corta antes de llegar a Django.
+	request_body {
+		max_size 25MB
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		-Server
+	}
+
+	# API, WebSocket de la terminal, estáticos del admin de Django (whitenoise)
+	# y el admin mismo. Caddy conserva el Host original y agrega
+	# X-Forwarded-For/Proto (uvicorn corre con --proxy-headers).
+	@backend path /api/* /ws/* /static/* /{$DJANGO_ADMIN_URL:admin/}*
+	handle @backend {
+		reverse_proxy web:8000
+	}
+
+	# Archivos subidos por usuarios: se sirven aislados. `sandbox` impide
+	# que un HTML o SVG subido como adjunto ejecute scripts en el origen de
+	# la plataforma (XSS almacenado), y nosniff evita que el navegador
+	# "adivine" un tipo ejecutable.
+	handle_path /media/* {
+		root * /srv/media
+		header Content-Security-Policy "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox"
+		header Cache-Control "public, max-age=3600"
+		file_server
+	}
+
+	# SPA: assets con hash de Vite se cachean un año; cualquier otra ruta
+	# cae en index.html (react-router resuelve en el navegador).
+	handle {
+		root * /srv/app
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		header X-Frame-Options DENY
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@html not path /assets/*
+		header @html Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}
