@@ -5,7 +5,11 @@ import pytest
 from modules.gamification.application.dtos import ProcesarCompletitudDTO
 from modules.gamification.application.procesar_completitud import ProcesarCompletitudLaboratorio
 from modules.gamification.domain.entities import Cosmetico, Logro, Titulo
-from modules.gamification.domain.value_objects import RarezaCosmetico, TipoCosmetico, TipoCriterioLogro
+from modules.gamification.domain.value_objects import (
+    RarezaCosmetico,
+    TipoCosmetico,
+    TipoCriterioLogro,
+)
 from modules.gamification.infrastructure.repositories import (
     CosmeticoDesbloqueadoRepository,
     CosmeticoRepository,
@@ -17,12 +21,19 @@ from modules.gamification.infrastructure.repositories import (
     XpOtorgadoRepository,
 )
 from modules.laboratories.domain.entities import Laboratorio
-from modules.laboratories.domain.value_objects import EstadoLaboratorio, NivelDificultad, TipoLaboratorio
+from modules.laboratories.domain.value_objects import (
+    EstadoLaboratorio,
+    NivelDificultad,
+    TipoLaboratorio,
+)
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.roadmap.application.dtos import AgregarNodoDTO
 from modules.roadmap.application.use_cases.agregar_nodo import AgregarNodoUseCase
 from modules.roadmap.domain.entities import CategoriaRoadmap
-from modules.roadmap.infrastructure.repositories import CategoriaRoadmapRepository, NodoRoadmapRepository
+from modules.roadmap.infrastructure.repositories import (
+    CategoriaRoadmapRepository,
+    NodoRoadmapRepository,
+)
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
 
@@ -178,7 +189,7 @@ def test_logro_n_laboratorios_se_desbloquea_al_alcanzar_el_umbral():
         ProcesarCompletitudDTO(estudiante_id=estudiante_id, laboratorio_id=lab_b.id)
     )
 
-    assert any(l.logro_id == logro.id for l in resultado.logros_desbloqueados)
+    assert any(lg.logro_id == logro.id for lg in resultado.logros_desbloqueados)
 
 
 @pytest.mark.django_db
@@ -209,12 +220,12 @@ def test_logro_categoria_roadmap_completa():
     resultado = _uc().execute(
         ProcesarCompletitudDTO(estudiante_id=estudiante_id, laboratorio_id=lab_b.id)
     )
-    assert any(l.logro_id == logro.id for l in resultado.logros_desbloqueados)
+    assert any(lg.logro_id == logro.id for lg in resultado.logros_desbloqueados)
 
 
 @pytest.mark.django_db
 def test_no_reprocesa_un_logro_ya_desbloqueado():
-    logro = _crear_logro(clave="primer_laboratorio", tipo_criterio=TipoCriterioLogro.PRIMER_LABORATORIO)
+    _crear_logro(clave="primer_laboratorio", tipo_criterio=TipoCriterioLogro.PRIMER_LABORATORIO)
     lab_a, lab_b = _crear_lab(), _crear_lab()
     estudiante_id = uuid.uuid4()
 

@@ -10,7 +10,11 @@ Uso:
 from django.core.management.base import BaseCommand
 
 from modules.gamification.domain.entities import Cosmetico, Logro, Titulo
-from modules.gamification.domain.value_objects import RarezaCosmetico, TipoCosmetico, TipoCriterioLogro
+from modules.gamification.domain.value_objects import (
+    RarezaCosmetico,
+    TipoCosmetico,
+    TipoCriterioLogro,
+)
 from modules.gamification.infrastructure.repositories import (
     CosmeticoRepository,
     LogroRepository,

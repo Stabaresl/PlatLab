@@ -120,14 +120,14 @@ class ProcesarCompletitudLaboratorio(
         logros_nuevos = self._evaluar_logros(input_dto.estudiante_id)
 
         events: list[DomainEvent] = [
-            LogroDesbloqueadoEvent(estudiante_id=input_dto.estudiante_id, logro_id=l.id, nombre=l.nombre)
-            for l in logros_nuevos
+            LogroDesbloqueadoEvent(estudiante_id=input_dto.estudiante_id, logro_id=lg.id, nombre=lg.nombre)
+            for lg in logros_nuevos
         ]
         result = ProcesarCompletitudResultDTO(
             xp_otorgado=xp,
             nivel_actual=perfil.nivel,
             logros_desbloqueados=[
-                LogroDesbloqueadoResultDTO(logro_id=l.id, nombre=l.nombre) for l in logros_nuevos
+                LogroDesbloqueadoResultDTO(logro_id=lg.id, nombre=lg.nombre) for lg in logros_nuevos
             ],
         )
         return result, events

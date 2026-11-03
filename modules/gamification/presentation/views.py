@@ -18,7 +18,9 @@ from modules.gamification.application.dtos import (
 from modules.gamification.application.queries.listar_catalogo import ListarCatalogoQuery
 from modules.gamification.application.queries.obtener_perfil import ObtenerPerfilQuery
 from modules.gamification.application.use_cases.cambiar_avatar import CambiarAvatarUseCase
-from modules.gamification.application.use_cases.completar_onboarding import CompletarOnboardingUseCase
+from modules.gamification.application.use_cases.completar_onboarding import (
+    CompletarOnboardingUseCase,
+)
 from modules.gamification.application.use_cases.equipar_cosmetico import EquiparCosmeticoUseCase
 from modules.gamification.application.use_cases.equipar_titulo import EquiparTituloUseCase
 from modules.gamification.application.use_cases.quitar_cosmetico import QuitarCosmeticoUseCase
@@ -42,7 +44,6 @@ from modules.gamification.presentation.serializers import (
     EquiparTituloRequestSerializer,
     SubirAvatarRequestSerializer,
 )
-from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.roadmap.infrastructure.repositories import NodoRoadmapRepository
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
@@ -68,15 +69,15 @@ def _serializar_perfil(perfil) -> dict:
         "avatar_valor": perfil.avatar_valor,
         "logros": [
             {
-                "id": str(l.id),
-                "clave": l.clave,
-                "nombre": l.nombre,
-                "descripcion": l.descripcion,
-                "rareza": l.rareza,
-                "desbloqueado": l.desbloqueado,
-                "progreso": l.progreso,
+                "id": str(lg.id),
+                "clave": lg.clave,
+                "nombre": lg.nombre,
+                "descripcion": lg.descripcion,
+                "rareza": lg.rareza,
+                "desbloqueado": lg.desbloqueado,
+                "progreso": lg.progreso,
             }
-            for l in perfil.logros
+            for lg in perfil.logros
         ],
         "cosmeticos": [
             {
@@ -147,13 +148,13 @@ class GamificationViewSet(ViewSet):
             {
                 "logros": [
                     {
-                        "id": str(l.id),
-                        "clave": l.clave,
-                        "nombre": l.nombre,
-                        "descripcion": l.descripcion,
-                        "rareza": l.rareza,
+                        "id": str(lg.id),
+                        "clave": lg.clave,
+                        "nombre": lg.nombre,
+                        "descripcion": lg.descripcion,
+                        "rareza": lg.rareza,
                     }
-                    for l in logros
+                    for lg in logros
                 ],
                 "cosmeticos": [
                     {

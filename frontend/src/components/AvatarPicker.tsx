@@ -5,7 +5,7 @@ import { useGamificationStore } from "../store/gamificationStore"
 import { resolveMediaUrl, type PerfilJugador } from "../pages/api"
 import { Button } from "./ui/button"
 
-const MAX_TAMANO_MB = 2
+const MAX_TAMANO_MB = 10 // igual que avatar_storage.py — el backend reduce la foto a 512 px
 
 // Selector de avatar — grilla de predeterminados (emoji + color) más la
 // opción de subir una foto propia. Reusa framer-motion (ya instalado)
@@ -108,7 +108,7 @@ export default function AvatarPicker({ perfil }: { perfil: PerfilJugador }) {
         >
           {busy ? "Subiendo…" : "Subir tu foto"}
         </Button>
-        <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/gif" className="hidden" onChange={handleFileChange} />
+        <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={handleFileChange} />
       </div>
       {localError && <p className="text-xs mt-2" style={{ color: "var(--signal-red)" }}>{localError}</p>}
     </div>

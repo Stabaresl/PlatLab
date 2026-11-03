@@ -9,6 +9,7 @@ from modules.gamification.domain.value_objects import (
     TipoCriterioLogro,
 )
 from modules.shared.domain.base_entity import BaseEntity
+from modules.shared.domain.tiempo import ahora_utc
 
 # Umbrales de XP acumulado para subir de nivel — nivel = cuántos umbrales
 # superó (nivel 1 en 0 XP). Tabla fija en el dominio a propósito: no hay
@@ -72,7 +73,7 @@ class PerfilJugador(BaseEntity):
     nivel: int = 1
     avatar_tipo: AvatarTipo = AvatarTipo.PRESET
     avatar_valor: str = AVATAR_PRESETS[0].clave
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -103,7 +104,7 @@ class XpOtorgado(BaseEntity):
     estudiante_id: uuid.UUID
     laboratorio_id: uuid.UUID
     xp: int
-    fecha: datetime = field(default_factory=datetime.utcnow)
+    fecha: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -119,7 +120,8 @@ class Logro(BaseEntity):
     descripcion: str
     tipo_criterio: TipoCriterioLogro
     rareza: RarezaCosmetico
-    # Umbral N (N_LABORATORIOS) o id de CategoriaRoadmap (CATEGORIA_ROADMAP_COMPLETA) según el tipo; None para PRIMER_LABORATORIO.
+    # Umbral N (N_LABORATORIOS) o id de CategoriaRoadmap (CATEGORIA_ROADMAP_COMPLETA)
+    # según el tipo; None para PRIMER_LABORATORIO.
     criterio_valor: str | None = None
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
@@ -131,7 +133,7 @@ class Logro(BaseEntity):
 class LogroDesbloqueado(BaseEntity):
     estudiante_id: uuid.UUID
     logro_id: uuid.UUID
-    fecha: datetime = field(default_factory=datetime.utcnow)
+    fecha: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -159,7 +161,7 @@ class CosmeticoDesbloqueado(BaseEntity):
     estudiante_id: uuid.UUID
     cosmetico_id: uuid.UUID
     equipado: bool = False
-    fecha: datetime = field(default_factory=datetime.utcnow)
+    fecha: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -191,7 +193,7 @@ class TituloDesbloqueado(BaseEntity):
     estudiante_id: uuid.UUID
     titulo_id: uuid.UUID
     equipado: bool = False
-    fecha: datetime = field(default_factory=datetime.utcnow)
+    fecha: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):

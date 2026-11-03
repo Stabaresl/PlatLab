@@ -13,7 +13,11 @@ from modules.gamification.domain.entities import (
     Titulo,
     TituloDesbloqueado,
 )
-from modules.gamification.domain.value_objects import RarezaCosmetico, TipoCosmetico, TipoCriterioLogro
+from modules.gamification.domain.value_objects import (
+    RarezaCosmetico,
+    TipoCosmetico,
+    TipoCriterioLogro,
+)
 from modules.gamification.infrastructure.repositories import (
     CosmeticoDesbloqueadoRepository,
     CosmeticoRepository,
@@ -26,7 +30,10 @@ _PNG_MAGIC_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
 
 
 def _png_valido() -> bytes:
-    """avatar_storage.py decodifica la imagen de verdad para redimensionarla — acá no alcanza con las firmas mágicas solas."""
+    """
+    avatar_storage.py decodifica la imagen de verdad para redimensionarla —
+    acá no alcanza con las firmas mágicas solas.
+    """
     buffer = io.BytesIO()
     Image.new("RGB", (20, 20), color="blue").save(buffer, format="PNG")
     return buffer.getvalue()

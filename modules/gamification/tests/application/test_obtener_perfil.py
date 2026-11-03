@@ -18,7 +18,11 @@ from modules.gamification.infrastructure.repositories import (
     XpOtorgadoRepository,
 )
 from modules.laboratories.domain.entities import Laboratorio
-from modules.laboratories.domain.value_objects import EstadoLaboratorio, NivelDificultad, TipoLaboratorio
+from modules.laboratories.domain.value_objects import (
+    EstadoLaboratorio,
+    NivelDificultad,
+    TipoLaboratorio,
+)
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.roadmap.infrastructure.repositories import NodoRoadmapRepository
 from modules.shared.domain.exceptions import ForbiddenError
@@ -101,7 +105,7 @@ def test_perfil_refleja_xp_y_logro_desbloqueado_tras_completar_un_lab():
     perfil = _query().execute(estudiante_id=estudiante_id, actor_rol="estudiante")
 
     assert perfil.xp == 50
-    logro = next(l for l in perfil.logros if l.clave == "primer_laboratorio")
+    logro = next(lg for lg in perfil.logros if lg.clave == "primer_laboratorio")
     assert logro.desbloqueado is True
 
 
@@ -123,7 +127,7 @@ def test_progreso_de_logro_n_laboratorios_no_desbloqueado():
 
     perfil = _query().execute(estudiante_id=estudiante_id, actor_rol="estudiante")
 
-    logro = next(l for l in perfil.logros if l.clave == "cinco_labs")
+    logro = next(lg for lg in perfil.logros if lg.clave == "cinco_labs")
     assert logro.desbloqueado is False
     assert logro.progreso == "1/5"
 

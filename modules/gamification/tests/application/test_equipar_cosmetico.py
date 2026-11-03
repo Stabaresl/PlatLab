@@ -5,8 +5,16 @@ import pytest
 from modules.gamification.application.dtos import EquiparCosmeticoDTO
 from modules.gamification.application.use_cases.equipar_cosmetico import EquiparCosmeticoUseCase
 from modules.gamification.domain.entities import Cosmetico, CosmeticoDesbloqueado, Logro
-from modules.gamification.domain.value_objects import RarezaCosmetico, TipoCosmetico, TipoCriterioLogro
-from modules.gamification.infrastructure.repositories import CosmeticoDesbloqueadoRepository, CosmeticoRepository, LogroRepository
+from modules.gamification.domain.value_objects import (
+    RarezaCosmetico,
+    TipoCosmetico,
+    TipoCriterioLogro,
+)
+from modules.gamification.infrastructure.repositories import (
+    CosmeticoDesbloqueadoRepository,
+    CosmeticoRepository,
+    LogroRepository,
+)
 from modules.shared.domain.exceptions import ForbiddenError, NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork

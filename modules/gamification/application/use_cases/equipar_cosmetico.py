@@ -1,5 +1,11 @@
-from modules.gamification.application.dtos import CosmeticoDesbloqueadoResultDTO, EquiparCosmeticoDTO
-from modules.gamification.domain.repositories import ICosmeticoDesbloqueadoRepository, ICosmeticoRepository
+from modules.gamification.application.dtos import (
+    CosmeticoDesbloqueadoResultDTO,
+    EquiparCosmeticoDTO,
+)
+from modules.gamification.domain.repositories import (
+    ICosmeticoDesbloqueadoRepository,
+    ICosmeticoRepository,
+)
 from modules.gamification.domain.value_objects import TipoCosmetico
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent

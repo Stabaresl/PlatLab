@@ -3,7 +3,11 @@ from modules.gamification.application.dtos import (
     CompletarOnboardingResultDTO,
     LogroDesbloqueadoResultDTO,
 )
-from modules.gamification.domain.entities import CosmeticoDesbloqueado, LogroDesbloqueado, TituloDesbloqueado
+from modules.gamification.domain.entities import (
+    CosmeticoDesbloqueado,
+    LogroDesbloqueado,
+    TituloDesbloqueado,
+)
 from modules.gamification.domain.events import LogroDesbloqueadoEvent
 from modules.gamification.domain.repositories import (
     ICosmeticoDesbloqueadoRepository,

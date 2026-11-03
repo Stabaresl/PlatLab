@@ -3,7 +3,11 @@ from modules.gamification.application.dtos import (
     CatalogoLogroItemDTO,
     CatalogoTituloItemDTO,
 )
-from modules.gamification.domain.repositories import ICosmeticoRepository, ILogroRepository, ITituloRepository
+from modules.gamification.domain.repositories import (
+    ICosmeticoRepository,
+    ILogroRepository,
+    ITituloRepository,
+)
 
 
 class ListarCatalogoQuery:
@@ -24,9 +28,9 @@ class ListarCatalogoQuery:
     ) -> tuple[list[CatalogoLogroItemDTO], list[CatalogoCosmeticoItemDTO], list[CatalogoTituloItemDTO]]:
         logros = [
             CatalogoLogroItemDTO(
-                id=l.id, clave=l.clave, nombre=l.nombre, descripcion=l.descripcion, rareza=l.rareza.value
+                id=lg.id, clave=lg.clave, nombre=lg.nombre, descripcion=lg.descripcion, rareza=lg.rareza.value
             )
-            for l in self._logro_repository.find_todos()
+            for lg in self._logro_repository.find_todos()
         ]
         cosmeticos = [
             CatalogoCosmeticoItemDTO(
