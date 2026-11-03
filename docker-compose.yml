@@ -9,8 +9,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Sin `ports` a propósito: web/worker llegan por la red interna de
+    # compose (postgres:5432). Publicarlo al host chocaba con un PostgreSQL
+    # nativo instalado en la máquina (muy común en Windows) y lo exponía a
+    # la red del aula. Para correr el backend fuera de Docker, ver
+    # docker-compose.override.example.yml.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -20,8 +23,9 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # Sin `ports`: Redis no tiene contraseña y guarda sesiones + un caché
+    # serializado con pickle — publicado en 0.0.0.0 (como antes) era una vía
+    # de ejecución remota de código para cualquiera en la misma red.
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -85,10 +89,19 @@ services:
       # docker.from_env() (docker_provider.py) lee esta variable sola —
       # no hace falta tocar código, solo dejar de montar el socket crudo.
       DOCKER_HOST: tcp://docker-proxy:2375
+      # Único servicio que migra (ver docker/entrypoint.sh) — worker/beat
+      # esperan a que web esté sano antes de arrancar.
+      RUN_MIGRATIONS: "1"
     volumes:
       - .:/app
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/', timeout=4)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
     depends_on:
       postgres:
         condition: service_healthy
@@ -96,9 +109,11 @@ services:
         condition: service_healthy
       docker-proxy:
         condition: service_started
-    # Daphne sirve HTTP + WebSocket en un solo proceso ASGI (config/asgi.py)
-    # — reemplaza a `runserver`, que no entiende WebSockets.
-    command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+    # Uvicorn sirve HTTP + WebSocket (config/asgi.py) con WEB_CONCURRENCY
+    # procesos — reemplaza a daphne (un solo proceso Python, se saturaba
+    # en ~30 req/s en loadtests/). `--lifespan off`: Django no implementa
+    # el protocolo lifespan de ASGI.
+    command: ["sh", "-c", "exec uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY:-4} --lifespan off --proxy-headers --forwarded-allow-ips '*'"]
 
   worker:
     build:
@@ -121,7 +136,38 @@ services:
         condition: service_healthy
       docker-proxy:
         condition: service_started
-    command: ["celery", "-A", "config", "worker", "-l", "info"]
+      web:
+        condition: service_healthy
+    # Sin --concurrency, Celery levanta un proceso hijo por CPU (12 en una
+    # laptop típica, ~700 MB de RAM medidos) — memoria que hace falta para
+    # los contenedores de práctica de los estudiantes.
+    command: ["sh", "-c", "exec celery -A config worker -l info --concurrency ${CELERY_CONCURRENCY:-4}"]
+
+  # Worker dedicado a aprovisionar entornos de práctica (cola `entornos`,
+  # ver config/celery.py): pool de hilos porque la tarea es casi todo
+  # espera de I/O contra Docker — 20 aprovisionamientos en paralelo en un
+  # solo proceso (~100 MB), en vez de 4 en el worker general.
+  worker-entornos:
+    build:
+      context: .
+      args:
+        REQUIREMENTS_FILE: requirements/dev.txt
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DOCKER_HOST: tcp://docker-proxy:2375
+      # Un hilo por aprovisionamiento concurrente + margen para el pool de BD.
+      DB_POOL_MAX: "25"
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+      docker-proxy:
+        condition: service_started
+      web:
+        condition: service_healthy
+    command: ["sh", "-c", "exec celery -A config worker -Q entornos --pool threads --concurrency ${LAB_ENV_PROVISION_CONCURRENCY:-20} -n entornos@%h -l info"]
 
   beat:
     build:
@@ -136,6 +182,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      web:
         condition: service_healthy
     command: ["celery", "-A", "config", "beat", "-l", "info"]
 

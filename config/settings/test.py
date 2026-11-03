@@ -9,3 +9,7 @@ from config.settings.dev import *  # noqa
 
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
+
+# Sin pool en tests: pytest-django envuelve cada test en una transacción y
+# crea/borra la base de test — conexiones directas, más simple y aislado.
+DATABASES['default']['OPTIONS'] = {}  # noqa: F405

@@ -112,6 +112,19 @@ DATABASES = {
         'PASSWORD': env('POSTGRES_PASSWORD'),
         'HOST': env('POSTGRES_HOST', default='localhost'),
         'PORT': env('POSTGRES_PORT', default='5432'),
+        # Pool nativo de Django (psycopg 3): sin esto, cada hilo del
+        # servidor ASGI abría su propia conexión y bajo estrés (~250
+        # usuarios en loadtests/) Postgres rechazaba con "too many clients
+        # already" -> 500 en todos los endpoints. Tamaño por proceso: con
+        # WEB_CONCURRENCY procesos, el total es WEB_CONCURRENCY × max_size
+        # (+ worker/beat), muy por debajo de max_connections=100.
+        'OPTIONS': {
+            'pool': {
+                'min_size': env.int('DB_POOL_MIN', default=2),
+                'max_size': env.int('DB_POOL_MAX', default=10),
+                'timeout': env.int('DB_POOL_TIMEOUT', default=10),
+            },
+        },
     }
 }
 
@@ -181,9 +194,20 @@ CORS_ALLOW_CREDENTIALS = True
 # lab_environments — entornos de práctica reales (contenedor Docker por
 # estudiante, ver modules/lab_environments). Límites conservadores para un
 # único host de desarrollo; ajustables sin tocar código.
-LAB_ENV_MAX_CONCURRENTES = env.int('LAB_ENV_MAX_CONCURRENTES', default=5)
+# Medido en loadtests/estres_entornos.py (laptop 12 CPU / 8 GB WSL2): cada
+# contenedor del target sqli usa ~14 MiB de RAM, y 100 simultáneos
+# arrancan en p95 ~21 s con worker-entornos. 120 deja margen para una sala
+# de 100 + otros estudiantes; bajarlo en máquinas más chicas.
+LAB_ENV_MAX_CONCURRENTES = env.int('LAB_ENV_MAX_CONCURRENTES', default=120)
+LAB_ENV_MAX_POR_ESTUDIANTE = env.int('LAB_ENV_MAX_POR_ESTUDIANTE', default=2)
 LAB_ENV_IDLE_MINUTES = env.int('LAB_ENV_IDLE_MINUTES', default=20)
 LAB_ENV_MAX_LIFETIME_MINUTES = env.int('LAB_ENV_MAX_LIFETIME_MINUTES', default=120)
+
+
+# Clave HMAC de flags/respuestas de examen (modules/shared/infrastructure/
+# secret_hasher.py). Por defecto se deriva de SECRET_KEY; definirla aparte
+# permite rotar SECRET_KEY (sesiones JWT) sin invalidar las flags guardadas.
+FLAG_HASH_KEY = env('FLAG_HASH_KEY', default='')
 
 
 # OpenAlex — verificación académica (ORCID + nombre + publicaciones) al

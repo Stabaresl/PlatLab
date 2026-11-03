@@ -9,10 +9,18 @@ if [ -n "$POSTGRES_HOST" ]; then
   echo "PostgreSQL disponible."
 fi
 
-python manage.py migrate --noinput
+# Solo el servicio que tenga RUN_MIGRATIONS=1 (web, ver docker-compose.yml)
+# migra: si web/worker/beat migran a la vez sobre una base vacía, chocan
+# creando las mismas tablas en Postgres (primer arranque de un clon nuevo)
+# y el worker se cae con MigrationSchemaMissing.
+if [ "${RUN_MIGRATIONS:-0}" = "1" ]; then
+  python manage.py migrate --noinput
 
-if [ "$DJANGO_SETTINGS_MODULE" = "config.settings.prod" ]; then
-  python manage.py collectstatic --noinput
+  # Estáticos del admin de Django (whitenoise) — solo sin DEBUG; en dev los
+  # sirve runserver/uvicorn directo desde cada app.
+  if [ "$DJANGO_SETTINGS_MODULE" = "config.settings.prod" ] || [ "$DJANGO_SETTINGS_MODULE" = "config.settings.local" ]; then
+    python manage.py collectstatic --noinput
+  fi
 fi
 
 exec "$@"

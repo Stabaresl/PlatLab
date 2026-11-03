@@ -1,0 +1,15 @@
+# Solo para desarrollar el backend FUERA de Docker (ver README, "Correr sin
+# Docker"): publica Postgres y Redis en localhost para que Django/Celery
+# nativos puedan conectarse. Copiar como docker-compose.override.yml
+# (ignorado por git) — compose lo aplica automáticamente.
+#
+# Si ya tienes un PostgreSQL nativo usando el 5432 (frecuente en Windows),
+# cambia el puerto de la izquierda (ej. "127.0.0.1:5433:5432") y usa
+# POSTGRES_PORT=5433 en tu .env local.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"

@@ -41,6 +41,14 @@ services:
       DJANGO_SETTINGS_MODULE: config.settings.prod
     volumes: !reset []
 
+  worker-entornos:
+    build:
+      args:
+        REQUIREMENTS_FILE: requirements/prod.txt
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    volumes: !reset []
+
   beat:
     build:
       args:

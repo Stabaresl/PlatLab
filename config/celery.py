@@ -28,6 +28,18 @@ app.conf.update(
     task_reject_on_worker_lost=True,
 )
 
+# Aprovisionar un entorno real es casi todo espera de I/O (Docker crea el
+# contenedor + poll del HEALTHCHECK). En el worker general (prefork, 4
+# procesos) se aprovisionaban de a 4: con 100 estudiantes arrancando a la
+# vez (una sala), p95 de 148 s hasta tener terminal (loadtests/). Va a su
+# propia cola, atendida por `worker-entornos` (pool de hilos, ver
+# docker-compose.yml) que puede esperar decenas de contenedores en paralelo.
+app.conf.task_routes = {
+    'modules.lab_environments.infrastructure.tasks.aprovisionar_entorno_task': {
+        'queue': 'entornos'
+    },
+}
+
 app.autodiscover_tasks()
 # `autodiscover_tasks()` sin argumentos solo busca `<app>.tasks` en la
 # raíz de cada app instalada — nuestros módulos de tareas viven en

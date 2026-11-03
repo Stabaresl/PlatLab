@@ -22,7 +22,13 @@ RUN chown -R platlab:platlab /app
 # Le permite a lab_environments saber cuándo el objetivo ya está
 # escuchando (evita la carrera "el estudiante escribe un comando antes de
 # que la app interna termine de levantar" — ver docker_provider.py).
-HEALTHCHECK --interval=1s --timeout=2s --retries=5 --start-period=5s \
+#
+# --start-interval=1s chequea cada segundo SOLO durante el arranque (para
+# detectar "listo" rápido); después, cada 30 s. Antes era --interval=1s
+# permanente: un `curl` por segundo en cada contenedor, ~5% de CPU por
+# contenedor inactivo — con 100 estudiantes, 4.4 núcleos ocupados sin que
+# nadie escribiera un comando (medido en loadtests/estres_entornos.py).
+HEALTHCHECK --interval=30s --timeout=2s --retries=3 --start-period=15s --start-interval=1s \
     CMD curl -sf http://127.0.0.1:5000/login.php || exit 1
 
 USER platlab
