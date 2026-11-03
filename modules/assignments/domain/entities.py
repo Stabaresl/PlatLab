@@ -4,6 +4,7 @@ from datetime import datetime
 
 from modules.assignments.domain.value_objects import EstadoAsignacion
 from modules.shared.domain.base_entity import BaseEntity
+from modules.shared.domain.tiempo import ahora_utc
 
 
 @dataclass(eq=False)
@@ -22,7 +23,7 @@ class Asignacion(BaseEntity):
     laboratorio_id: uuid.UUID
     instructor_id: uuid.UUID | None = None
     estado: EstadoAsignacion = EstadoAsignacion.PENDIENTE
-    fecha_invitacion: datetime = field(default_factory=datetime.utcnow)
+    fecha_invitacion: datetime = field(default_factory=ahora_utc)
     fecha_vencimiento: datetime | None = None
     fecha_respuesta: datetime | None = None
     id: uuid.UUID = field(default_factory=uuid.uuid4)
@@ -40,11 +41,11 @@ class Asignacion(BaseEntity):
         estado al evaluar vencimientos.
         """
         self.estado = EstadoAsignacion.ACTIVA
-        self.fecha_respuesta = datetime.utcnow()
+        self.fecha_respuesta = ahora_utc()
 
     def rechazar(self) -> None:
         self.estado = EstadoAsignacion.RECHAZADA
-        self.fecha_respuesta = datetime.utcnow()
+        self.fecha_respuesta = ahora_utc()
 
     def vencer(self) -> None:
         """RF-32, UC-07: revoca el acceso al llegar la `VentanaVencimiento`."""

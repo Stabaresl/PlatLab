@@ -13,6 +13,7 @@ from modules.laboratories.domain.value_objects import (
 )
 from modules.shared.domain.base_entity import BaseEntity
 from modules.shared.domain.exceptions import ValidationError
+from modules.shared.domain.tiempo import ahora_utc
 
 _OPCIONES_REQUERIDAS_MSG = "Las preguntas de opción múltiple requieren al menos dos opciones."
 _OPCIONES_NO_PERMITIDAS_MSG = "Las preguntas abiertas no llevan opciones."
@@ -52,8 +53,8 @@ class Laboratorio(BaseEntity):
     # decida exponerlo). Sin efecto en un `predeterminado`, que ya es
     # público apenas se publica.
     visible_en_catalogo: bool = False
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=ahora_utc)
+    updated_at: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -127,7 +128,7 @@ class DockerfileSeccion(BaseEntity):
     archivo_url: str
     nombre_archivo: str
     tamano_kb: int
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):

@@ -4,6 +4,7 @@ from datetime import datetime
 
 from modules.notifications.domain.value_objects import CanalNotificacion, TipoNotificacion
 from modules.shared.domain.base_entity import BaseEntity
+from modules.shared.domain.tiempo import ahora_utc
 
 
 @dataclass(eq=False)
@@ -22,7 +23,7 @@ class Notificacion(BaseEntity):
     leida: bool = False
     entidad_tipo: str | None = None
     entidad_id: uuid.UUID | None = None
-    fecha_creacion: datetime = field(default_factory=datetime.utcnow)
+    fecha_creacion: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):

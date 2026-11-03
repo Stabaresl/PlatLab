@@ -4,6 +4,7 @@ from datetime import datetime
 
 from modules.lab_environments.domain.value_objects import EstadoEntorno
 from modules.shared.domain.base_entity import BaseEntity
+from modules.shared.domain.tiempo import ahora_utc
 
 
 @dataclass(eq=False)
@@ -22,8 +23,8 @@ class EntornoActivo(BaseEntity):
     estudiante_id: uuid.UUID
     container_id: str
     estado: EstadoEntorno = EstadoEntorno.INICIANDO
-    fecha_inicio: datetime = field(default_factory=datetime.utcnow)
-    ultima_actividad: datetime = field(default_factory=datetime.utcnow)
+    fecha_inicio: datetime = field(default_factory=ahora_utc)
+    ultima_actividad: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -42,7 +43,7 @@ class EntornoActivo(BaseEntity):
         self.estado = EstadoEntorno.ERROR
 
     def tocar_actividad(self) -> None:
-        self.ultima_actividad = datetime.utcnow()
+        self.ultima_actividad = ahora_utc()
 
     def esta_activo(self) -> bool:
         return self.estado in (EstadoEntorno.INICIANDO, EstadoEntorno.ACTIVO)

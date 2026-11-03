@@ -4,6 +4,7 @@ from datetime import datetime
 
 from modules.progress.domain.value_objects import EstadoProgresoSeccion
 from modules.shared.domain.base_entity import BaseEntity
+from modules.shared.domain.tiempo import ahora_utc
 
 
 @dataclass(eq=False)
@@ -24,8 +25,8 @@ class Progreso(BaseEntity):
 
     asignacion_id: uuid.UUID
     estudiante_id: uuid.UUID
-    fecha_inicio: datetime = field(default_factory=datetime.utcnow)
-    ultima_actividad: datetime = field(default_factory=datetime.utcnow)
+    fecha_inicio: datetime = field(default_factory=ahora_utc)
+    ultima_actividad: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -61,7 +62,7 @@ class ProgresoSeccion(BaseEntity):
 
     def completar(self) -> None:
         self.estado = EstadoProgresoSeccion.COMPLETADA
-        self.fecha_completado = datetime.utcnow()
+        self.fecha_completado = ahora_utc()
 
 
 @dataclass(eq=False)
@@ -74,7 +75,7 @@ class IntentoFlag(BaseEntity):
     progreso_id: uuid.UUID
     seccion_id: uuid.UUID
     resultado: bool
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -96,7 +97,7 @@ class ResultadoExamen(BaseEntity):
     examen_id: uuid.UUID
     respuestas: dict
     puntaje: float
-    fecha: datetime = field(default_factory=datetime.utcnow)
+    fecha: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -112,7 +113,7 @@ class HistorialCompletitud(BaseEntity):
 
     progreso_id: uuid.UUID
     numero_intento: int
-    fecha_completado: datetime = field(default_factory=datetime.utcnow)
+    fecha_completado: datetime = field(default_factory=ahora_utc)
     puntaje: float | None = None
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 

@@ -4,6 +4,7 @@ from datetime import datetime
 
 from modules.roadmap.domain.exceptions import PosicionInvalidaError
 from modules.shared.domain.base_entity import BaseEntity
+from modules.shared.domain.tiempo import ahora_utc
 
 
 @dataclass(eq=False)
@@ -17,7 +18,7 @@ class CategoriaRoadmap(BaseEntity):
 
     nombre: str
     orden: int = 0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -41,7 +42,7 @@ class NodoRoadmap(BaseEntity):
     categoria_id: uuid.UUID
     laboratorio_id: uuid.UUID
     posicion: int
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=ahora_utc)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):

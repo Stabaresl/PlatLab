@@ -5,6 +5,7 @@ from datetime import datetime
 from modules.reports.domain.exceptions import DescriptionTooShortError, ReporteYaResueltoError
 from modules.reports.domain.value_objects import EstadoReporte
 from modules.shared.domain.base_entity import BaseEntity
+from modules.shared.domain.tiempo import ahora_utc
 
 _DESCRIPCION_MINIMA = 10
 _DESCRIPCION_CORTA_MSG = f"La descripción debe tener al menos {_DESCRIPCION_MINIMA} caracteres."
@@ -25,7 +26,7 @@ class Reporte(BaseEntity):
     descripcion: str
     seccion_id: uuid.UUID | None = None
     estado: EstadoReporte = EstadoReporte.ABIERTO
-    fecha_creacion: datetime = field(default_factory=datetime.utcnow)
+    fecha_creacion: datetime = field(default_factory=ahora_utc)
     fecha_resolucion: datetime | None = None
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
@@ -43,13 +44,13 @@ class Reporte(BaseEntity):
         if self.estado in _ESTADOS_FINALES:
             raise ReporteYaResueltoError(_YA_RESUELTO_MSG)
         self.estado = EstadoReporte.RESUELTO
-        self.fecha_resolucion = datetime.utcnow()
+        self.fecha_resolucion = ahora_utc()
 
     def marcar_no_reproducible(self) -> None:
         if self.estado in _ESTADOS_FINALES:
             raise ReporteYaResueltoError(_YA_RESUELTO_MSG)
         self.estado = EstadoReporte.NO_REPRODUCIBLE
-        self.fecha_resolucion = datetime.utcnow()
+        self.fecha_resolucion = ahora_utc()
 
 
 @dataclass(eq=False)
