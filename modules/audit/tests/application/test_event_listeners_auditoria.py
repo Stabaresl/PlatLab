@@ -13,7 +13,10 @@ from modules.laboratories.domain.events import (
 )
 from modules.reports.domain.events import ReportSubmitted
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
-from modules.users.domain.events import InstructorVerificationRequested, InstructorVerificationResolved
+from modules.users.domain.events import (
+    InstructorVerificationRequested,
+    InstructorVerificationResolved,
+)
 
 # `AuditConfig.ready()` ya suscribió los listeners reales al
 # `EventDispatcher` (singleton) al arrancar Django para esta sesión de
@@ -155,16 +158,23 @@ def test_instructor_verification_requested_registra_auditoria():
 
 
 @pytest.mark.django_db
-def test_instructor_verification_resolved_registra_sin_actor_humano():
+def test_instructor_verification_resolved_registra_al_admin_como_actor():
     solicitud_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    admin_id = uuid.uuid4()
 
     EventDispatcher().dispatch(
         InstructorVerificationResolved(
-            solicitud_id=solicitud_id, user_id=uuid.uuid4(), aprobada=True, motivo_rechazo=None
+            solicitud_id=solicitud_id,
+            user_id=user_id,
+            aprobada=True,
+            motivo_rechazo=None,
+            admin_id=admin_id,
         )
     )
 
     registros = AuditoriaRepository().find_todos(accion="instructor_verification_approved")
     assert len(registros) == 1
     assert registros[0].entidad_id == solicitud_id
-    assert registros[0].actor_id is None
+    assert registros[0].actor_id == admin_id
+    assert registros[0].metadata["user_id"] == str(user_id)

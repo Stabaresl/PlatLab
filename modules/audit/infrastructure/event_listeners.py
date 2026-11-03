@@ -6,13 +6,13 @@ from modules.assignments.domain.events import (
 )
 from modules.audit.domain.entities import RegistroAuditoria
 from modules.audit.infrastructure.repositories import AuditoriaRepository
-from modules.gamification.domain.events import LogroDesbloqueadoEvent
 from modules.authentication.domain.events import (
     OAuthAccountLinked,
     PasswordResetRequested,
     UserLoggedIn,
     UserRegistered,
 )
+from modules.gamification.domain.events import LogroDesbloqueadoEvent
 from modules.laboratories.domain.events import (
     LaboratoryApproved,
     LaboratoryCatalogVisibilityChanged,
@@ -25,18 +25,27 @@ from modules.progress.domain.events import ExamGraded, FlagValidated, LabComplet
 from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.reports.domain.events import ReportResolved, ReportSubmitted
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
-from modules.users.domain.events import InstructorVerificationRequested, InstructorVerificationResolved
+from modules.users.domain.events import (
+    InstructorVerificationRequested,
+    InstructorVerificationResolved,
+    RolUsuarioCambiado,
+    UsuarioDeshabilitado,
+    UsuarioHabilitado,
+)
 
 _repo = AuditoriaRepository()
 
 
-def _registrar(actor_id, accion: str, entidad_tipo: str | None, entidad_id) -> None:
+def _registrar(
+    actor_id, accion: str, entidad_tipo: str | None, entidad_id, metadata: dict | None = None
+) -> None:
     _repo.add(
         RegistroAuditoria(
             actor_id=actor_id,
             accion=accion,
             entidad_tipo=entidad_tipo,
             entidad_id=entidad_id,
+            metadata=metadata,
         )
     )
 
@@ -117,13 +126,40 @@ def _on_instructor_verification_requested(event: InstructorVerificationRequested
 
 
 def _on_instructor_verification_resolved(event: InstructorVerificationResolved) -> None:
-    # Verificación automática (OpenAlex vía Celery) — no la ejecuta una
-    # persona, por eso `actor_id=None` (a diferencia de un admin
-    # aprobando/rechazando un laboratorio, que sí es una decisión humana).
+    # La decide un administrador (OpenAlex solo aporta evidencia) — él es el
+    # actor; el estudiante afectado queda en metadata.
     accion = (
         "instructor_verification_approved" if event.aprobada else "instructor_verification_rejected"
     )
-    _registrar(None, accion, "solicitud_instructor", event.solicitud_id)
+    _registrar(
+        event.admin_id,
+        accion,
+        "solicitud_instructor",
+        event.solicitud_id,
+        metadata={"user_id": str(event.user_id), "motivo": event.motivo_rechazo},
+    )
+
+
+# --- Users (administración: HA-01 exige auditar cada acción) ----------------
+# El actor es el admin que tomó la decisión, la entidad es el usuario afectado.
+
+
+def _on_usuario_deshabilitado(event: UsuarioDeshabilitado) -> None:
+    _registrar(event.admin_id, "user_disabled", "user", event.user_id)
+
+
+def _on_usuario_habilitado(event: UsuarioHabilitado) -> None:
+    _registrar(event.admin_id, "user_enabled", "user", event.user_id)
+
+
+def _on_rol_usuario_cambiado(event: RolUsuarioCambiado) -> None:
+    _registrar(
+        event.admin_id,
+        "user_role_changed",
+        "user",
+        event.user_id,
+        metadata={"rol_anterior": event.rol_anterior, "rol_nuevo": event.rol_nuevo},
+    )
 
 
 # --- Progress -------------------------------------------------------------
@@ -200,6 +236,9 @@ def registrar_listeners(dispatcher: EventDispatcher) -> None:
 
     dispatcher.subscribe(InstructorVerificationRequested, _on_instructor_verification_requested)
     dispatcher.subscribe(InstructorVerificationResolved, _on_instructor_verification_resolved)
+    dispatcher.subscribe(UsuarioDeshabilitado, _on_usuario_deshabilitado)
+    dispatcher.subscribe(UsuarioHabilitado, _on_usuario_habilitado)
+    dispatcher.subscribe(RolUsuarioCambiado, _on_rol_usuario_cambiado)
 
     dispatcher.subscribe(FlagValidated, _on_flag_validated)
     dispatcher.subscribe(SectionCompleted, _on_section_completed)

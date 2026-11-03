@@ -63,6 +63,7 @@ def _refresh_uc():
         event_dispatcher=EventDispatcher(),
         jwt_service=JWTService(),
         refresh_token_store=RefreshTokenStore(),
+        user_repository=UserRepository(),
     )
 
 

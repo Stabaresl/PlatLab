@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
-
 IMAGENES_PRACTICA_PERMITIDAS: frozenset[str] = frozenset(
     {
         "platlab-target-sqli:latest",

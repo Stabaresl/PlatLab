@@ -1,6 +1,7 @@
 from modules.laboratories.application.dtos import CrearExamenDTO, ExamenResultDTO
 from modules.laboratories.domain.entities import Examen
 from modules.laboratories.domain.repositories import ILaboratorioRepository
+from modules.laboratories.domain.services import validar_contenido_editable
 from modules.laboratories.domain.value_objects import TipoLaboratorio
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
@@ -40,6 +41,8 @@ class CrearExamenUseCase(BaseUseCase[CrearExamenDTO, ExamenResultDTO]):
                 raise ForbiddenError(_SIN_PERMISO_MSG)
         else:
             raise ForbiddenError(_SIN_PERMISO_MSG)
+
+        validar_contenido_editable(laboratorio)
 
         if self._laboratorio_repository.get_examen_by_laboratorio(input_dto.laboratorio_id):
             raise ConflictError(_EXAMEN_YA_EXISTE_MSG)

@@ -10,5 +10,6 @@ def registro_to_entity(model: RegistroAuditoriaModel) -> RegistroAuditoria:
         entidad_tipo=model.entidad_tipo,
         entidad_id=model.entidad_id,
         ip=model.ip,
+        metadata=model.metadata,
         timestamp=model.timestamp,
     )

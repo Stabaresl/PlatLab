@@ -6,6 +6,7 @@ from modules.laboratories.application.dtos import CrearSeccionDTO, EditarSeccion
 from modules.laboratories.application.use_cases.crear_seccion import CrearSeccionUseCase
 from modules.laboratories.application.use_cases.editar_seccion import EditarSeccionUseCase
 from modules.laboratories.domain.entities import Laboratorio, Seccion
+from modules.laboratories.domain.exceptions import ImagenPracticaNoPermitidaError
 from modules.laboratories.domain.value_objects import (
     ComandoSimulado,
     EntornoPractica,
@@ -14,7 +15,6 @@ from modules.laboratories.domain.value_objects import (
     PasoGuia,
     TipoLaboratorio,
 )
-from modules.laboratories.domain.exceptions import ImagenPracticaNoPermitidaError
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.shared.domain.exceptions import ConflictError, ForbiddenError, NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher

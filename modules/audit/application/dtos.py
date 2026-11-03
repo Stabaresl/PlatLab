@@ -22,3 +22,4 @@ class RegistroAuditoriaItemDTO:
     entidad_tipo: str | None
     entidad_id: uuid.UUID | None
     timestamp: datetime
+    metadata: dict | None = None

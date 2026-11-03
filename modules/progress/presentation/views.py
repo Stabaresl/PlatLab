@@ -29,7 +29,7 @@ from modules.progress.application.use_cases.completar_seccion_teorica import (
 from modules.progress.application.use_cases.enviar_examen import EnviarExamenUseCase
 from modules.progress.application.use_cases.validar_flag import ValidarFlagUseCase
 from modules.progress.infrastructure.asignacion_estado_provider import AsignacionEstadoProvider
-from modules.progress.infrastructure.rate_limiter import FlagRateLimiter
+from modules.progress.infrastructure.rate_limiter import ExamenRateLimiter, FlagRateLimiter
 from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.progress.presentation.serializers import (
     EnviarExamenRequestSerializer,
@@ -294,6 +294,9 @@ class ExamSubmissionView(APIView):
     def post(self, request, assignment_id):
         serializer = EnviarExamenRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        ExamenRateLimiter().verificar(
+            estudiante_id=request.user.id, asignacion_id=_parsear_uuid(assignment_id)
+        )
 
         resultado = EnviarExamenUseCase(
             unit_of_work=BaseUnitOfWork(),

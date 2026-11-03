@@ -1,7 +1,5 @@
 import uuid
 
-from django.contrib.auth.hashers import check_password
-
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.progress.application.dtos import ValidarFlagDTO, ValidarFlagResultDTO
 from modules.progress.domain.entities import HistorialCompletitud, IntentoFlag
@@ -14,6 +12,7 @@ from modules.progress.domain.value_objects import ContadorFallos, EstadoProgreso
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
 from modules.shared.domain.exceptions import NotFoundError
+from modules.shared.infrastructure.secret_hasher import verificar_secreto
 
 _PROGRESO_NO_ENCONTRADO_MSG = "Progreso no encontrado."
 _SECCION_NO_ENCONTRADA_MSG = "Sección no encontrada."
@@ -72,11 +71,12 @@ class ValidarFlagUseCase(BaseUseCase[ValidarFlagDTO, ValidarFlagResultDTO]):
 
         self._progreso = progreso
         self._flag = flag
+        self._ya_completada = progreso_seccion.estado == EstadoProgresoSeccion.COMPLETADA
 
     def _execute_domain_logic(
         self, input_dto: ValidarFlagDTO
     ) -> tuple[ValidarFlagResultDTO, list[DomainEvent]]:
-        correcta = check_password(input_dto.valor, self._flag.hash)
+        correcta = verificar_secreto(input_dto.valor, self._flag.hash)
         fallos_previos = self._progreso_repository.contar_fallos(
             self._progreso.id, input_dto.seccion_id
         )
@@ -102,7 +102,11 @@ class ValidarFlagUseCase(BaseUseCase[ValidarFlagDTO, ValidarFlagResultDTO]):
         ]
 
         seccion_desbloqueada: uuid.UUID | None = None
-        if correcta:
+        # Idempotente (mismo criterio que CompletarSeccionTeoricaUseCase):
+        # reenviar la flag correcta de una sección YA completada no la vuelve
+        # a completar. Antes re-emitía SectionCompleted/LabCompleted y, en un
+        # lab sin examen, registraba un HistorialCompletitud duplicado.
+        if correcta and not self._ya_completada:
             secciones = sorted(
                 self._progreso_repository.get_secciones(self._progreso.id),
                 key=lambda s: self._orden_de(s.seccion_id),

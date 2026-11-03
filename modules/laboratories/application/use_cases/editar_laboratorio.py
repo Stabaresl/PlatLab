@@ -1,6 +1,7 @@
 from modules.laboratories.application.dtos import EditarLaboratorioDTO, LaboratorioResultDTO
 from modules.laboratories.domain.exceptions import CannotEditPredeterminadoError
 from modules.laboratories.domain.repositories import ILaboratorioRepository
+from modules.laboratories.domain.services import validar_contenido_editable
 from modules.laboratories.domain.value_objects import NivelDificultad, TipoLaboratorio
 from modules.laboratories.infrastructure.content_sanitizer import sanitizar_contenido_html
 from modules.shared.application.base_use_case import BaseUseCase
@@ -45,6 +46,8 @@ class EditarLaboratorioUseCase(BaseUseCase[EditarLaboratorioDTO, LaboratorioResu
                 raise ForbiddenError(_SIN_PERMISO_MSG)
         else:
             raise ForbiddenError(_SIN_PERMISO_MSG)
+
+        validar_contenido_editable(laboratorio)
 
         if input_dto.nivel_dificultad is not None:
             try:

@@ -27,3 +27,24 @@ class FlagRateLimiter:
             self._redis.raw.expire(clave, _VENTANA_SEGUNDOS)
         if conteo > _LIMITE_INTENTOS:
             raise RateLimitedError(_MENSAJE)
+
+
+class ExamenRateLimiter:
+    """
+    Envíos de examen: 5 por minuto por estudiante+asignación. El examen es
+    reintentable por diseño, pero sin límite una opción múltiple se
+    resolvía por fuerza bruta con un script (cada envío devuelve el puntaje).
+    """
+
+    _LIMITE = 5
+
+    def __init__(self, redis_client: RedisClient | None = None):
+        self._redis = redis_client or RedisClient()
+
+    def verificar(self, estudiante_id: uuid.UUID, asignacion_id: uuid.UUID) -> None:
+        clave = f"examen_rate:{estudiante_id}:{asignacion_id}"
+        conteo = self._redis.raw.incr(clave)
+        if conteo == 1:
+            self._redis.raw.expire(clave, _VENTANA_SEGUNDOS)
+        if conteo > self._LIMITE:
+            raise RateLimitedError("Demasiados envíos del examen. Espera un minuto antes de reintentar.")

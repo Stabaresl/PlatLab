@@ -14,6 +14,7 @@ class RegistroAuditoriaModel(models.Model):
     entidad_tipo = models.CharField(max_length=50, null=True, blank=True)
     entidad_id = models.UUIDField(null=True, blank=True)
     ip = models.GenericIPAddressField(null=True, blank=True)
+    metadata = models.JSONField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:

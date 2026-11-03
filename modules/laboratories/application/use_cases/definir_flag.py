@@ -1,8 +1,7 @@
-from django.contrib.auth.hashers import make_password
-
 from modules.laboratories.application.dtos import DefinirFlagDTO, DefinirFlagResultDTO
 from modules.laboratories.domain.entities import Flag
 from modules.laboratories.domain.repositories import ILaboratorioRepository
+from modules.laboratories.domain.services import validar_contenido_editable
 from modules.laboratories.domain.value_objects import AyudaProgresiva, TipoLaboratorio
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
@@ -11,6 +10,7 @@ from modules.shared.domain.exceptions import (
     ForbiddenError,
     NotFoundError,
 )
+from modules.shared.infrastructure.secret_hasher import hashear_secreto
 
 _LAB_NO_ENCONTRADO_MSG = "Laboratorio no encontrado."
 _SECCION_NO_ENCONTRADA_MSG = "Sección no encontrada."
@@ -56,6 +56,8 @@ class DefinirFlagUseCase(BaseUseCase[DefinirFlagDTO, DefinirFlagResultDTO]):
         ):
             raise ForbiddenError(_SIN_PERMISO_MSG)
 
+        validar_contenido_editable(laboratorio)
+
         secciones = self._laboratorio_repository.get_secciones(input_dto.laboratorio_id)
         seccion = next((s for s in secciones if s.id == input_dto.seccion_id), None)
         if seccion is None:
@@ -68,7 +70,7 @@ class DefinirFlagUseCase(BaseUseCase[DefinirFlagDTO, DefinirFlagResultDTO]):
     ) -> tuple[DefinirFlagResultDTO, list[DomainEvent]]:
         flag = Flag(
             seccion_id=input_dto.seccion_id,
-            hash=make_password(input_dto.valor),
+            hash=hashear_secreto(input_dto.valor),
             ayuda=AyudaProgresiva(pista=input_dto.pista, paso_a_paso=input_dto.paso_a_paso),
         )
         guardada = self._laboratorio_repository.save_flag(flag)

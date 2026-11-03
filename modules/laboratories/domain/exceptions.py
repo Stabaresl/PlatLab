@@ -33,3 +33,14 @@ class ImagenPracticaNoPermitidaError(BusinessRuleViolationError):
     comprometida no puede apuntar una sección a una imagen arbitraria —
     solo a las que ya están en `IMAGENES_PRACTICA_PERMITIDAS`.
     """
+
+
+class LaboratorioNoEditableError(BusinessRuleViolationError):
+    """
+    Un `personalizado` que ya está `en_revision` o `publicado` no admite
+    cambios de contenido: si se pudiera editar después de aprobado, la
+    revisión del admin no garantizaría nada (se aprueba una versión y se
+    publica otra) y además se rompe el progreso de los estudiantes que ya
+    lo están resolviendo (secciones nuevas sin `ProgresoSeccion`, flags
+    cambiadas a mitad de camino).
+    """

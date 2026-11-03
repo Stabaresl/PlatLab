@@ -5,6 +5,10 @@ from modules.authentication.infrastructure.jwt_service import JWTService
 from modules.authentication.infrastructure.refresh_token_store import RefreshTokenStore
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
+from modules.shared.domain.exceptions import UnauthenticatedError
+from modules.users.domain.repositories import IUserRepository
+
+_CUENTA_NO_DISPONIBLE_MSG = "Tu cuenta ya no está disponible. Inicia sesión de nuevo."
 
 
 class RefreshTokenUseCase(BaseUseCase[RefreshRequestDTO, TokenPairDTO]):
@@ -13,6 +17,14 @@ class RefreshTokenUseCase(BaseUseCase[RefreshRequestDTO, TokenPairDTO]):
     nuevo. Si el refresh recibido ya no es el vigente de su familia (fue
     rotado antes — posible robo/replay), `RefreshTokenStore` detecta el
     reuso y revoca toda la sesión (ver seguridad.md §2).
+
+    Consulta el usuario en la base en cada rotación (como mucho cada 15
+    min, la vida del access token). Antes copiaba el `rol` del refresh
+    viejo sin mirar la base, con dos consecuencias:
+    - un usuario deshabilitado por un admin seguía renovando su sesión
+      indefinidamente (nunca quedaba afuera);
+    - un cambio de rol (admin, o el ascenso automático a instructor vía
+      OpenAlex) no se reflejaba hasta cerrar sesión y volver a entrar.
     """
 
     def __init__(
@@ -21,11 +33,14 @@ class RefreshTokenUseCase(BaseUseCase[RefreshRequestDTO, TokenPairDTO]):
         event_dispatcher,
         jwt_service: JWTService,
         refresh_token_store: RefreshTokenStore,
+        user_repository: IUserRepository,
     ):
         super().__init__(unit_of_work, event_dispatcher)
         self._jwt_service = jwt_service
         self._refresh_token_store = refresh_token_store
+        self._user_repository = user_repository
         self._validated_claims: dict | None = None
+        self._rol_actual: str | None = None
 
     def _validate(self, input_dto: RefreshRequestDTO) -> None:
         # Verifica firma y expiración del token (lanza UnauthenticatedError
@@ -34,14 +49,22 @@ class RefreshTokenUseCase(BaseUseCase[RefreshRequestDTO, TokenPairDTO]):
         # muta el estado en Redis (rotación), no es una simple lectura.
         self._validated_claims = self._jwt_service.decode_refresh_token(input_dto.refresh)
 
+        user = self._user_repository.get_by_id(uuid.UUID(self._validated_claims["sub"]))
+        if user is None or not user.is_active:
+            # Se corta la sesión entera, no solo este intento.
+            family_id = self._refresh_token_store.get_family_id(self._validated_claims["jti"])
+            if family_id:
+                self._refresh_token_store.revoke_family(family_id)
+            raise UnauthenticatedError(_CUENTA_NO_DISPONIBLE_MSG)
+        self._rol_actual = user.rol.value
+
     def _execute_domain_logic(
         self, input_dto: RefreshRequestDTO
     ) -> tuple[TokenPairDTO, list[DomainEvent]]:
         old_jti = self._validated_claims["jti"]
         user_id = uuid.UUID(self._validated_claims["sub"])
-        rol = self._validated_claims["rol"]
 
-        new_tokens = self._jwt_service.generate_token_pair(user_id=user_id, rol=rol)
+        new_tokens = self._jwt_service.generate_token_pair(user_id=user_id, rol=self._rol_actual)
         new_claims = self._jwt_service.decode_refresh_token(new_tokens.refresh)
 
         # Puede lanzar TokenReuseDetectedError o InvalidCredentialsError —

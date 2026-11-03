@@ -10,10 +10,11 @@ from modules.authentication.domain.exceptions import (
 )
 from modules.authentication.infrastructure.jwt_service import JWTService
 from modules.authentication.infrastructure.refresh_token_store import RefreshTokenStore
+from modules.shared.domain.exceptions import UnauthenticatedError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
 from modules.users.domain.entities import User
-from modules.users.domain.value_objects import Email
+from modules.users.domain.value_objects import Email, Rol
 from modules.users.infrastructure.repositories import UserRepository
 
 
@@ -41,7 +42,42 @@ def _build_refresh_use_case():
         event_dispatcher=EventDispatcher(),
         jwt_service=JWTService(),
         refresh_token_store=RefreshTokenStore(),
+        user_repository=UserRepository(),
     )
+
+
+@pytest.mark.django_db
+def test_refresh_de_usuario_deshabilitado_falla_y_revoca_la_sesion():
+    """Regresión: un usuario deshabilitado seguía renovando su sesión indefinidamente."""
+    tokens = _login("refresh_disabled@uni.edu")
+    repo = UserRepository()
+    user = repo.get_by_email("refresh_disabled@uni.edu")
+    user.is_active = False
+    repo.update(user)
+
+    with pytest.raises(UnauthenticatedError):
+        _build_refresh_use_case().execute(RefreshRequestDTO(refresh=tokens.refresh))
+
+    # aunque lo reactiven, ese refresh ya quedó revocado
+    user.is_active = True
+    repo.update(user)
+    with pytest.raises(InvalidCredentialsError):
+        _build_refresh_use_case().execute(RefreshRequestDTO(refresh=tokens.refresh))
+
+
+@pytest.mark.django_db
+def test_refresh_refleja_cambio_de_rol_sin_volver_a_iniciar_sesion():
+    """Regresión: el rol se copiaba del token viejo (ej. ascenso a instructor no se aplicaba)."""
+    tokens = _login("refresh_rol@uni.edu")
+    repo = UserRepository()
+    user = repo.get_by_email("refresh_rol@uni.edu")
+    user.rol = Rol.INSTRUCTOR
+    repo.update(user)
+
+    nuevos = _build_refresh_use_case().execute(RefreshRequestDTO(refresh=tokens.refresh))
+
+    assert nuevos.rol == "instructor"
+    assert JWTService().decode_access_token(nuevos.access)["rol"] == "instructor"
 
 
 @pytest.mark.django_db

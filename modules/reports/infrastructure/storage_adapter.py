@@ -2,6 +2,7 @@ import uuid
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.utils.text import get_valid_filename
 
 from modules.shared.domain.exceptions import ValidationError
 
@@ -52,6 +53,7 @@ def guardar_adjunto(nombre_archivo: str, contenido: bytes) -> tuple[str, int]:
 
     _detectar_mime(contenido)
 
-    ruta = f"reports/adjuntos/{uuid.uuid4()}_{nombre_archivo}"
+    # get_valid_filename: sin espacios/acentos/separadores de ruta del cliente.
+    ruta = f"reports/adjuntos/{uuid.uuid4().hex}_{get_valid_filename(nombre_archivo)[:80]}"
     archivo_guardado = default_storage.save(ruta, ContentFile(contenido))
     return default_storage.url(archivo_guardado), tamano_kb

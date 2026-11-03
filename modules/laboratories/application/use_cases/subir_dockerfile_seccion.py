@@ -1,6 +1,7 @@
 from modules.laboratories.application.dtos import DockerfileResultDTO, SubirDockerfileDTO
 from modules.laboratories.domain.entities import DockerfileSeccion
 from modules.laboratories.domain.repositories import ILaboratorioRepository
+from modules.laboratories.domain.services import validar_contenido_editable
 from modules.laboratories.domain.value_objects import TipoLaboratorio
 from modules.laboratories.infrastructure.dockerfile_storage import guardar_dockerfile
 from modules.shared.application.base_use_case import BaseUseCase
@@ -42,6 +43,8 @@ class SubirDockerfileSeccionUseCase(BaseUseCase[SubirDockerfileDTO, DockerfileRe
                 raise ForbiddenError(_SIN_PERMISO_MSG)
         else:
             raise ForbiddenError(_SIN_PERMISO_MSG)
+
+        validar_contenido_editable(laboratorio)
 
         secciones = self._laboratorio_repository.get_secciones(input_dto.laboratorio_id)
         if not any(s.id == input_dto.seccion_id for s in secciones):

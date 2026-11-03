@@ -1,8 +1,7 @@
-from django.contrib.auth.hashers import check_password
-
 from modules.laboratories.application.dtos import VerificarFlagPreviewDTO
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.shared.domain.exceptions import ForbiddenError, NotFoundError
+from modules.shared.infrastructure.secret_hasher import verificar_secreto
 
 _LAB_NO_ENCONTRADO_MSG = "Laboratorio no encontrado."
 _SECCION_NO_ENCONTRADA_MSG = "Sección no encontrada."
@@ -43,4 +42,4 @@ class VerificarFlagPreviewQuery:
         if flag is None:
             raise NotFoundError(_SIN_FLAG_MSG)
 
-        return check_password(input_dto.valor, flag.hash)
+        return verificar_secreto(input_dto.valor, flag.hash)

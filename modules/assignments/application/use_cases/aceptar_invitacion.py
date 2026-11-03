@@ -1,7 +1,7 @@
 from modules.assignments.application.dtos import AceptarInvitacionDTO, AsignacionResultDTO
 from modules.assignments.domain.events import AssignmentAccepted
 from modules.assignments.domain.repositories import IAsignacionRepository
-from modules.assignments.domain.value_objects import EstadoAsignacion
+from modules.assignments.domain.value_objects import EstadoAsignacion, VentanaVencimiento
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.progress.domain.entities import Progreso, ProgresoSeccion
 from modules.progress.domain.repositories import IProgresoRepository
@@ -12,6 +12,7 @@ from modules.shared.domain.exceptions import BusinessRuleViolationError, NotFoun
 
 _ASIGNACION_NO_ENCONTRADA_MSG = "Invitación no encontrada."
 _YA_RESPONDIDA_MSG = "Esta invitación ya fue respondida."
+_VENCIDA_MSG = "Esta invitación ya venció. Pídele al instructor que te invite de nuevo."
 
 
 class AceptarInvitacionUseCase(BaseUseCase[AceptarInvitacionDTO, AsignacionResultDTO]):
@@ -43,6 +44,12 @@ class AceptarInvitacionUseCase(BaseUseCase[AceptarInvitacionDTO, AsignacionResul
             raise NotFoundError(_ASIGNACION_NO_ENCONTRADA_MSG)
         if asignacion.estado != EstadoAsignacion.PENDIENTE:
             raise BusinessRuleViolationError(_YA_RESPONDIDA_MSG)
+        # Una invitación cuyo plazo ya pasó no se puede aceptar (antes quedaba
+        # activa con fecha vencida hasta la siguiente pasada del job).
+        if asignacion.fecha_vencimiento is not None and VentanaVencimiento(
+            fecha=asignacion.fecha_vencimiento
+        ).ya_vencio():
+            raise BusinessRuleViolationError(_VENCIDA_MSG)
 
         self._asignacion = asignacion
 

@@ -10,7 +10,9 @@ from modules.shared.domain.domain_event import DomainEvent
 from modules.shared.domain.exceptions import ConflictError, ForbiddenError, NotFoundError
 
 _LAB_NO_ENCONTRADO_MSG = "Laboratorio no encontrado."
-_SIN_PERMISO_MSG = "Solo el instructor dueño del laboratorio o un administrador pueden cambiar su visibilidad en el catálogo."
+_SIN_PERMISO_MSG = (
+    "Solo el instructor dueño del laboratorio o un administrador pueden cambiar su visibilidad en el catálogo."
+)
 _SOLO_PERSONALIZADO_MSG = (
     "Un laboratorio predeterminado ya es público — la visibilidad de catálogo solo "
     "aplica a laboratorios personalizados."

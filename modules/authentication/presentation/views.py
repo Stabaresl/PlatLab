@@ -8,6 +8,7 @@ from modules.authentication.application.dtos import (
     ConfirmarRecuperacionDTO,
     ConfirmarVinculacionDTO,
     LoginDTO,
+    LogoutDTO,
     OAuthAuthorizeDTO,
     OAuthCallbackDTO,
     RefreshRequestDTO,
@@ -22,6 +23,7 @@ from modules.authentication.application.use_cases.confirmar_vinculacion_oauth im
 )
 from modules.authentication.application.use_cases.iniciar_oauth import IniciarOAuthUseCase
 from modules.authentication.application.use_cases.login import LoginUseCase
+from modules.authentication.application.use_cases.logout import LogoutAllUseCase, LogoutUseCase
 from modules.authentication.application.use_cases.oauth_login import OAuthLoginUseCase
 from modules.authentication.application.use_cases.refresh_token import RefreshTokenUseCase
 from modules.authentication.application.use_cases.registrar_usuario import (
@@ -158,6 +160,7 @@ class RefreshTokenView(APIView):
             event_dispatcher=EventDispatcher(),
             jwt_service=JWTService(),
             refresh_token_store=RefreshTokenStore(),
+            user_repository=UserRepository(),
         )
         tokens = use_case.execute(RefreshRequestDTO(**serializer.validated_data))
 
@@ -317,3 +320,46 @@ class OAuthConfirmLinkView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class LogoutView(APIView):
+    """
+    POST /api/v1/auth/logout/ — RF-02: invalida la sesión (familia de refresh
+    tokens) del refresh recibido. Antes el caso de uso existía sin ruta: el
+    botón "Salir" solo borraba el token del navegador y el refresh seguía
+    sirviendo 7 días en el servidor.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        AuthRateLimiter().verificar(accion="logout", ip=_client_ip(request))
+        serializer = RefreshRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        LogoutUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            jwt_service=JWTService(),
+            refresh_token_store=RefreshTokenStore(),
+        ).execute(LogoutDTO(refresh=serializer.validated_data["refresh"]))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class LogoutAllView(APIView):
+    """POST /api/v1/auth/logout-all/ — HE-14: cierra la sesión en todos los dispositivos."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        AuthRateLimiter().verificar(accion="logout", ip=_client_ip(request))
+        serializer = RefreshRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        LogoutAllUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            jwt_service=JWTService(),
+            refresh_token_store=RefreshTokenStore(),
+        ).execute(LogoutDTO(refresh=serializer.validated_data["refresh"]))
+        return Response(status=status.HTTP_204_NO_CONTENT)

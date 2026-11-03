@@ -1,12 +1,12 @@
-from django.contrib.auth.hashers import make_password
-
 from modules.laboratories.application.dtos import AgregarPreguntaDTO, PreguntaResultDTO
 from modules.laboratories.domain.entities import Pregunta
 from modules.laboratories.domain.repositories import ILaboratorioRepository
+from modules.laboratories.domain.services import validar_contenido_editable
 from modules.laboratories.domain.value_objects import TipoLaboratorio, TipoPregunta
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
 from modules.shared.domain.exceptions import ForbiddenError, NotFoundError, ValidationError
+from modules.shared.infrastructure.secret_hasher import hashear_secreto
 
 _LAB_NO_ENCONTRADO_MSG = "Laboratorio no encontrado."
 _SIN_PERMISO_MSG = "No tienes permiso para editar este laboratorio."
@@ -47,6 +47,8 @@ class AgregarPreguntaUseCase(BaseUseCase[AgregarPreguntaDTO, PreguntaResultDTO])
         else:
             raise ForbiddenError(_SIN_PERMISO_MSG)
 
+        validar_contenido_editable(laboratorio)
+
         examen = self._laboratorio_repository.get_examen_by_laboratorio(
             input_dto.laboratorio_id
         )
@@ -72,7 +74,7 @@ class AgregarPreguntaUseCase(BaseUseCase[AgregarPreguntaDTO, PreguntaResultDTO])
             examen_id=self._examen.id,
             enunciado=input_dto.enunciado,
             tipo=self._tipo,
-            respuesta_hash=make_password(respuesta),
+            respuesta_hash=hashear_secreto(respuesta),
             opciones=input_dto.opciones,
         )
         guardada = self._laboratorio_repository.add_pregunta(pregunta)

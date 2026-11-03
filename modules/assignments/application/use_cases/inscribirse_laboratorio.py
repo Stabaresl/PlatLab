@@ -4,6 +4,7 @@ from modules.assignments.application.dtos import AsignacionResultDTO, Inscribirs
 from modules.assignments.domain.entities import Asignacion
 from modules.assignments.domain.events import AssignmentAccepted
 from modules.assignments.domain.repositories import IAsignacionRepository
+from modules.assignments.domain.value_objects import EstadoAsignacion
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.laboratories.domain.value_objects import EstadoLaboratorio, TipoLaboratorio
 from modules.progress.domain.entities import Progreso, ProgresoSeccion
@@ -99,7 +100,10 @@ class InscribirseLaboratorioUseCase(BaseUseCase[InscribirseLaboratorioDTO, Asign
         vigentes = [
             a
             for a in self._asignacion_repository.find_por_estudiante(input_dto.actor_id)
-            if a.esta_vigente()
+            # Solo bloquea un laboratorio que el estudiante YA empezó (activa sin
+            # terminar). Una invitación pendiente no es "un lab en curso": antes
+            # bloqueaba toda autoinscripción hasta que la aceptara o rechazara.
+            if a.estado == EstadoAsignacion.ACTIVA
         ]
         for asignacion in vigentes:
             if not self._esta_terminada(asignacion):

@@ -46,7 +46,7 @@ class RegistrarUsuarioUseCase(BaseUseCase[RegistroDTO, RegistroResultDTO]):
         self, input_dto: RegistroDTO
     ) -> tuple[RegistroResultDTO, list[DomainEvent]]:
         user = User(
-            email=Email(input_dto.email),
+            email=Email(input_dto.email.strip().lower()),
             nombre_completo=input_dto.nombre_completo,
             rol=Rol.ESTUDIANTE,
             password_hash=make_password(input_dto.password),

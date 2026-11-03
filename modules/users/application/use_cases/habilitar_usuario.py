@@ -2,6 +2,7 @@ from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
 from modules.shared.domain.exceptions import ForbiddenError, NotFoundError
 from modules.users.application.dtos import HabilitarUsuarioDTO, UsuarioResultDTO
+from modules.users.domain.events import UsuarioHabilitado
 from modules.users.domain.repositories import IUserRepository
 
 _USUARIO_NO_ENCONTRADO_MSG = "Usuario no encontrado."
@@ -39,4 +40,4 @@ class HabilitarUsuarioUseCase(BaseUseCase[HabilitarUsuarioDTO, UsuarioResultDTO]
             rol=actualizado.rol.value,
             is_active=actualizado.is_active,
         )
-        return result, []
+        return result, [UsuarioHabilitado(user_id=actualizado.id, admin_id=input_dto.actor_id)]

@@ -107,3 +107,20 @@ def test_cambiar_estado_actor_no_admin_lanza_forbidden():
                 nuevo_estado="resuelto",
             )
         )
+
+
+@pytest.mark.django_db
+def test_patch_estado_abierto_responde_400_y_no_500():
+    """Regresión: `abierto` pasaba el serializer y el caso de uso caía con KeyError (500)."""
+    from rest_framework.test import APIClient
+
+    from modules.authentication.infrastructure.jwt_service import JWTService
+
+    reporte = _crear_reporte()
+    client = APIClient()
+    token = JWTService().generate_token_pair(user_id=uuid.uuid4(), rol="administrador").access
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    response = client.patch(f"/api/v1/reports/{reporte.id}/", {"estado": "abierto"}, format="json")
+
+    assert response.status_code == 400

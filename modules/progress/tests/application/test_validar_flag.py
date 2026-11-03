@@ -266,3 +266,22 @@ def test_validar_flag_ultima_seccion_sin_examen_registra_historial():
     assert len(historial) == 1
     assert historial[0].numero_intento == 1
     assert historial[0].puntaje is None
+
+
+@pytest.mark.django_db
+def test_reenviar_flag_correcta_de_seccion_completada_no_duplica_historial():
+    """Regresión: reenviar la flag correcta re-completaba la sección y duplicaba el historial."""
+    _, secciones = _crear_lab_con_secciones(1, valor_flag="FLAG{unica}")
+    progreso, estudiante_id = _crear_progreso(secciones)
+    dto = ValidarFlagDTO(
+        asignacion_id=progreso.asignacion_id,
+        seccion_id=secciones[0].id,
+        valor="FLAG{unica}",
+        estudiante_id=estudiante_id,
+    )
+
+    primera = _build_use_case().execute(dto)
+    segunda = _build_use_case().execute(dto)
+
+    assert primera.correcto and segunda.correcto
+    assert len(ProgresoRepository().get_historial(progreso.id)) == 1

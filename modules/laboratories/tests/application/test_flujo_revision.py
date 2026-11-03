@@ -231,3 +231,47 @@ def test_reenviar_a_revision_limpia_motivo_rechazo():
 
     guardado = _repo().get_by_id(lab.id)
     assert guardado.motivo_rechazo is None
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("aprobar", [False, True], ids=["en_revision", "publicado"])
+def test_lab_en_revision_o_publicado_no_admite_cambios_de_contenido(aprobar):
+    """
+    Regresión: un instructor podía editar secciones/flags/examen de un lab ya
+    aprobado, publicando contenido que ningún admin revisó.
+    """
+    from modules.laboratories.application.dtos import CrearSeccionDTO, DefinirFlagDTO
+    from modules.laboratories.application.use_cases.crear_seccion import CrearSeccionUseCase
+    from modules.laboratories.application.use_cases.definir_flag import DefinirFlagUseCase
+    from modules.laboratories.domain.exceptions import LaboratorioNoEditableError
+
+    instructor_id = uuid.uuid4()
+    lab = _crear_lab_personalizado_con_flag(instructor_id)
+    _solicitar_uc().execute(
+        SolicitarRevisionLaboratorioDTO(laboratorio_id=lab.id, actor_id=instructor_id, actor_rol="instructor")
+    )
+    if aprobar:
+        _aprobar_uc().execute(
+            AprobarLaboratorioDTO(laboratorio_id=lab.id, actor_id=uuid.uuid4(), actor_rol="administrador")
+        )
+    kwargs = {
+        "unit_of_work": BaseUnitOfWork(),
+        "event_dispatcher": EventDispatcher(),
+        "laboratorio_repository": _repo(),
+    }
+
+    with pytest.raises(LaboratorioNoEditableError):
+        CrearSeccionUseCase(**kwargs).execute(
+            CrearSeccionDTO(
+                laboratorio_id=lab.id, titulo="Nueva", contenido_teorico="x", orden=2,
+                actor_id=instructor_id, actor_rol="instructor",
+            )
+        )
+    seccion = _repo().get_secciones(lab.id)[0]
+    with pytest.raises(LaboratorioNoEditableError):
+        DefinirFlagUseCase(**kwargs).execute(
+            DefinirFlagDTO(
+                laboratorio_id=lab.id, seccion_id=seccion.id, valor="FLAG{otra}",
+                actor_id=instructor_id, actor_rol="instructor",
+            )
+        )

@@ -2,6 +2,7 @@ import uuid
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.utils.text import get_valid_filename
 
 from modules.shared.domain.exceptions import ValidationError
 
@@ -35,6 +36,6 @@ def guardar_dockerfile(nombre_archivo: str, contenido: bytes) -> tuple[str, int]
     if tamano_kb > _LIMITE_TAMANO_KB:
         raise ValidationError(_TAMANO_EXCEDIDO_MSG)
 
-    ruta = f"laboratories/dockerfiles/{uuid.uuid4()}_{nombre_archivo}"
+    ruta = f"laboratories/dockerfiles/{uuid.uuid4().hex}_{get_valid_filename(nombre_archivo)[:80]}"
     archivo_guardado = default_storage.save(ruta, ContentFile(contenido))
     return default_storage.url(archivo_guardado), tamano_kb

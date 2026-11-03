@@ -4,7 +4,12 @@ from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.laboratories.domain.value_objects import EstadoLaboratorio, TipoLaboratorio
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
-from modules.shared.domain.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from modules.shared.domain.exceptions import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 
 _LAB_NO_ENCONTRADO_MSG = "Laboratorio no encontrado."
 _SIN_PERMISO_MSG = "Solo un administrador puede rechazar laboratorios."

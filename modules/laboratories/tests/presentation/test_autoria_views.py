@@ -170,7 +170,7 @@ def test_approve_endpoint_admin_publica_y_reject_endpoint_admin_vuelve_a_borrado
 def test_review_queue_endpoint_solo_admin():
     instructor_id = uuid.uuid4()
     lab = _crear_lab_personalizado(instructor_id)
-    seccion = LaboratorioRepository().add_seccion(
+    LaboratorioRepository().add_seccion(
         Seccion(laboratorio_id=lab.id, titulo="Teoria", contenido_teorico="...", orden=1)
     )
     instructor_client = _client_autenticado(instructor_id, "instructor")

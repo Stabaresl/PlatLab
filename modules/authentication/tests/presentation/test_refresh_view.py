@@ -64,3 +64,24 @@ def test_refresh_endpoint_is_public():
     response = client.post("/api/v1/auth/refresh/", {}, format="json")
 
     assert response.status_code != 403
+
+
+@pytest.mark.django_db
+def test_logout_endpoint_revoca_el_refresh_en_el_servidor():
+    """Regresión: no existía ruta de logout — el refresh seguía valiendo 7 días tras "Salir"."""
+    from django.contrib.auth.hashers import make_password
+
+    from modules.users.domain.entities import User
+    from modules.users.domain.value_objects import Email
+    from modules.users.infrastructure.repositories import UserRepository
+
+    UserRepository().add(
+        User(email=Email("logout_view@uni.edu"), nombre_completo="L", password_hash=make_password("Segura123"))
+    )
+    client = APIClient()
+    tokens = client.post(
+        "/api/v1/auth/login/", {"email": "logout_view@uni.edu", "password": "Segura123"}, format="json"
+    ).data
+
+    assert client.post("/api/v1/auth/logout/", {"refresh": tokens["refresh"]}, format="json").status_code == 204
+    assert client.post("/api/v1/auth/refresh/", {"refresh": tokens["refresh"]}, format="json").status_code == 401

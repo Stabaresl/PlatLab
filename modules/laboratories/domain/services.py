@@ -3,6 +3,7 @@ import uuid
 from modules.laboratories.domain.entities import Flag, Laboratorio, Seccion
 from modules.laboratories.domain.exceptions import (
     ImagenPracticaNoPermitidaError,
+    LaboratorioNoEditableError,
     OrigenInvalidoParaDuplicarError,
     PublishValidationError,
 )
@@ -112,3 +113,22 @@ class DuplicadorDeLaboratorio:
                 )
 
         return copia, secciones_copiadas, flags_copiadas
+
+
+_NO_EDITABLE_MSG = (
+    "Este laboratorio ya fue enviado a revisión o publicado: su contenido no se puede "
+    "modificar. Si un administrador lo rechaza vuelve a borrador y podrás editarlo."
+)
+
+
+def validar_contenido_editable(laboratorio: Laboratorio) -> None:
+    """
+    Regla compartida por toda escritura de contenido (metadatos, secciones,
+    flags, examen, Dockerfile). Solo aplica a `personalizado` — un
+    `predeterminado` lo edita únicamente un admin, que ya es el revisor.
+    """
+    if (
+        laboratorio.tipo == TipoLaboratorio.PERSONALIZADO
+        and laboratorio.estado != EstadoLaboratorio.BORRADOR
+    ):
+        raise LaboratorioNoEditableError(_NO_EDITABLE_MSG)

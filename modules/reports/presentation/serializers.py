@@ -15,9 +15,15 @@ class CrearReporteRequestSerializer(serializers.Serializer):
 
 
 class CambiarEstadoReporteRequestSerializer(serializers.Serializer):
-    """api.md §8 `PATCH /reports/{id}/`."""
+    """
+    api.md §8 `PATCH /reports/{id}/`. `abierto` no es una transición (es el
+    estado inicial): antes pasaba esta validación y el caso de uso caía
+    con KeyError -> 500.
+    """
 
-    estado = serializers.ChoiceField(choices=_ESTADO_CHOICES)
+    estado = serializers.ChoiceField(
+        choices=[e.value for e in EstadoReporte if e != EstadoReporte.ABIERTO]
+    )
 
 
 class ListarReportesQuerySerializer(serializers.Serializer):

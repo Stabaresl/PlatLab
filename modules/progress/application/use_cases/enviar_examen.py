@@ -1,5 +1,3 @@
-from django.contrib.auth.hashers import check_password
-
 from modules.laboratories.domain.entities import Pregunta
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.laboratories.domain.value_objects import TipoPregunta
@@ -18,6 +16,7 @@ from modules.shared.domain.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from modules.shared.infrastructure.secret_hasher import verificar_secreto
 
 _PROGRESO_NO_ENCONTRADO_MSG = "Progreso no encontrado."
 _SECCIONES_INCOMPLETAS_MSG = "Debes completar todas las secciones antes de enviar el examen."
@@ -35,7 +34,7 @@ class EnviarExamenUseCase(BaseUseCase[EnviarExamenDTO, EnviarExamenResultDTO]):
     `ResultadoExamen` y una fila `HistorialCompletitud` nuevos, con
     `numero_intento` incremental — nunca sobrescribe un intento
     anterior. La comparación por tipo de pregunta (Strategy) vive aquí
-    -`_es_correcta`- porque necesita `check_password` (Django); el
+    -`_es_correcta`- porque necesita `verificar_secreto` (Infrastructure); el
     `CalificadorDeExamen` de Domain solo agrega los booleanos ya
     evaluados en un `Puntaje` (mismo límite de capas que
     `ValidarFlagUseCase`/`ValidadorDeFlag`).
@@ -135,4 +134,4 @@ class EnviarExamenUseCase(BaseUseCase[EnviarExamenDTO, EnviarExamenResultDTO]):
         if respuesta is None:
             return False
         valor = respuesta.strip().lower() if pregunta.tipo == TipoPregunta.ABIERTA else respuesta
-        return check_password(valor, pregunta.respuesta_hash)
+        return verificar_secreto(valor, pregunta.respuesta_hash)

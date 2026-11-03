@@ -1,6 +1,9 @@
 from modules.laboratories.application.dtos import EditarSeccionDTO, SeccionResultDTO
 from modules.laboratories.domain.repositories import ILaboratorioRepository
-from modules.laboratories.domain.services import validar_imagen_practica_permitida
+from modules.laboratories.domain.services import (
+    validar_contenido_editable,
+    validar_imagen_practica_permitida,
+)
 from modules.laboratories.domain.value_objects import PasoGuia, TipoLaboratorio
 from modules.laboratories.infrastructure.content_sanitizer import sanitizar_contenido_html
 from modules.shared.application.base_use_case import BaseUseCase
@@ -53,6 +56,8 @@ class EditarSeccionUseCase(BaseUseCase[EditarSeccionDTO, SeccionResultDTO]):
                 raise ForbiddenError(_SIN_PERMISO_MSG)
         else:
             raise ForbiddenError(_SIN_PERMISO_MSG)
+
+        validar_contenido_editable(laboratorio)
 
         secciones = self._laboratorio_repository.get_secciones(input_dto.laboratorio_id)
         seccion = next((s for s in secciones if s.id == input_dto.seccion_id), None)

@@ -14,7 +14,10 @@ _ESTADO_INVALIDO_MSG = "Solo un laboratorio en revisión se puede aprobar."
 
 
 class AprobarLaboratorioUseCase(BaseUseCase[AprobarLaboratorioDTO, LaboratorioResultDTO]):
-    """Admin, `en_revision` → `publicado`. Cierra el flujo de revisión que abre `SolicitarRevisionLaboratorioUseCase`."""
+    """
+    Admin, `en_revision` → `publicado`. Cierra el flujo de revisión que abre
+    `SolicitarRevisionLaboratorioUseCase`.
+    """
 
     def __init__(
         self,

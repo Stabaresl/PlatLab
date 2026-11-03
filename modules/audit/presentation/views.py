@@ -5,7 +5,7 @@ from modules.audit.application.dtos import ConsultarAuditoriaDTO
 from modules.audit.application.queries.consultar_auditoria import ConsultarAuditoriaQuery
 from modules.audit.infrastructure.repositories import AuditoriaRepository
 from modules.audit.presentation.serializers import ConsultarAuditoriaQuerySerializer
-from modules.shared.presentation.pagination import ListaPagination
+from modules.shared.presentation.pagination import parametros_pagina, respuesta_paginada
 
 
 def _serializar(item) -> dict:
@@ -16,6 +16,7 @@ def _serializar(item) -> dict:
         "entidad_tipo": item.entidad_tipo,
         "entidad_id": str(item.entidad_id) if item.entidad_id else None,
         "timestamp": item.timestamp.isoformat(),
+        "metadata": item.metadata,
     }
 
 
@@ -29,16 +30,18 @@ class AuditViewSet(ViewSet):
         query_serializer.is_valid(raise_exception=True)
         datos = query_serializer.validated_data
 
-        resultado = ConsultarAuditoriaQuery(AuditoriaRepository()).execute(
+        limit, offset = parametros_pagina(request)
+        resultado, total = ConsultarAuditoriaQuery(AuditoriaRepository()).execute_paginado(
             ConsultarAuditoriaDTO(
                 actor_rol=request.user.rol,
                 actor_id=datos.get("actor"),
                 accion=datos.get("accion"),
                 desde=datos.get("desde"),
                 hasta=datos.get("hasta"),
-            )
+            ),
+            limit=limit,
+            offset=offset,
         )
-        serializados = [_serializar(item) for item in resultado]
-        paginator = ListaPagination()
-        pagina = paginator.paginate_queryset(serializados, request, view=self)
-        return paginator.get_paginated_response(pagina)
+        return respuesta_paginada(
+            request, [_serializar(item) for item in resultado], total, limit, offset
+        )

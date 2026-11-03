@@ -22,16 +22,11 @@ class AuditoriaRepository:
             entidad_tipo=registro.entidad_tipo,
             entidad_id=registro.entidad_id,
             ip=registro.ip,
+            metadata=registro.metadata,
         )
         return registro_to_entity(model)
 
-    def find_todos(
-        self,
-        actor_id: uuid.UUID | None = None,
-        accion: str | None = None,
-        desde: datetime | None = None,
-        hasta: datetime | None = None,
-    ) -> list[RegistroAuditoria]:
+    def _filtrar(self, actor_id, accion, desde, hasta):
         queryset = RegistroAuditoriaModel.objects.all()
         if actor_id is not None:
             queryset = queryset.filter(actor_id=actor_id)
@@ -41,6 +36,27 @@ class AuditoriaRepository:
             queryset = queryset.filter(timestamp__gte=desde)
         if hasta is not None:
             queryset = queryset.filter(timestamp__lte=hasta)
+        return queryset
 
-        queryset = queryset.order_by("-timestamp")
+    def find_todos(
+        self,
+        actor_id: uuid.UUID | None = None,
+        accion: str | None = None,
+        desde: datetime | None = None,
+        hasta: datetime | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[RegistroAuditoria]:
+        queryset = self._filtrar(actor_id, accion, desde, hasta).order_by("-timestamp")
+        if limit is not None:
+            queryset = queryset[offset : offset + limit]
         return [registro_to_entity(m) for m in queryset]
+
+    def contar(
+        self,
+        actor_id: uuid.UUID | None = None,
+        accion: str | None = None,
+        desde: datetime | None = None,
+        hasta: datetime | None = None,
+    ) -> int:
+        return self._filtrar(actor_id, accion, desde, hasta).count()

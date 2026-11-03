@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-from django.contrib.auth.hashers import check_password
 
 from modules.laboratories.application.dtos import DefinirFlagDTO
 from modules.laboratories.application.use_cases.definir_flag import DefinirFlagUseCase
@@ -18,6 +17,7 @@ from modules.shared.domain.exceptions import (
     NotFoundError,
 )
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
+from modules.shared.infrastructure.secret_hasher import verificar_secreto
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
 
 
@@ -97,7 +97,7 @@ def test_definir_flag_exitoso_persiste_hash_no_valor_en_claro():
     flag = LaboratorioRepository().get_flag_by_seccion(seccion.id)
     assert flag is not None
     assert flag.hash != "FLAG{secreta}"
-    assert check_password("FLAG{secreta}", flag.hash)
+    assert verificar_secreto("FLAG{secreta}", flag.hash)
     assert flag.ayuda.pista == "pista 1"
     assert flag.ayuda.paso_a_paso == "paso a paso 1"
 
@@ -117,8 +117,8 @@ def test_definir_flag_actualiza_si_ya_existia():
     _build_use_case().execute(DefinirFlagDTO(valor="FLAG{segunda}", **dto_base))
 
     flag = LaboratorioRepository().get_flag_by_seccion(seccion.id)
-    assert check_password("FLAG{segunda}", flag.hash)
-    assert not check_password("FLAG{primera}", flag.hash)
+    assert verificar_secreto("FLAG{segunda}", flag.hash)
+    assert not verificar_secreto("FLAG{primera}", flag.hash)
 
 
 @pytest.mark.django_db

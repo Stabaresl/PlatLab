@@ -21,6 +21,18 @@ class IAuditoriaRepository(Protocol):
         accion: str | None = None,
         desde: datetime | None = None,
         hasta: datetime | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list[RegistroAuditoria]:
-        """api.md §10 `GET /audit/?actor=&accion=&desde=&hasta=` — solo Admin."""
+        """api.md §10 `GET /audit/?actor=&accion=&desde=&hasta=` — solo Admin. Paginado en BD si se pasa `limit`."""
+        ...
+
+    def contar(
+        self,
+        actor_id: uuid.UUID | None = None,
+        accion: str | None = None,
+        desde: datetime | None = None,
+        hasta: datetime | None = None,
+    ) -> int:
+        """Total de registros que cumplen los filtros (para `count` de la paginación)."""
         ...

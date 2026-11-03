@@ -2,6 +2,7 @@ from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
 from modules.shared.domain.exceptions import ForbiddenError, NotFoundError, ValidationError
 from modules.users.application.dtos import ActualizarUsuarioDTO, UsuarioResultDTO
+from modules.users.domain.events import RolUsuarioCambiado
 from modules.users.domain.exceptions import SelfDisableNotAllowedError
 from modules.users.domain.repositories import IUserRepository
 from modules.users.domain.value_objects import Rol
@@ -51,6 +52,7 @@ class ActualizarUsuarioUseCase(BaseUseCase[ActualizarUsuarioDTO, UsuarioResultDT
         self, input_dto: ActualizarUsuarioDTO
     ) -> tuple[UsuarioResultDTO, list[DomainEvent]]:
         usuario = self._usuario
+        rol_anterior = usuario.rol
         if input_dto.nombre_completo is not None:
             usuario.nombre_completo = input_dto.nombre_completo
         if input_dto.username is not None:
@@ -67,4 +69,14 @@ class ActualizarUsuarioUseCase(BaseUseCase[ActualizarUsuarioDTO, UsuarioResultDT
             rol=actualizado.rol.value,
             is_active=actualizado.is_active,
         )
-        return result, []
+        events: list[DomainEvent] = []
+        if actualizado.rol != rol_anterior:
+            events.append(
+                RolUsuarioCambiado(
+                    user_id=actualizado.id,
+                    admin_id=input_dto.actor_id,
+                    rol_anterior=rol_anterior.value,
+                    rol_nuevo=actualizado.rol.value,
+                )
+            )
+        return result, events

@@ -101,7 +101,7 @@ class OAuthLoginUseCase(BaseUseCase[OAuthCallbackDTO, OAuthLoginResultDTO]):
         else:
             user = self._user_repository.add(
                 User(
-                    email=Email(self._profile.email),
+                    email=Email(self._profile.email.strip().lower()),
                     nombre_completo=self._profile.nombre_completo,
                     rol=Rol.ESTUDIANTE,
                     password_hash=None,

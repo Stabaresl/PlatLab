@@ -11,5 +11,7 @@ class EnviarExamenRequestSerializer(serializers.Serializer):
     """api.md §7 — DTO de entrada de `POST .../exam/` (HE-09/HI-08, UC-03)."""
 
     respuestas = serializers.DictField(
-        child=serializers.CharField(trim_whitespace=False), allow_empty=True
+        # max_length: las respuestas se guardan tal cual en JSON (sin tope, un
+        # cliente podía mandar megabytes por pregunta).
+        child=serializers.CharField(trim_whitespace=False, max_length=1000), allow_empty=True
     )
