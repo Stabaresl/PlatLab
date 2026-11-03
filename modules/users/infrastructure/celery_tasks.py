@@ -5,13 +5,13 @@ from celery import shared_task
 
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
-from modules.users.application.dtos import ProcesarVerificacionInstructorDTO
-from modules.users.application.use_cases.procesar_verificacion_instructor import (
-    ProcesarVerificacionInstructorUseCase,
+from modules.users.application.dtos import RegistrarVerificacionOpenAlexDTO
+from modules.users.application.use_cases.registrar_verificacion_openalex import (
+    RegistrarVerificacionOpenAlexUseCase,
 )
 from modules.users.domain.value_objects import SolicitudInstructorEstado
 from modules.users.infrastructure.openalex_adapter import OpenAlexAdapter
-from modules.users.infrastructure.repositories import SolicitudInstructorRepository, UserRepository
+from modules.users.infrastructure.repositories import SolicitudInstructorRepository
 
 
 @shared_task(
@@ -23,11 +23,13 @@ from modules.users.infrastructure.repositories import SolicitudInstructorReposit
 def verificar_solicitud_instructor_task(solicitud_id: str) -> None:
     """
     Encolada por `event_listeners.py` al crear una `SolicitudInstructor` —
-    corre en el worker, nunca dentro del request que la creó. Solo
-    reintenta ante fallas de red/timeout hacia OpenAlex
-    (`requests.RequestException`); un ORCID no encontrado o un nombre que
-    no coincide no es un error de red, es un rechazo legítimo, así que no
-    se reintenta.
+    corre en el worker, nunca dentro del request que la creó. Consulta
+    OpenAlex y guarda el resultado como evidencia para el admin que va a
+    revisar la solicitud (no la aprueba ni la rechaza). Solo reintenta
+    ante fallas de red/timeout (`requests.RequestException`): un ORCID no
+    encontrado es un resultado válido, no un error. Si OpenAlex no
+    responde tras los reintentos, la solicitud queda sin resultado y el
+    admin lo ve así en su panel.
     """
     solicitud_repository = SolicitudInstructorRepository()
     solicitud = solicitud_repository.get_by_id(uuid.UUID(solicitud_id))
@@ -38,12 +40,6 @@ def verificar_solicitud_instructor_task(solicitud_id: str) -> None:
         orcid=solicitud.orcid, nombre_declarado=solicitud.nombre_declarado
     )
 
-    use_case = ProcesarVerificacionInstructorUseCase(
-        BaseUnitOfWork(),
-        EventDispatcher(),
-        solicitud_repository,
-        UserRepository(),
-    )
-    use_case.execute(
-        ProcesarVerificacionInstructorDTO(solicitud_id=solicitud.id, resultado=resultado)
-    )
+    RegistrarVerificacionOpenAlexUseCase(
+        BaseUnitOfWork(), EventDispatcher(), solicitud_repository
+    ).execute(RegistrarVerificacionOpenAlexDTO(solicitud_id=solicitud.id, resultado=resultado))

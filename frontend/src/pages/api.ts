@@ -1,17 +1,25 @@
 // Cliente HTTP para la API real de PlatLAB (Django/DRF, `/api/v1`).
 // Reemplaza el mock (Bun/Express en :3001) de la rama mik4ela.
 
-const BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000/api/v1"
+// En desarrollo (Vite :5173) el backend está en otro origen (:8000). En el
+// build de producción (gateway Caddy de la instalación local / aula) SPA y
+// API comparten origen: rutas relativas, así la misma imagen funciona por
+// localhost y por la IP de la red sin recompilar. VITE_API_URL fuerza un
+// backend explícito en cualquiera de los dos casos.
+const BASE: string =
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "/api/v1" : "http://localhost:8000/api/v1")
+// Origen del backend: con BASE relativa es el de la página misma.
+export const API_ORIGIN = BASE.startsWith("/") ? window.location.origin : BASE.replace(/\/api\/v1\/?$/, "")
 // El WebSocket de la terminal (lab_environments) vive fuera de /api/v1,
 // en la raíz ASGI (config/asgi.py) — mismo host, protocolo ws(s) en vez de http(s).
-const WS_BASE = BASE.replace(/^http/, "ws").replace(/\/api\/v1\/?$/, "")
+const WS_BASE = API_ORIGIN.replace(/^http/, "ws")
 // `default_storage.url()` (Django) devuelve una ruta relativa ("/media/...")
 // pensada para un backend que sirve las vistas Y los archivos desde el mismo
-// origen — acá el frontend (Vite) vive en otro origen, así que un <a href>
-// con esa ruta tal cual navega dentro de la SPA en vez de descargar el
-// archivo, y el catch-all del router termina mandando a "/". Hay que
+// origen — en desarrollo el frontend (Vite) vive en otro origen, así que un
+// <a href> con esa ruta tal cual navega dentro de la SPA en vez de descargar
+// el archivo, y el catch-all del router termina mandando a "/". Hay que
 // resolverla contra el origen real del backend.
-const MEDIA_ORIGIN = BASE.replace(/\/api\/v1\/?$/, "")
+const MEDIA_ORIGIN = API_ORIGIN
 
 export function resolveMediaUrl(url: string): string {
   if (/^https?:\/\//.test(url)) return url
@@ -23,7 +31,7 @@ export function resolveMediaUrl(url: string): string {
 // OAUTH_CLIENT_ID en .env) — sin ellas, el proveedor devuelve un 404/400
 // al recibir `client_id` vacío. Se ocultan por defecto para no dejar al
 // usuario en un callejón sin salida; activar con VITE_OAUTH_ENABLED=true.
-export const OAUTH_ENABLED = (import.meta as any).env?.VITE_OAUTH_ENABLED === "true"
+export const OAUTH_ENABLED = import.meta.env.VITE_OAUTH_ENABLED === "true"
 
 // ---------------------------------------------------------------------------
 // Tokens (SimpleJWT: access de vida corta + refresh rotado, seguridad.md §2)
@@ -49,7 +57,18 @@ export function clearTokens() {
   localStorage.removeItem("profile")
 }
 
-export function logout() {
+export async function logout() {
+  // Revoca la sesión en el servidor (familia de refresh tokens) antes de
+  // limpiar el navegador — sin esto el refresh seguía valiendo 7 días. Si
+  // la red falla, igual se cierra la sesión local.
+  const refresh = getRefreshToken()
+  if (refresh) {
+    await fetch(`${BASE}/auth/logout/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    }).catch(() => {})
+  }
   clearTokens()
   window.location.href = "/login"
 }
@@ -131,6 +150,9 @@ async function tryRefresh(): Promise<boolean> {
         if (!res.ok) return false
         const data = await res.json()
         setTokens(data.access, data.refresh)
+        // El refresh trae el rol vigente en BD: si un admin te ascendió
+        // (o te cambió el rol) la UI se entera aquí, sin cerrar sesión.
+        if (data.rol) localStorage.setItem("role", data.rol)
         return true
       } catch {
         return false
@@ -140,6 +162,11 @@ async function tryRefresh(): Promise<boolean> {
     })()
   }
   return refreshInFlight
+}
+
+/** Fuerza un refresh ya (ej. tras "fuiste aprobado como instructor") para traer el rol nuevo. */
+export function refrescarSesion(): Promise<boolean> {
+  return tryRefresh()
 }
 
 interface RequestOptions extends RequestInit {
@@ -867,6 +894,54 @@ export function solicitarConvertirseEnInstructor(body: {
 
 export function getMiSolicitudInstructor() {
   return api<SolicitudInstructor | undefined>("/users/instructor-requests/mine/")
+}
+
+/** Lo que OpenAlex encontró para el ORCID — evidencia para el admin, no decide nada. */
+export interface ResultadoOpenAlex {
+  encontrado: boolean
+  coincide_nombre: boolean
+  works_count: number
+  nombre_openalex: string | null
+  consultado_en?: string
+}
+
+export interface SolicitudInstructorAdmin {
+  id: string
+  estado: "pendiente" | "aprobada" | "rechazada"
+  orcid: string
+  orcid_url: string
+  tipo: string
+  institucion: string | null
+  especialidades: string | null
+  motivacion: string | null
+  nombre_declarado: string
+  usuario: {
+    id: string
+    email: string | null
+    nombre_completo: string | null
+    registrado_desde: string | null
+  }
+  openalex: ResultadoOpenAlex | null
+  motivo_rechazo: string | null
+  created_at: string | null
+  resolved_at: string | null
+}
+
+export type EstadoSolicitudFiltro = "pendiente" | "aprobada" | "rechazada" | "todas"
+
+export function listSolicitudesInstructor(estado: EstadoSolicitudFiltro = "pendiente") {
+  return api<SolicitudInstructorAdmin[]>(`/users/instructor-requests/?estado=${estado}`)
+}
+
+export function aprobarSolicitudInstructor(id: string) {
+  return api<SolicitudInstructor>(`/users/instructor-requests/${id}/approve/`, { method: "POST" })
+}
+
+export function rechazarSolicitudInstructor(id: string, motivo: string) {
+  return api<SolicitudInstructor>(`/users/instructor-requests/${id}/reject/`, {
+    method: "POST",
+    body: JSON.stringify({ motivo }),
+  })
 }
 
 export interface AdminDashboard {

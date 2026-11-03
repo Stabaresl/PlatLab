@@ -102,6 +102,39 @@ class SolicitudInstructorResultDTO:
 
 
 @dataclass(frozen=True)
-class ProcesarVerificacionInstructorDTO:
+class RegistrarVerificacionOpenAlexDTO:
     solicitud_id: uuid.UUID
     resultado: ResultadoVerificacionAcademica
+
+
+@dataclass(frozen=True)
+class ResolverSolicitudInstructorDTO:
+    """`POST /users/instructor-requests/{id}/approve|reject/` — solo Admin."""
+
+    solicitud_id: uuid.UUID
+    actor_id: uuid.UUID
+    actor_rol: str
+    aprobar: bool
+    motivo: str | None = None
+
+
+@dataclass(frozen=True)
+class SolicitudInstructorAdminItemDTO:
+    """Item de la cola de revisión: datos de la cuenta + lo declarado + resultado de OpenAlex."""
+
+    id: uuid.UUID
+    estado: str
+    orcid: str
+    tipo: str
+    institucion: str
+    especialidades: str
+    motivacion: str
+    nombre_declarado: str
+    usuario_id: uuid.UUID
+    usuario_email: str | None
+    usuario_nombre: str | None
+    usuario_desde: datetime | None
+    resultado_openalex: dict | None
+    motivo_rechazo: str | None
+    created_at: datetime | None
+    resolved_at: datetime | None

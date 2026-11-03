@@ -22,8 +22,22 @@ class IUserRepository(Protocol):
         nombre: str | None = None,
         rol: str | None = None,
         activo: bool | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list[User]:
-        """HA-01, api.md §4 `GET /users/?nombre=&rol=&activo=`."""
+        """HA-01, api.md §4 `GET /users/?nombre=&rol=&activo=`. Paginado en BD si se pasa `limit`."""
+        ...
+
+    def contar(
+        self, nombre: str | None = None, rol: str | None = None, activo: bool | None = None
+    ) -> int: ...
+
+    def contar_por_rol(self) -> dict[str, int]:
+        """HA-03: `{rol: total}` en una sola consulta agregada (sin traer usuarios a memoria)."""
+        ...
+
+    def get_by_ids(self, user_ids: list[uuid.UUID]) -> dict[uuid.UUID, User]:
+        """Batch por id — evita N+1 en listados que resuelven nombres (HI-04)."""
         ...
 
     def get_by_email(self, email: str) -> User | None: ...
@@ -53,6 +67,10 @@ class ISolicitudInstructorRepository(Protocol):
     def get_pendiente_by_user_id(self, user_id: uuid.UUID) -> SolicitudInstructor | None: ...
 
     def get_ultima_by_user_id(self, user_id: uuid.UUID) -> SolicitudInstructor | None: ...
+
+    def find_por_estado(self, estado: str | None) -> list[SolicitudInstructor]:
+        """Cola de revisión del admin (`estado=None` = todas)."""
+        ...
 
     def add(self, solicitud: SolicitudInstructor) -> SolicitudInstructor: ...
 

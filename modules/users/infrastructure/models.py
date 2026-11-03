@@ -76,6 +76,8 @@ class SolicitudInstructorModel(models.Model):
     resultado_verificacion = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
+    # Admin que tomó la decisión (id suelto, igual que el resto de referencias).
+    revisada_por_id = models.UUIDField(null=True, blank=True)
 
     class Meta:
         db_table = "users_solicitudinstructor"

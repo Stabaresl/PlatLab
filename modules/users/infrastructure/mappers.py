@@ -73,6 +73,7 @@ def solicitud_instructor_to_entity(model: SolicitudInstructorModel) -> Solicitud
         resultado_verificacion=model.resultado_verificacion,
         created_at=model.created_at,
         resolved_at=model.resolved_at,
+        revisada_por_id=model.revisada_por_id,
     )
 
 
@@ -90,4 +91,5 @@ def solicitud_instructor_to_model(entity: SolicitudInstructor) -> SolicitudInstr
         motivo_rechazo=entity.motivo_rechazo,
         resultado_verificacion=entity.resultado_verificacion,
         resolved_at=entity.resolved_at,
+        revisada_por_id=entity.revisada_por_id,
     )

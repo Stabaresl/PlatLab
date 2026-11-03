@@ -16,6 +16,8 @@ class NotificacionModel(models.Model):
         INSTRUCTOR_RECHAZADO = "instructor_rechazado", "Instructor rechazado"
         LABORATORIO_APROBADO = "laboratorio_aprobado", "Laboratorio aprobado"
         LABORATORIO_RECHAZADO = "laboratorio_rechazado", "Laboratorio rechazado"
+        LOGRO_DESBLOQUEADO = "logro_desbloqueado", "Logro desbloqueado"
+        SOLICITUD_INSTRUCTOR = "solicitud_instructor", "Solicitud de instructor"
 
     class Canal(models.TextChoices):
         IN_APP = "in_app", "In-app"

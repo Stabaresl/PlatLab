@@ -12,14 +12,18 @@ from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
-from modules.shared.presentation.pagination import ListaPagination
+from modules.shared.presentation.pagination import parametros_pagina, respuesta_paginada
 from modules.users.application.dtos import (
     ActualizarUsuarioDTO,
     DeshabilitarUsuarioDTO,
     HabilitarUsuarioDTO,
     ListarUsuariosDTO,
     ObtenerDashboardAdminDTO,
+    ResolverSolicitudInstructorDTO,
     SolicitarInstructorDTO,
+)
+from modules.users.application.queries.listar_solicitudes_instructor import (
+    ListarSolicitudesInstructorQuery,
 )
 from modules.users.application.queries.listar_usuarios import ListarUsuariosQuery
 from modules.users.application.queries.obtener_dashboard_admin import ObtenerDashboardAdminQuery
@@ -30,6 +34,9 @@ from modules.users.application.queries.obtener_usuario import ObtenerUsuarioQuer
 from modules.users.application.use_cases.actualizar_usuario import ActualizarUsuarioUseCase
 from modules.users.application.use_cases.deshabilitar_usuario import DeshabilitarUsuarioUseCase
 from modules.users.application.use_cases.habilitar_usuario import HabilitarUsuarioUseCase
+from modules.users.application.use_cases.resolver_solicitud_instructor import (
+    ResolverSolicitudInstructorUseCase,
+)
 from modules.users.application.use_cases.solicitar_convertirse_en_instructor import (
     SolicitarConvertirseEnInstructorUseCase,
 )
@@ -37,6 +44,7 @@ from modules.users.infrastructure.repositories import SolicitudInstructorReposit
 from modules.users.presentation.serializers import (
     ActualizarUsuarioRequestSerializer,
     ListarUsuariosQuerySerializer,
+    ResolverSolicitudInstructorRequestSerializer,
     SolicitarInstructorRequestSerializer,
 )
 
@@ -79,13 +87,15 @@ class UserViewSet(ViewSet):
         query_serializer = ListarUsuariosQuerySerializer(data=request.query_params)
         query_serializer.is_valid(raise_exception=True)
 
-        resultado = ListarUsuariosQuery(UserRepository()).execute(
-            ListarUsuariosDTO(actor_rol=request.user.rol, **query_serializer.validated_data)
+        limit, offset = parametros_pagina(request)
+        resultado, total = ListarUsuariosQuery(UserRepository()).execute_paginado(
+            ListarUsuariosDTO(actor_rol=request.user.rol, **query_serializer.validated_data),
+            limit=limit,
+            offset=offset,
         )
-        serializados = [_serializar_usuario(item) for item in resultado]
-        paginator = ListaPagination()
-        pagina = paginator.paginate_queryset(serializados, request, view=self)
-        return paginator.get_paginated_response(pagina)
+        return respuesta_paginada(
+            request, [_serializar_usuario(item) for item in resultado], total, limit, offset
+        )
 
     def retrieve(self, request, pk=None):
         resultado = ObtenerUsuarioQuery(UserRepository()).execute(
@@ -144,8 +154,11 @@ class UserViewSet(ViewSet):
         )
         return Response(_serializar_usuario(resultado), status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["post"], url_path="instructor-requests")
+    @action(detail=False, methods=["get", "post"], url_path="instructor-requests")
     def solicitar_instructor(self, request):
+        if request.method == "GET":
+            return self._listar_solicitudes_instructor(request)
+
         serializer = SolicitarInstructorRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -163,6 +176,71 @@ class UserViewSet(ViewSet):
             )
         )
         return Response(_serializar_solicitud_instructor(resultado), status=status.HTTP_201_CREATED)
+
+    def _listar_solicitudes_instructor(self, request):
+        """`GET /users/instructor-requests/?estado=pendiente|aprobada|rechazada|todas` — solo Admin."""
+        estado = request.query_params.get("estado", "pendiente")
+        resultado = ListarSolicitudesInstructorQuery(
+            SolicitudInstructorRepository(), UserRepository()
+        ).execute(actor_rol=request.user.rol, estado=None if estado == "todas" else estado)
+        return Response(
+            [
+                {
+                    "id": str(item.id),
+                    "estado": item.estado,
+                    "orcid": item.orcid,
+                    "orcid_url": f"https://orcid.org/{item.orcid}",
+                    "tipo": item.tipo,
+                    "institucion": item.institucion,
+                    "especialidades": item.especialidades,
+                    "motivacion": item.motivacion,
+                    "nombre_declarado": item.nombre_declarado,
+                    "usuario": {
+                        "id": str(item.usuario_id),
+                        "email": item.usuario_email,
+                        "nombre_completo": item.usuario_nombre,
+                        "registrado_desde": item.usuario_desde.isoformat() if item.usuario_desde else None,
+                    },
+                    "openalex": item.resultado_openalex,
+                    "motivo_rechazo": item.motivo_rechazo,
+                    "created_at": item.created_at.isoformat() if item.created_at else None,
+                    "resolved_at": item.resolved_at.isoformat() if item.resolved_at else None,
+                }
+                for item in resultado
+            ],
+            status=status.HTTP_200_OK,
+        )
+
+    def _resolver_solicitud(self, request, solicitud_pk: str, aprobar: bool):
+        serializer = ResolverSolicitudInstructorRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        resultado = ResolverSolicitudInstructorUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            solicitud_repository=SolicitudInstructorRepository(),
+            user_repository=UserRepository(),
+        ).execute(
+            ResolverSolicitudInstructorDTO(
+                solicitud_id=_parsear_uuid(solicitud_pk),
+                actor_id=request.user.id,
+                actor_rol=request.user.rol,
+                aprobar=aprobar,
+                motivo=serializer.validated_data.get("motivo"),
+            )
+        )
+        return Response(_serializar_solicitud_instructor(resultado), status=status.HTTP_200_OK)
+
+    @action(
+        detail=False, methods=["post"], url_path=r"instructor-requests/(?P<solicitud_pk>[^/.]+)/approve"
+    )
+    def aprobar_solicitud_instructor(self, request, solicitud_pk=None):
+        return self._resolver_solicitud(request, solicitud_pk, aprobar=True)
+
+    @action(
+        detail=False, methods=["post"], url_path=r"instructor-requests/(?P<solicitud_pk>[^/.]+)/reject"
+    )
+    def rechazar_solicitud_instructor(self, request, solicitud_pk=None):
+        return self._resolver_solicitud(request, solicitud_pk, aprobar=False)
 
     @action(detail=False, methods=["get"], url_path="instructor-requests/mine")
     def mi_solicitud_instructor(self, request):

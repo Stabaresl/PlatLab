@@ -3,15 +3,24 @@ from modules.gamification.domain.events import LogroDesbloqueadoEvent
 from modules.laboratories.domain.events import LaboratoryApproved, LaboratoryRejected
 from modules.notifications.domain.value_objects import TipoNotificacion
 from modules.notifications.infrastructure.celery_tasks import despachar_notificacion_task
+from modules.notifications.infrastructure.destinatarios_provider import AdministradoresProvider
 from modules.reports.domain.events import ReportResolved
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
-from modules.users.domain.events import InstructorVerificationResolved
+from modules.users.domain.events import (
+    InstructorVerificationRequested,
+    InstructorVerificationResolved,
+)
 
 _MSG_INVITACION = "Fuiste invitado a un nuevo laboratorio."
 _MSG_ACCESO_VENCIDO = "Tu acceso a un laboratorio ha vencido."
 _MSG_REPORTE_RESUELTO = "Tu reporte fue resuelto."
 _MSG_INSTRUCTOR_APROBADO = (
-    "Tu ORCID fue verificado en OpenAlex. Ya eres instructor en PlatLAB."
+    "Un administrador aprobó tu solicitud. Ya eres instructor en PlatLAB: "
+    "vuelve a entrar al panel para ver tus nuevas herramientas."
+)
+_MSG_INSTRUCTOR_RECHAZADO = "Un administrador revisó tu solicitud de instructor y no la aprobó. Motivo: {motivo}"
+_MSG_SOLICITUD_INSTRUCTOR = (
+    "{nombre} pidió ser instructor (ORCID {orcid}). Revisa su solicitud en el panel de administración."
 )
 _MSG_LABORATORIO_APROBADO = "Tu laboratorio fue aprobado y ya está publicado en el catálogo."
 
@@ -46,6 +55,19 @@ def _on_report_resolved(event: ReportResolved) -> None:
     )
 
 
+def _on_instructor_verification_requested(event: InstructorVerificationRequested) -> None:
+    # Aviso a cada admin activo: la solicitud queda en su cola de revisión.
+    mensaje = _MSG_SOLICITUD_INSTRUCTOR.format(nombre=event.nombre_declarado, orcid=event.orcid)
+    for admin_id in AdministradoresProvider().ids_activos():
+        despachar_notificacion_task.delay(
+            user_id=str(admin_id),
+            tipo=TipoNotificacion.SOLICITUD_INSTRUCTOR.value,
+            mensaje=mensaje,
+            entidad_tipo="solicitud_instructor",
+            entidad_id=str(event.solicitud_id),
+        )
+
+
 def _on_instructor_verification_resolved(event: InstructorVerificationResolved) -> None:
     despachar_notificacion_task.delay(
         user_id=str(event.user_id),
@@ -54,7 +76,11 @@ def _on_instructor_verification_resolved(event: InstructorVerificationResolved) 
             if event.aprobada
             else TipoNotificacion.INSTRUCTOR_RECHAZADO.value
         ),
-        mensaje=event.motivo_rechazo if not event.aprobada else _MSG_INSTRUCTOR_APROBADO,
+        mensaje=(
+            _MSG_INSTRUCTOR_APROBADO
+            if event.aprobada
+            else _MSG_INSTRUCTOR_RECHAZADO.format(motivo=event.motivo_rechazo)
+        ),
         entidad_tipo="solicitud_instructor",
         entidad_id=str(event.solicitud_id),
     )
@@ -105,6 +131,7 @@ def registrar_listeners(dispatcher: EventDispatcher) -> None:
     dispatcher.subscribe(AssignmentInvited, _on_assignment_invited)
     dispatcher.subscribe(AssignmentExpired, _on_assignment_expired)
     dispatcher.subscribe(ReportResolved, _on_report_resolved)
+    dispatcher.subscribe(InstructorVerificationRequested, _on_instructor_verification_requested)
     dispatcher.subscribe(InstructorVerificationResolved, _on_instructor_verification_resolved)
     dispatcher.subscribe(LaboratoryApproved, _on_laboratory_approved)
     dispatcher.subscribe(LaboratoryRejected, _on_laboratory_rejected)

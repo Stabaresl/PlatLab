@@ -38,9 +38,7 @@ class ObtenerDashboardAdminQuery:
         if input_dto.actor_rol != "administrador":
             raise ForbiddenError(_SIN_PERMISO_MSG)
 
-        usuarios_por_rol: dict[str, int] = {}
-        for usuario in self._user_repository.find_all():
-            usuarios_por_rol[usuario.rol.value] = usuarios_por_rol.get(usuario.rol.value, 0) + 1
+        usuarios_por_rol = self._user_repository.contar_por_rol()
 
         labs_publicados = self._laboratorio_repository.find_publicados()
         asignaciones_activas = self._asignacion_repository.find_todas_activas()

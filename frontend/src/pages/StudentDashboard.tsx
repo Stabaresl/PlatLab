@@ -465,16 +465,16 @@ const ORCID_REGEX = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/
 
 const ESTADO_COPY: Record<SolicitudInstructor["estado"], { titulo: string; texto: (motivo: string | null) => string }> = {
   pendiente: {
-    titulo: "Verificando tu ORCID",
-    texto: () => "Estamos comparando tu ORCID contra OpenAlex (nombre + publicaciones registradas). Te avisaremos el resultado por notificación en unos minutos.",
+    titulo: "Tu solicitud está en revisión",
+    texto: () => "Un administrador va a revisar tus datos junto con tu perfil ORCID y te avisaremos por notificación cuando tome una decisión.",
   },
   aprobada: {
     titulo: "¡Ya eres instructor!",
-    texto: () => "Tu ORCID fue verificado en OpenAlex. Ya puedes crear y publicar laboratorios.",
+    texto: () => "Un administrador aprobó tu solicitud. Ya puedes crear y publicar laboratorios.",
   },
   rechazada: {
-    titulo: "Solicitud rechazada",
-    texto: (motivo) => motivo || "No pudimos verificar tu ORCID contra OpenAlex.",
+    titulo: "Solicitud no aprobada",
+    texto: (motivo) => motivo || "Un administrador revisó tu solicitud y no la aprobó.",
   },
 }
 

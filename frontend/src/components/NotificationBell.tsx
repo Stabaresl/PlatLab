@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useNavigate } from "react-router-dom"
-import { listNotifications, markNotificationRead, ApiError, type Notificacion } from "../pages/api"
+import { listNotifications, markNotificationRead, refrescarSesion, ApiError, type Notificacion } from "../pages/api"
 import { relativeTime, TONE_COLOR, type ActivityTone } from "./ActivityTimeline"
 import { IconBell } from "./icons"
 
@@ -16,6 +16,7 @@ const TIPO_TONE: Record<string, ActivityTone> = {
   vencimiento_proximo: "warning",
   reporte_resuelto: "info",
   logro_desbloqueado: "success",
+  solicitud_instructor: "info",
 }
 
 const POLL_INTERVAL_MS = 60_000
@@ -33,9 +34,10 @@ function rutaDeNotificacion(n: Notificacion): string | null {
       return n.entidad_id ? `/resolver/${n.entidad_id}` : "/dashboard"
     case "invitacion":
     case "reporte_resuelto":
-    case "instructor_aprobado":
     case "instructor_rechazado":
       return "/dashboard"
+    case "solicitud_instructor":
+      return "/dashboard#solicitudes-instructor"
     case "laboratorio_aprobado":
     case "laboratorio_rechazado":
       return n.entidad_id ? `/laboratorios/${n.entidad_id}/revision` : "/dashboard"
@@ -131,6 +133,16 @@ export default function NotificationBell() {
       } catch {
         // No es crítico si falla marcar como leída — se reintentará en el próximo poll.
       }
+    }
+
+    if (n.tipo === "instructor_aprobado") {
+      // El access token vigente todavía dice "estudiante": se refresca ya
+      // para traer el rol nuevo y se recarga el panel completo (Navbar y
+      // dashboard leen el rol al montar).
+      setOpen(false)
+      await refrescarSesion()
+      window.location.assign("/dashboard")
+      return
     }
 
     const ruta = rutaDeNotificacion(n)

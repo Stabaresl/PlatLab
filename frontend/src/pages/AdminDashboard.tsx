@@ -26,6 +26,7 @@ import ProgressRing from "../components/ProgressRing"
 import TerminalHeader from "../components/TerminalHeader"
 import StatusDot from "../components/StatusDot"
 import TiltCard from "../components/TiltCard"
+import SolicitudesInstructorPanel from "../components/SolicitudesInstructorPanel"
 import ActivityTimeline, { type ActivityItem, type ActivityTone } from "../components/ActivityTimeline"
 import { IconChart, IconUsers, IconTrophy, IconFlask, IconActivity, IconGlobe, IconClock } from "../components/icons"
 import { Skeleton } from "../components/ui/skeleton"
@@ -43,8 +44,11 @@ const AUDIT_LABELS: Record<string, { title: string; tone: ActivityTone }> = {
   laboratory_catalog_visibility_enabled: { title: "Laboratorio publicado en el catálogo", tone: "success" },
   laboratory_catalog_visibility_disabled: { title: "Laboratorio retirado del catálogo", tone: "neutral" },
   instructor_verification_requested: { title: "Solicitud de instructor recibida", tone: "info" },
-  instructor_verification_approved: { title: "Instructor verificado vía OpenAlex", tone: "success" },
-  instructor_verification_rejected: { title: "Verificación de instructor rechazada", tone: "warning" },
+  instructor_verification_approved: { title: "Solicitud de instructor aprobada", tone: "success" },
+  instructor_verification_rejected: { title: "Solicitud de instructor rechazada", tone: "warning" },
+  user_disabled: { title: "Usuario deshabilitado", tone: "warning" },
+  user_enabled: { title: "Usuario reactivado", tone: "info" },
+  user_role_changed: { title: "Rol de usuario cambiado", tone: "info" },
   flag_validated: { title: "Flag capturada", tone: "success" },
   section_completed: { title: "Sección completada", tone: "success" },
   lab_completed: { title: "Laboratorio completado", tone: "success" },
@@ -314,6 +318,8 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </section>
+
+                <SolicitudesInstructorPanel />
 
                 {/* ═══ CATÁLOGO — LABORATORIOS DE INSTRUCTORES ═══ */}
                 <section className="mb-8 sm:mb-10">

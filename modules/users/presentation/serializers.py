@@ -40,3 +40,9 @@ class SolicitarInstructorRequestSerializer(serializers.Serializer):
     institucion = serializers.CharField(max_length=200, required=False, allow_blank=True)
     especialidades = serializers.CharField(max_length=300, required=False, allow_blank=True)
     motivacion = serializers.CharField(max_length=1000, required=False, allow_blank=True)
+
+
+class ResolverSolicitudInstructorRequestSerializer(serializers.Serializer):
+    """`POST /users/instructor-requests/{id}/approve|reject/` — `motivo` obligatorio al rechazar (caso de uso)."""
+
+    motivo = serializers.CharField(max_length=300, required=False, allow_blank=True)

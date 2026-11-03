@@ -1,5 +1,7 @@
 import uuid
 
+from django.db.models import Count
+
 from modules.users.domain.entities import ProveedorAutenticacion, SolicitudInstructor, User
 from modules.users.domain.value_objects import SolicitudInstructorEstado
 from modules.users.infrastructure.mappers import (
@@ -29,12 +31,7 @@ class UserRepository:
         model = UserModel.objects.filter(id=user_id).first()
         return user_to_entity(model) if model else None
 
-    def find_all(
-        self,
-        nombre: str | None = None,
-        rol: str | None = None,
-        activo: bool | None = None,
-    ) -> list[User]:
+    def _filtrar(self, nombre, rol, activo):
         queryset = UserModel.objects.all()
         if nombre:
             queryset = queryset.filter(nombre_completo__icontains=nombre)
@@ -42,12 +39,40 @@ class UserRepository:
             queryset = queryset.filter(rol=rol)
         if activo is not None:
             queryset = queryset.filter(is_active=activo)
+        return queryset
 
-        queryset = queryset.order_by("nombre_completo")
+    def find_all(
+        self,
+        nombre: str | None = None,
+        rol: str | None = None,
+        activo: bool | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[User]:
+        queryset = self._filtrar(nombre, rol, activo).order_by("nombre_completo", "id")
+        if limit is not None:
+            queryset = queryset[offset : offset + limit]
         return [user_to_entity(m) for m in queryset]
 
+    def contar(
+        self, nombre: str | None = None, rol: str | None = None, activo: bool | None = None
+    ) -> int:
+        return self._filtrar(nombre, rol, activo).count()
+
+    def contar_por_rol(self) -> dict[str, int]:
+        filas = UserModel.objects.values("rol").annotate(total=Count("id"))
+        return {fila["rol"]: fila["total"] for fila in filas}
+
+    def get_by_ids(self, user_ids: list[uuid.UUID]) -> dict[uuid.UUID, User]:
+        if not user_ids:
+            return {}
+        return {m.id: user_to_entity(m) for m in UserModel.objects.filter(id__in=user_ids)}
+
     def get_by_email(self, email: str) -> User | None:
-        model = UserModel.objects.filter(email=email).first()
+        # iexact: el correo no distingue mayúsculas — "Ana@x.com" y
+        # "ana@x.com" son la misma persona (evita cuentas duplicadas y que el
+        # login falle por una mayúscula, ej. un email de OAuth).
+        model = UserModel.objects.filter(email__iexact=email.strip()).first()
         return user_to_entity(model) if model else None
 
     def get_by_username(self, username: str) -> User | None:
@@ -55,7 +80,7 @@ class UserRepository:
         return user_to_entity(model) if model else None
 
     def exists_by_email(self, email: str) -> bool:
-        return UserModel.objects.filter(email=email).exists()
+        return UserModel.objects.filter(email__iexact=email.strip()).exists()
 
     def add(self, user: User) -> User:
         model = user_to_model(user)
@@ -113,6 +138,13 @@ class SolicitudInstructorRepository:
         )
         return solicitud_instructor_to_entity(model) if model else None
 
+    def find_por_estado(self, estado: str | None) -> list[SolicitudInstructor]:
+        """Cola de revisión del admin: más antiguas primero (orden de llegada)."""
+        queryset = SolicitudInstructorModel.objects.all()
+        if estado:
+            queryset = queryset.filter(estado=estado)
+        return [solicitud_instructor_to_entity(m) for m in queryset.order_by("created_at")[:200]]
+
     def add(self, solicitud: SolicitudInstructor) -> SolicitudInstructor:
         model = solicitud_instructor_to_model(solicitud)
         model.save()
@@ -124,5 +156,6 @@ class SolicitudInstructorRepository:
         model.motivo_rechazo = solicitud.motivo_rechazo
         model.resultado_verificacion = solicitud.resultado_verificacion
         model.resolved_at = solicitud.resolved_at
+        model.revisada_por_id = solicitud.revisada_por_id
         model.save()
         return solicitud_instructor_to_entity(model)
