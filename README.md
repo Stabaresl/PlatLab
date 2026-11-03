@@ -13,8 +13,49 @@ Documentación funcional y técnica extendida, sprint a sprint, en
 
 ---
 
+## Instalación rápida (para usar la plataforma)
+
+Solo necesitas **Docker Desktop** (Windows/macOS) o **Docker Engine + compose** (Linux), encendido. No hace falta instalar Python, Node ni Bun: todo se construye dentro de Docker.
+
+```bash
+git clone <url-del-repo>
+cd PlatLab
+```
+
+| Sistema | Cómo instalar |
+|---|---|
+| Windows | Doble clic en **`instalar.cmd`** (o en PowerShell: `.\platlab.ps1`) |
+| Linux / macOS | `bash platlab.sh` |
+
+El instalador revisa los requisitos, crea el `.env` con claves aleatorias, construye las imágenes (también las de los laboratorios), levanta todo, carga los laboratorios, el mapa de aprendizaje y los logros, y al final te muestra la dirección para entrar. La primera vez tarda varios minutos; después arranca en segundos.
+
+Te pregunta **cómo se va a usar**:
+
+- **Solo en este computador**: entra por `http://localhost:8080`, con las cuentas demo de la tabla de [credenciales](#credenciales-de-prueba). Nadie más en la red puede entrar.
+- **En red / aula**: otros equipos entran por `http://<IP-de-este-equipo>:8080`. Las cuentas demo quedan desactivadas (sus contraseñas están en este README) y creas tu cuenta de administrador; la contraseña se genera y se muestra una sola vez. En Windows, abre el puerto en el firewall (el instalador lo hace si lo ejecutas como administrador, o te da el comando) y verifica que tu red esté marcada como *Privada*.
+
+Para el día a día (en Linux/macOS cambia `.\platlab.ps1` por `bash platlab.sh`):
+
+| Comando | Qué hace |
+|---|---|
+| `.\platlab.ps1 iniciar` | Enciende la plataforma (por ejemplo, después de reiniciar el equipo) |
+| `.\platlab.ps1 detener` | La apaga sin borrar nada |
+| `.\platlab.ps1 estado` | Muestra qué servicios están corriendo |
+| `.\platlab.ps1 logs [servicio]` | Muestra los registros (`web`, `worker`, `gateway`...) |
+| `.\platlab.ps1 actualizar` | Descarga la última versión (`git pull`) y la reconstruye conservando los datos |
+| `.\platlab.ps1 desinstalar [-BorrarDatos]` | Elimina los contenedores; con `-BorrarDatos` (`--borrar-datos` en Linux) también la base de datos |
+
+Opciones sin preguntas, por ejemplo para preparar varios equipos: `.\platlab.ps1 instalar -Modo red -Puerto 8090 -AdminEmail profe@universidad.edu.co -SinPreguntas` (en Linux: `--modo red --puerto 8090 --admin-email ... --si`).
+
+**Cómo queda armado.** Todo entra por un único puerto, servido por el contenedor `gateway` (Caddy). Ese contenedor entrega la interfaz ya compilada, hace de proxy hacia la API y el WebSocket de la terminal, y sirve los archivos subidos de forma aislada (`docker-compose.local.yml`, `frontend/Dockerfile`, `frontend/docker/Caddyfile`). El backend corre con `config.settings.local`: `DEBUG` apagado y sobre HTTP, porque en una red local no hay dominio para un certificado. Para publicarlo en internet con HTTPS existe `docker-compose.prod.yml`.
+
+> El instalador y el entorno de desarrollo comparten proyecto de Docker: si después de instalar quieres volver al modo desarrollo (código montado, recarga en caliente, puerto 8000), basta con `docker compose up -d`. Para volver al modo instalado: `.\platlab.ps1 iniciar`.
+
+---
+
 ## Índice
 
+- [Instalación rápida (para usar la plataforma)](#instalación-rápida-para-usar-la-plataforma)
 - [Stack](#stack)
 - [Requisitos previos](#requisitos-previos)
 - [Instalación y arranque (Docker — recomendado)](#instalación-y-arranque-docker--recomendado)
@@ -32,40 +73,40 @@ Documentación funcional y técnica extendida, sprint a sprint, en
 ## Stack
 
 **Backend**
-- Python 3.12, Django 6, Django REST Framework
-- PostgreSQL 16, Redis 7
-- Celery + Celery Beat (tareas asíncronas, vencimiento de asignaciones, reaper de entornos inactivos)
-- Django Channels + Daphne (WebSocket, sirve la terminal real)
-- `docker` (SDK de Python) — el backend crea/gestiona contenedores Docker "hermanos" para cada entorno de práctica
+- Python 3.12, Django 6, Django REST Framework, SimpleJWT
+- PostgreSQL 16 (pool de conexiones nativo de Django + psycopg 3), Redis 7
+- Uvicorn con varios procesos (HTTP + WebSocket, ASGI) y Django Channels para la terminal real
+- Celery + Celery Beat: tareas asíncronas, vencimiento de asignaciones, reaper de entornos inactivos y una cola dedicada (`entornos`) para levantar laboratorios en paralelo
+- `docker` (SDK de Python): el backend crea contenedores Docker "hermanos", uno por estudiante, a través de un proxy del socket que solo deja pasar las llamadas necesarias
 
 **Frontend**
 - React 19 + TypeScript + Vite
 - Tailwind CSS 4 + shadcn/ui (Radix UI)
-- framer-motion, anime.js (animaciones)
+- framer-motion (animaciones)
 - xterm.js (terminal real por WebSocket)
 
-**Infraestructura de desarrollo**: Docker Compose (`postgres`, `redis`, `web`, `worker`, `beat`).
+**Infraestructura**: Docker Compose (`postgres`, `redis`, `docker-proxy`, `web`, `worker`, `worker-entornos`, `beat` y, en la instalación local, `gateway`).
 
 ---
 
 ## Requisitos previos
 
-Instalá esto **antes** de clonar/arrancar, o vas a tener errores:
+Para **usar** la plataforma basta con Docker (ver [Instalación rápida](#instalación-rápida-para-usar-la-plataforma)). Para **desarrollar**, instala además:
 
 | Herramienta | Versión mínima | Para qué | Verificar con |
 |---|---|---|---|
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | reciente, con WSL2 backend en Windows | correr Postgres/Redis/backend y los contenedores de cada laboratorio | `docker --version` y `docker compose version` |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | con compose 2.24.4 o superior; en Windows, backend WSL2 | correr Postgres/Redis/backend y los contenedores de cada laboratorio | `docker --version` y `docker compose version` |
 | [Git](https://git-scm.com/) | cualquiera reciente | clonar el repo | `git --version` |
-| [Bun](https://bun.sh/) | 1.x (o Node.js 20+ y npm como alternativa) | frontend | `bun --version` |
+| [Bun](https://bun.sh/) | 1.2 o superior (o Node.js 20+ y npm) | frontend en modo desarrollo | `bun --version` |
 | Python | 3.12+ | **solo** si vas a correr el backend fuera de Docker | `python --version` |
 
-**Windows**: Docker Desktop debe estar corriendo con el backend **WSL2** activado (no Hyper-V clásico) — el backend monta `/var/run/docker.sock` dentro del contenedor `web`/`worker` para poder crear los contenedores de cada laboratorio, y eso solo funciona de forma confiable con WSL2. Abrí Docker Desktop y esperá a que la ballena del ícono de la bandeja quede fija (no animada) antes de arrancar.
+**Windows**: Docker Desktop debe estar corriendo con el backend **WSL2** activado (no Hyper-V clásico): el proxy del socket de Docker monta `/var/run/docker.sock`, y eso solo funciona de forma confiable con WSL2. Abre Docker Desktop y espera a que diga *Engine running* antes de arrancar.
 
 ---
 
 ## Instalación y arranque (Docker — recomendado)
 
-Este es el camino soportado y probado: todo el backend (API, worker, beat, base de datos, Redis) corre en contenedores, y el mismo Docker que los corre es el que el backend usa para levantar los laboratorios ("Docker-outside-of-Docker").
+Este es el modo de **desarrollo**: el código del repo se monta dentro de los contenedores. Todo el backend (API, workers, beat, base de datos, Redis) corre en Docker, y el mismo Docker que los corre es el que el backend usa para levantar los laboratorios ("Docker-outside-of-Docker").
 
 ### 1. Clonar el repositorio
 
@@ -80,9 +121,9 @@ cd PlatLab
 cp .env.example .env
 ```
 
-Los valores por defecto de `.env.example` ya funcionan para desarrollo local (no hace falta tocar nada para levantar el proyecto). Si querés cambiar contraseñas de Postgres o activar OAuth real, editá `.env` — ver [Variables de entorno](#variables-de-entorno).
+Los valores de `.env.example` funcionan para desarrollo local. Para cambiar contraseñas de Postgres o activar OAuth real, edita `.env` (ver [Variables de entorno](#variables-de-entorno)).
 
-`.env` **nunca** se sube al repositorio (está en `.gitignore`) — cada quien mantiene el suyo local.
+`.env` **nunca** se sube al repositorio (está en `.gitignore`): cada quien mantiene el suyo.
 
 ### 3. Levantar los servicios
 
@@ -90,29 +131,35 @@ Los valores por defecto de `.env.example` ya funcionan para desarrollo local (no
 docker compose up --build
 ```
 
-Esto levanta 4 servicios (Postgres y Redis se descargan la primera vez, puede tardar unos minutos):
+Esto levanta (la primera vez descarga imágenes y puede tardar unos minutos):
 
-- `postgres` — base de datos (puerto `5432`)
-- `redis` — caché / broker de Celery / refresh tokens (puerto `6379`)
-- `web` — Daphne sirviendo la API REST + WebSocket en `http://localhost:8000` (HTTP y WS en el mismo proceso ASGI, por eso no se usa `runserver`)
-- `worker` — Celery worker (notificaciones, auditoría, vencimiento de asignaciones)
-- `beat` — Celery Beat (dispara tareas periódicas: expira asignaciones vencidas, apaga entornos Docker inactivos)
+- `postgres`: base de datos (sin puerto publicado; ver `docker-compose.override.example.yml` si necesitas entrar desde el host)
+- `redis`: caché, broker de Celery y refresh tokens (sin puerto publicado)
+- `docker-proxy`: único punto de contacto con el Docker del host
+- `web`: Uvicorn sirviendo la API REST + WebSocket en `http://localhost:8000`
+- `worker`: Celery (notificaciones, auditoría, verificación OpenAlex, vencimientos)
+- `worker-entornos`: Celery con hilos, dedicado a levantar contenedores de laboratorio
+- `beat`: tareas periódicas (expira asignaciones vencidas, apaga entornos inactivos)
 
-El contenedor `web` corre las migraciones automáticamente al arrancar (`docker/entrypoint.sh`) — no hace falta correr `migrate` a mano.
+Solo `web` corre las migraciones al arrancar (`docker/entrypoint.sh`); los workers esperan a que esté sano.
 
-Para correrlo en segundo plano: `docker compose up -d --build`. Para ver logs: `docker compose logs -f web`. Para parar todo: `docker compose down` (agregá `-v` si además querés borrar los datos de Postgres).
+En segundo plano: `docker compose up -d --build`. Logs: `docker compose logs -f web`. Para parar: `docker compose down` (con `-v` además borras los datos).
 
 ### 4. Cargar datos de demo
 
-Con los contenedores corriendo, en otra terminal:
+Con los contenedores corriendo:
 
 ```bash
 docker compose exec web python manage.py seed_demo_data
+docker compose exec web python manage.py seed_roadmap_labs
+docker compose exec web python manage.py seed_labs_expansion
+docker compose exec web python manage.py seed_gamification_catalog
+docker build -t platlab-target-sqli:latest docker/targets/sqli-login   # imagen del laboratorio con terminal real
 ```
 
-Esto crea (si no existen ya) los tres usuarios de prueba de la sección siguiente, un laboratorio plantilla publicado y visible en el catálogo público, una copia del instructor con examen, y una asignación ya aceptada del estudiante — es decir, deja la plataforma en un estado navegable de punta a punta sin cargar nada a mano. El comando es idempotente: correrlo de nuevo no duplica datos.
+`seed_demo_data` crea los tres usuarios de prueba, un laboratorio plantilla publicado en el catálogo, una copia del instructor con examen y una asignación aceptada del estudiante. Los otros tres cargan el mapa de aprendizaje, los laboratorios adicionales y el catálogo de logros y títulos. Todos son idempotentes: correrlos de nuevo no duplica datos.
 
-En este punto el backend ya está arriba y probado en `http://localhost:8000/api/v1/`.
+El backend queda en `http://localhost:8000/api/v1/`.
 
 ---
 
@@ -126,7 +173,7 @@ bun install     # o: npm install
 bun run dev     # o: npm run dev
 ```
 
-Se sirve en `http://localhost:5173`. Por defecto apunta al backend en `http://localhost:8000/api/v1` (ver `frontend/src/pages/api.ts`); si necesitás otra URL, creá `frontend/.env.local`:
+Se sirve en `http://localhost:5173` y apunta al backend en `http://localhost:8000/api/v1`. En el build de producción (el que usa el instalador) usa rutas relativas, porque la interfaz y la API comparten origen detrás del gateway. Para forzar otra URL, crea `frontend/.env.local`:
 
 ```bash
 VITE_API_URL=http://localhost:8000/api/v1
@@ -134,13 +181,13 @@ VITE_API_URL=http://localhost:8000/api/v1
 # VITE_OAUTH_ENABLED=true
 ```
 
-Los botones de login social (Google/GitHub) están ocultos por defecto porque no hay credenciales OAuth configuradas — es el comportamiento esperado en un entorno de prueba, no un error.
+Los botones de login social (Google/GitHub) están ocultos por defecto porque no hay credenciales OAuth configuradas: es lo esperado en un entorno de prueba, no un error.
 
 ---
 
 ## Credenciales de prueba
 
-Creadas por `seed_demo_data` (ver paso 4 arriba). Un rol por usuario:
+Creadas por `seed_demo_data`. Un rol por usuario:
 
 | Rol | Email | Contraseña |
 |---|---|---|
@@ -148,27 +195,28 @@ Creadas por `seed_demo_data` (ver paso 4 arriba). Un rol por usuario:
 | Instructor | `instructor@platlab.demo` | `Instructor1234` |
 | Estudiante | `estudiante@platlab.demo` | `Estudiante1234` |
 
-Entrá en `http://localhost:5173/login` con cualquiera de estos para ver el dashboard correspondiente a ese rol.
+Estas contraseñas son públicas: el instalador en modo **red / aula** desactiva estas cuentas. Para cuentas reales usa `python manage.py create_production_users --admin-email ...` (genera la contraseña y la muestra una sola vez).
 
 ---
 
 ## Probar el flujo completo
 
-Con backend + frontend arriba y `seed_demo_data` ya corrido:
+Con backend + frontend arriba y las semillas cargadas:
 
-1. **Como estudiante** (`estudiante@platlab.demo`) — entrá al Dashboard, vas a ver el laboratorio ya asignado por el seed. Abrilo, recorré las secciones (teoría + guía práctica), enviá la flag de la sección práctica y completá el examen final al terminar todas las secciones.
-2. **Terminal simulada vs. real**: dentro de una sección con práctica, el toggle de terminal permite elegir entre la simulada (guion de comandos, no ejecuta nada real) y la real (xterm.js conectado por WebSocket a un contenedor Docker efímero — tarda unos segundos en "conectar" la primera vez mientras el backend levanta el contenedor).
-3. **Como instructor** (`instructor@platlab.demo`) — vas a ver la copia del laboratorio que duplicó del catálogo, con la opción de editar secciones, definir flags y armar el examen.
-4. **Como administrador** (`admin@platlab.demo`) — panel de administración general (usuarios, laboratorio plantilla).
-5. **Catálogo público** (`http://localhost:5173/laboratorios`, sin necesidad de login) — muestra el laboratorio plantilla publicado por el admin.
+1. **Como estudiante** (`estudiante@platlab.demo`): en el Dashboard verás el laboratorio asignado. Ábrelo, recorre las secciones (teoría + guía práctica), envía la flag de la sección práctica y completa el examen final.
+2. **Terminal simulada vs. real**: en una sección con práctica puedes elegir la terminal simulada (guion de comandos, no ejecuta nada real) o la real (xterm.js conectado por WebSocket a un contenedor Docker propio y descartable; tarda unos segundos la primera vez mientras se levanta).
+3. **Como estudiante, pedir ser instructor**: desde el Dashboard, con un ORCID. La solicitud queda pendiente; la plataforma consulta OpenAlex en segundo plano y guarda lo que encontró.
+4. **Como administrador** (`admin@platlab.demo`): panel con usuarios, cola de revisión de laboratorios, actividad reciente y **solicitudes de instructor**, donde ves los datos de quien se inscribió junto a lo que dice OpenAlex de su ORCID, y apruebas o rechazas con un motivo.
+5. **Como instructor** (`instructor@platlab.demo`): la copia del laboratorio duplicada del catálogo, con edición de secciones, flags y examen.
+6. **Catálogo público** (`/laboratorios`, sin login): los laboratorios publicados.
 
-Si algo de esto no carga, revisá primero [Solución de problemas comunes](#solución-de-problemas-comunes).
+Si algo no carga, revisa [Solución de problemas comunes](#solución-de-problemas-comunes).
 
 ---
 
 ## Correr sin Docker (backend nativo)
 
-Alternativa para desarrollar el backend sin reconstruir la imagen en cada cambio. Necesitás igualmente **Postgres y Redis corriendo** (podés levantar solo esos dos con Docker: `docker compose up postgres redis`) **y Docker Desktop corriendo en el host** si querés que funcionen los entornos reales de laboratorio (el backend igual necesita hablarle a un daemon Docker).
+Alternativa para desarrollar el backend sin reconstruir la imagen. Igual necesitas **Postgres y Redis** (copia `docker-compose.override.example.yml` como `docker-compose.override.yml` para publicarlos en `127.0.0.1` y luego `docker compose up postgres redis`) y **Docker corriendo en el host** si quieres los entornos reales de laboratorio.
 
 ```bash
 python -m venv venv
@@ -177,23 +225,24 @@ venv\Scripts\Activate.ps1
 # Linux/Mac:
 source venv/bin/activate
 
-pip install -r requirements/dev.txt
+pip install -r requirements/dev.txt -c requirements/constraints.txt
 
-# Editá .env: POSTGRES_HOST=localhost (no "postgres", ese nombre solo
-# resuelve dentro de la red de docker-compose)
+# Edita .env: POSTGRES_HOST=localhost y REDIS_URL=redis://localhost:6379/0
+# ("postgres"/"redis" solo resuelven dentro de la red de docker compose)
 
 python manage.py migrate
 python manage.py seed_demo_data
 
-# Daphne, no runserver — runserver no entiende WebSockets y la terminal
-# real del frontend se queda "conectando" para siempre:
-daphne -b 0.0.0.0 -p 8000 config.asgi:application
+# Uvicorn, no runserver: runserver no entiende WebSockets y la terminal
+# real se queda "conectando" para siempre.
+uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --lifespan off
 ```
 
-En otra terminal, para las tareas periódicas (vencimiento de asignaciones, apagado de entornos inactivos):
+En otras terminales, los workers y las tareas periódicas:
 
 ```bash
 celery -A config worker -l info
+celery -A config worker -Q entornos --pool threads --concurrency 20 -n entornos@%h -l info
 celery -A config beat -l info
 ```
 
@@ -201,91 +250,110 @@ celery -A config beat -l info
 
 ## Tests
 
-**Backend** (pytest, corre contra `config.settings.test` — Celery en modo síncrono, no necesita worker real):
+**Backend** (pytest contra `config.settings.test`: Celery en modo síncrono, no necesita worker):
 
 ```bash
 docker compose exec web pytest
-# o, con el venv activado y Postgres/Redis corriendo:
-pytest
+docker compose exec web ruff check .
 ```
 
-**Frontend** (type-check + lint):
+**Frontend** (tipos + lint):
 
 ```bash
 cd frontend
-bun run build   # tsc -b + vite build, falla si hay errores de tipos
+bun run build   # tsc -b + vite build: falla si hay errores de tipos
 bun run lint
 ```
+
+**Carga y estrés**: ver [`loadtests/README.md`](./loadtests/README.md) (Locust para la API y un script que levanta 100 laboratorios a la vez).
 
 ---
 
 ## Variables de entorno
 
-Definidas en `.env` (ver `.env.example` para la plantilla completa):
+Definidas en `.env` (plantilla completa en `.env.example`; el instalador las completa solo):
 
 | Variable | Uso | ¿Hace falta tocarla para desarrollo local? |
 |---|---|---|
-| `SECRET_KEY` | clave de Django | no (usá el valor de ejemplo solo en local, nunca en producción) |
+| `SECRET_KEY` | clave de Django (firma de tokens) | no en local; en cualquier instalación compartida, una aleatoria (el instalador la genera) |
+| `FLAG_HASH_KEY` | clave HMAC de flags y respuestas de examen; vacía = derivada de `SECRET_KEY` | no; si rotas `SECRET_KEY`, pon aquí la anterior |
 | `DEBUG` | modo debug de Django | no |
-| `ALLOWED_HOSTS` | hosts permitidos | no |
-| `CORS_ALLOWED_ORIGINS` | orígenes permitidos para el frontend | no, ya incluye `localhost:5173` |
+| `ALLOWED_HOSTS` | hosts permitidos (dev/prod) | no |
+| `CORS_ALLOWED_ORIGINS` | orígenes permitidos para el frontend de desarrollo | no, ya incluye `localhost:5173` |
 | `POSTGRES_*` | conexión a la base de datos | no, salvo que cambies credenciales |
-| `REDIS_URL` | Celery/refresh tokens/canal de Channels | no |
-| `DEFAULT_FROM_EMAIL` | remitente de emails (dev usa consola, no envía nada real) | no |
-| `GOOGLE_OAUTH_*`, `GITHUB_OAUTH_*` | login social | solo si querés probar OAuth real; si no, dejalos en `changeme` y los botones quedan ocultos |
+| `REDIS_URL` | Celery, refresh tokens, canal de Channels | no |
+| `DJANGO_ADMIN_URL` | ruta del admin de Django | no; el instalador usa una ruta aleatoria |
+| `PLATLAB_MODO`, `PLATLAB_PORT`, `PLATLAB_BIND` | modo, puerto y alcance de la instalación local | las escribe el instalador |
+| `WEB_CONCURRENCY`, `CELERY_CONCURRENCY`, `LAB_ENV_*` | capacidad (procesos web, workers, laboratorios simultáneos) | solo para afinar con muchos usuarios |
+| `DEFAULT_FROM_EMAIL` | remitente de emails (dev usa consola) | no |
+| `GOOGLE_OAUTH_*`, `GITHUB_OAUTH_*` | login social | solo para probar OAuth real; si no, déjalos en `changeme` y los botones quedan ocultos |
 
 **Frontend** (`frontend/.env.local`, opcional, no versionado):
 
-| Variable | Default si no se define |
+| Variable | Valor si no se define |
 |---|---|
-| `VITE_API_URL` | `http://localhost:8000/api/v1` |
+| `VITE_API_URL` | `http://localhost:8000/api/v1` en desarrollo; `/api/v1` (mismo origen) en el build de producción |
 | `VITE_OAUTH_ENABLED` | `false` (oculta los botones de Google/GitHub) |
 
 ---
 
 ## Solución de problemas comunes
 
-**`docker compose up` falla en `web` con error de permisos sobre `/var/run/docker.sock`**
-En Windows, confirmá que Docker Desktop esté corriendo con el backend **WSL2** (Settings → General → "Use the WSL 2 based engine"). Con el backend Hyper-V clásico, el socket no queda expuesto de forma compatible con este montaje.
+**El instalador dice que Docker no está corriendo**
+Abre Docker Desktop y espera a que diga *Engine running*. En Linux: `sudo systemctl start docker`; si el error es de permisos, agrega tu usuario al grupo `docker` (`sudo usermod -aG docker $USER`) y vuelve a iniciar sesión.
 
-**`port is already allocated` para 5432 / 6379 / 8000 / 5173**
-Ya tenés otro Postgres/Redis/servidor corriendo en ese puerto (local o de otro proyecto). Parálo, o cambiá el mapeo de puertos en `docker-compose.yml`/`vite.config.ts` para ese servicio.
+**El instalador falla descargando imágenes (`no such host`, `timeout`)**
+Es la red: el instalador reintenta solo cuatro veces. Si sigue fallando, revisa la conexión (o el proxy de la red de la institución) y vuelve a ejecutarlo; retoma sin perder nada.
 
-**El frontend carga pero todas las peticiones a la API fallan / error de CORS en la consola del navegador**
-Confirmá que el backend esté arriba en `http://localhost:8000` y que `CORS_ALLOWED_ORIGINS` en `.env` incluya la URL exacta desde la que corre el frontend (por defecto `http://localhost:5173`).
+**Otros equipos de la red no logran entrar (modo red / aula)**
+Comprueba que entras desde el propio equipo con `http://<IP>:8080`. Si ahí funciona, es el firewall: en Windows ejecuta el instalador como administrador o crea la regla que te sugiere, y marca la red como *Privada*. Si la IP del equipo cambió (DHCP), solo usa la nueva: no hace falta reinstalar.
 
-**La terminal "real" de un laboratorio se queda en "conectando..." indefinidamente**
-- Confirmá que el backend se está sirviendo con `daphne` (Docker Compose ya lo hace) y no con `python manage.py runserver` — `runserver` no soporta WebSockets.
-- Confirmá que Docker Desktop está corriendo (el backend necesita crear un contenedor nuevo para ese entorno) y que el contenedor `web` tiene montado `/var/run/docker.sock` (ya viene así en `docker-compose.yml`).
-- Mirá `docker compose logs -f worker` y `docker compose logs -f web` por errores del SDK de Docker.
+**`docker compose up` falla en `docker-proxy` con error sobre `/var/run/docker.sock`**
+En Windows, confirma que Docker Desktop usa el backend **WSL2** (Settings → General → "Use the WSL 2 based engine").
+
+**`port is already allocated` para 8000 / 8080 / 5173**
+Otro programa ya usa ese puerto. Detenlo o elige otro: `.\platlab.ps1 instalar -Puerto 8090` (instalación) o cambia el mapeo en `docker-compose.yml` / `vite.config.ts` (desarrollo).
+
+**El frontend de desarrollo carga pero las peticiones a la API fallan / error de CORS**
+Confirma que el backend esté arriba en `http://localhost:8000` y que `CORS_ALLOWED_ORIGINS` en `.env` incluya la URL exacta del frontend (por defecto `http://localhost:5173`).
+
+**La terminal "real" de un laboratorio se queda en "conectando..."**
+- Confirma que existe la imagen del laboratorio: `docker images platlab-target-sqli` (el instalador la construye; en desarrollo, ver el paso 4).
+- Confirma que Docker está corriendo y revisa `docker compose logs -f worker-entornos web` por errores del SDK de Docker.
+- Si corres el backend fuera de Docker, usa `uvicorn` (no `runserver`, que no soporta WebSockets).
 
 **`seed_demo_data` falla o no crea nada**
-Es idempotente pero necesita las migraciones ya aplicadas — si corriste el backend sin Docker, asegurate de haber corrido `python manage.py migrate` antes. Si falla a mitad de camino (por ejemplo, se cortó Postgres), volvé a correrlo: retoma desde donde falló sin duplicar lo ya creado.
+Necesita las migraciones aplicadas: sin Docker, corre antes `python manage.py migrate`. Si falla a mitad de camino, vuelve a correrlo: retoma sin duplicar lo ya creado.
 
 **No tengo Bun instalado**
-Todos los comandos `bun ...` de este README tienen equivalente en `npm`: `bun install` → `npm install`, `bun run dev` → `npm run dev`, etc. El repo versiona `bun.lock`, así que si usás npm vas a generar tu propio `package-lock.json` local (no hace falta commitearlo salvo que el equipo decida migrar el proyecto a npm).
+Solo hace falta para el frontend en desarrollo. Todos los comandos `bun ...` tienen equivalente en `npm` (`npm install`, `npm run dev`); el repo versiona `bun.lock`, así que npm generará su propio `package-lock.json` local.
 
 **Los botones de login con Google/GitHub no aparecen**
-Es el comportamiento esperado sin credenciales OAuth reales configuradas — ver [Variables de entorno](#variables-de-entorno). No es un bug.
+Es lo esperado sin credenciales OAuth reales (ver [Variables de entorno](#variables-de-entorno)).
 
 ---
 
 ## Estructura del proyecto
 
-Backend organizado por módulos con arquitectura hexagonal (domain / application / infrastructure / presentation) — detalle completo, módulo por módulo, en [`Documentación/estructura-carpetas.md`](./Documentación/estructura-carpetas.md).
+Backend organizado por módulos con arquitectura hexagonal (domain / application / infrastructure / presentation). Detalle módulo por módulo en [`Documentación/estructura-carpetas.md`](./Documentación/estructura-carpetas.md).
 
 ```
 PlatLab/
-├── config/                 # settings, urls, asgi (Channels), celery
-├── modules/                 # authentication, users, laboratories, assignments,
-│                             # progress, lab_environments, reports,
-│                             # notifications, audit — cada uno con sus 4 capas
-├── docker/                  # entrypoint.sh + targets vulnerables de demo
-├── frontend/                # React + Vite + Tailwind + shadcn/ui
-├── requirements/             # base / dev / prod
-├── Documentación/            # documentación funcional y técnica por sprint
-├── docker-compose.yml
+├── config/                    # settings (dev, local, prod, test), urls, asgi, celery
+├── modules/                   # authentication, users, laboratories, assignments,
+│                              # progress, lab_environments, reports, notifications,
+│                              # audit, gamification, roadmap, shared
+├── docker/                    # entrypoint.sh + targets vulnerables de los laboratorios
+├── frontend/                  # React + Vite + Tailwind + shadcn/ui (+ Dockerfile del gateway)
+├── loadtests/                 # pruebas de carga (Locust) y de estrés de laboratorios
+├── requirements/              # base / dev / prod + constraints.txt (versiones congeladas)
+├── Documentación/             # documentación funcional y técnica por sprint
+├── docker-compose.yml         # desarrollo
+├── docker-compose.local.yml   # instalación local / aula (platlab.ps1, platlab.sh)
+├── docker-compose.prod.yml    # servidor en internet con HTTPS (Caddy)
+├── instalar.cmd, platlab.ps1  # instalador y administración en Windows
+├── platlab.sh                 # instalador y administración en Linux/macOS
 └── .env.example
 ```
 
-Para el detalle funcional (casos de uso, reglas de negocio, dominio) y el progreso del proyecto sprint a sprint, ver [`Documentación/`](./Documentación).
+Para el detalle funcional (casos de uso, reglas de negocio, dominio) y el progreso sprint a sprint, ver [`Documentación/`](./Documentación).
