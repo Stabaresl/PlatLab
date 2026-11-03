@@ -35,12 +35,23 @@ class NotificacionRepository:
         model.save()
         return notificacion_to_entity(model)
 
-    def find_por_usuario(
-        self, user_id: uuid.UUID, leida: bool | None = None
-    ) -> list[Notificacion]:
+    def _filtrar(self, user_id: uuid.UUID, leida: bool | None):
         queryset = NotificacionModel.objects.filter(user_id=user_id)
         if leida is not None:
             queryset = queryset.filter(leida=leida)
+        return queryset
 
-        queryset = queryset.order_by("-fecha_creacion")
+    def find_por_usuario(
+        self,
+        user_id: uuid.UUID,
+        leida: bool | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[Notificacion]:
+        queryset = self._filtrar(user_id, leida).order_by("-fecha_creacion")
+        if limit is not None:
+            queryset = queryset[offset : offset + limit]
         return [notificacion_to_entity(m) for m in queryset]
+
+    def contar_por_usuario(self, user_id: uuid.UUID, leida: bool | None = None) -> int:
+        return self._filtrar(user_id, leida).count()

@@ -16,8 +16,9 @@ class _FakeRepo:
         self.resultado = resultado
         self.llamadas = 0
 
-    def find_catalogo(self, instructor_id=None, nivel_dificultad=None, tema=None):
+    def find_catalogo(self, instructor_id=None, nivel_dificultad=None, tema=None, nombre=None):
         self.llamadas += 1
+        self.ultimo_nombre = nombre
         return self.resultado
 
     def get_by_id(self, laboratorio_id):
@@ -84,6 +85,30 @@ def test_invalidar_catalogo_fuerza_recalculo_en_la_siguiente_lectura():
     assert fake_repo.llamadas == 2  # la invalidación forzó un recálculo
     assert len(tras_invalidar) == 2
     assert primera[0].id == lab_viejo.id
+
+
+def test_find_catalogo_acepta_filtro_por_nombre_y_lo_separa_en_el_cache():
+    """
+    Regresión: `GET /laboratories/?nombre=x` respondía 500 porque el
+    repositorio cacheado no aceptaba `nombre` (TypeError).
+    """
+    tema = f"cache-tema-{uuid.uuid4()}"
+    fake_repo = _FakeRepo([_lab(f"Lab Nombre {uuid.uuid4()}", tema)])
+    cached = CachedLaboratorioRepository(fake_repo)
+
+    cached.find_catalogo(tema=tema, nombre="sql")
+    assert fake_repo.ultimo_nombre == "sql"
+    cached.find_catalogo(tema=tema, nombre="xss")
+
+    assert fake_repo.llamadas == 2  # nombres distintos = claves de cache distintas
+
+
+def test_listar_endpoint_filtra_por_nombre_sin_error(db):
+    from rest_framework.test import APIClient
+
+    response = APIClient().get("/api/v1/laboratories/?nombre=inyeccion")
+
+    assert response.status_code == 200
 
 
 def test_get_by_id_y_get_secciones_no_pasan_por_cache():

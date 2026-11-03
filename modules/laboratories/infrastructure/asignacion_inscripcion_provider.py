@@ -29,3 +29,10 @@ class AsignacionInscripcionProvider:
 
     def esta_inscrito(self, estudiante_id: uuid.UUID, laboratorio_id: uuid.UUID) -> bool:
         return self._repo.existe_vigente(estudiante_id, laboratorio_id)
+
+    def laboratorios_inscritos(self, estudiante_id: uuid.UUID) -> set[uuid.UUID]:
+        return {
+            a.laboratorio_id
+            for a in self._repo.find_por_estudiante(estudiante_id)
+            if a.esta_vigente()
+        }

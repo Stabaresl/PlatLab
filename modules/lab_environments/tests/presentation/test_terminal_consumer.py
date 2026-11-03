@@ -13,12 +13,16 @@ Se salta si Docker no está disponible (ver test_docker_provider.py).
 import asyncio
 import uuid
 
-import docker as docker_sdk
 import pytest
 from channels.testing import WebsocketCommunicator
 
+import docker as docker_sdk
 from config.asgi import application
 from modules.authentication.infrastructure.jwt_service import JWTService
+from modules.lab_environments.domain.entities import EntornoActivo
+from modules.lab_environments.domain.value_objects import EstadoEntorno
+from modules.lab_environments.infrastructure.docker_provider import DockerContenedorProvider
+from modules.lab_environments.infrastructure.repositories import EntornoRepository
 from modules.laboratories.domain.entities import Laboratorio, Seccion
 from modules.laboratories.domain.value_objects import (
     EstadoLaboratorio,
@@ -26,10 +30,6 @@ from modules.laboratories.domain.value_objects import (
     TipoLaboratorio,
 )
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
-from modules.lab_environments.domain.entities import EntornoActivo
-from modules.lab_environments.domain.value_objects import EstadoEntorno
-from modules.lab_environments.infrastructure.docker_provider import DockerContenedorProvider
-from modules.lab_environments.infrastructure.repositories import EntornoRepository
 from modules.progress.domain.entities import Progreso, ProgresoSeccion
 from modules.progress.domain.value_objects import EstadoProgresoSeccion
 from modules.progress.infrastructure.repositories import ProgresoRepository

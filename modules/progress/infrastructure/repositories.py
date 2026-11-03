@@ -92,6 +92,16 @@ class ProgresoRepository:
             resultado[asignacion_id] = completadas / total * 100
         return resultado
 
+    def asignaciones_con_historial(self, asignacion_ids: list[uuid.UUID]) -> set[uuid.UUID]:
+        """Batch: de estas asignaciones, cuáles tienen ≥1 `HistorialCompletitud` (laboratorio terminado)."""
+        if not asignacion_ids:
+            return set()
+        return set(
+            ProgresoModel.objects.filter(
+                asignacion_id__in=asignacion_ids, historial__isnull=False
+            ).values_list("asignacion_id", flat=True)
+        )
+
     def get_seccion(
         self, progreso_id: uuid.UUID, seccion_id: uuid.UUID
     ) -> ProgresoSeccion | None:

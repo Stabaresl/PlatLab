@@ -59,7 +59,9 @@ class AsignacionRepository:
 
     def find_activas_con_vencimiento(self) -> list[Asignacion]:
         modelos = AsignacionModel.objects.filter(
-            estado=EstadoAsignacion.ACTIVA.value, fecha_vencimiento__isnull=False
+            # Pendientes también: una invitación no aceptada a tiempo vence igual
+            # (antes quedaba "pendiente" para siempre y bloqueaba al estudiante).
+            estado__in=_ESTADOS_VIGENTES, fecha_vencimiento__isnull=False
         )
         return [asignacion_to_entity(m) for m in modelos]
 

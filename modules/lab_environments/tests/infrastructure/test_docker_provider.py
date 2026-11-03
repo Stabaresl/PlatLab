@@ -7,9 +7,9 @@ está disponible, se saltan en vez de fallar — no todos los entornos donde
 corre la suite completa tienen acceso a un daemon Docker.
 """
 
-import docker as docker_sdk
 import pytest
 
+import docker as docker_sdk
 from modules.lab_environments.infrastructure.docker_provider import DockerContenedorProvider
 
 _IMAGEN = "platlab-target-sqli:latest"

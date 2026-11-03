@@ -19,13 +19,22 @@ def esta_completado_por_estudiante(
     y `ListarRoadmapQuery` (estado de cada nodo) — ambos viven en este
     mismo módulo, así que factorizarlo acá no cruza límites de módulo.
     """
-    asignaciones = [
-        a for a in asignacion_repository.find_por_estudiante(estudiante_id) if a.laboratorio_id == laboratorio_id
-    ]
-    for asignacion in asignaciones:
-        progreso = progreso_repository.get_by_asignacion(asignacion.id)
-        if progreso is None:
-            continue
-        if len(progreso_repository.get_historial(progreso.id)) > 0:
-            return True
-    return False
+    return laboratorio_id in laboratorios_completados_por_estudiante(
+        asignacion_repository, progreso_repository, estudiante_id
+    )
+
+
+def laboratorios_completados_por_estudiante(
+    asignacion_repository: IAsignacionRepository,
+    progreso_repository: IProgresoRepository,
+    estudiante_id: uuid.UUID,
+) -> set[uuid.UUID]:
+    """
+    Mismo criterio que `esta_completado_por_estudiante`, pero para TODOS
+    los laboratorios del estudiante en 2 consultas — antes el roadmap
+    repetía asignaciones+progreso+historial por cada nodo (N+1 medido en
+    loadtests/: `/roadmap/` costaba ~6x el catálogo anónimo).
+    """
+    asignaciones = asignacion_repository.find_por_estudiante(estudiante_id)
+    terminadas = progreso_repository.asignaciones_con_historial([a.id for a in asignaciones])
+    return {a.laboratorio_id for a in asignaciones if a.id in terminadas}

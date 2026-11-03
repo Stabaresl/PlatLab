@@ -1,5 +1,7 @@
 import uuid
 
+from django.utils import timezone
+
 from modules.lab_environments.domain.entities import EntornoActivo
 from modules.lab_environments.domain.value_objects import EstadoEntorno
 from modules.lab_environments.infrastructure.mappers import entorno_to_entity
@@ -51,6 +53,26 @@ class EntornoRepository:
 
     def contar_activos(self) -> int:
         return EntornoActivoModel.objects.filter(estado__in=_ESTADOS_ACTIVOS).count()
+
+    def contar_activos_por_estudiante(self, estudiante_id: uuid.UUID) -> int:
+        return EntornoActivoModel.objects.filter(
+            estudiante_id=estudiante_id, estado__in=_ESTADOS_ACTIVOS
+        ).count()
+
+    def tocar_actividad(self, entorno_id: uuid.UUID) -> bool:
+        """
+        Actualiza SOLO `ultima_actividad`, y solo si el entorno sigue vivo.
+        Antes el consumer del WebSocket hacía `update()` con la entidad que
+        leyó al conectar: si mientras tanto el reaper o el estudiante lo
+        habían detenido, ese `update()` volvía a escribir `estado=activo`
+        sobre un contenedor ya borrado (entorno "fantasma" ocupando cupo).
+        Devuelve False si el entorno ya no está activo.
+        """
+        return bool(
+            EntornoActivoModel.objects.filter(id=entorno_id, estado__in=_ESTADOS_ACTIVOS).update(
+                ultima_actividad=timezone.now()
+            )
+        )
 
     def get_todos_activos(self) -> list[EntornoActivo]:
         modelos = EntornoActivoModel.objects.filter(estado__in=_ESTADOS_ACTIVOS)

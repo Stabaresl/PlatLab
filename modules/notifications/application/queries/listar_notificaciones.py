@@ -9,7 +9,23 @@ class ListarNotificacionesQuery:
         self._repo = notificacion_repository
 
     def execute(self, input_dto: ListarNotificacionesDTO) -> list[NotificacionResultDTO]:
-        notificaciones = self._repo.find_por_usuario(input_dto.user_id, leida=input_dto.leida)
+        return self.execute_paginado(input_dto, limit=None, offset=0)[0]
+
+    def execute_paginado(
+        self, input_dto: ListarNotificacionesDTO, limit: int | None, offset: int
+    ) -> tuple[list[NotificacionResultDTO], int]:
+        """Paginado en BD — la campana del frontend consulta esto cada 60 s por usuario conectado."""
+        notificaciones = self._repo.find_por_usuario(
+            input_dto.user_id, leida=input_dto.leida, limit=limit, offset=offset
+        )
+        total = (
+            self._repo.contar_por_usuario(input_dto.user_id, leida=input_dto.leida)
+            if limit is not None
+            else len(notificaciones)
+        )
+        return self._a_items(notificaciones), total
+
+    def _a_items(self, notificaciones) -> list[NotificacionResultDTO]:
         return [
             NotificacionResultDTO(
                 id=n.id,

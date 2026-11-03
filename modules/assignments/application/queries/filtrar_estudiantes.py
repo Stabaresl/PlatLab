@@ -1,8 +1,6 @@
 from modules.assignments.application.dtos import EstudianteFiltradoDTO, FiltrarEstudiantesDTO
-from modules.assignments.domain.entities import Asignacion
 from modules.assignments.domain.repositories import IAsignacionRepository
 from modules.progress.domain.repositories import IProgresoRepository
-from modules.progress.domain.value_objects import EstadoProgresoSeccion
 from modules.shared.domain.exceptions import ForbiddenError
 from modules.users.domain.repositories import IUserRepository
 
@@ -37,9 +35,19 @@ class FiltrarEstudiantesQuery:
                 a for a in asignaciones if a.laboratorio_id == input_dto.laboratorio_id
             ]
 
+        # Batch (2 consultas en total) en vez de usuario + progreso +
+        # secciones por cada asignación — mismo N+1 que ya se había quitado
+        # de los dashboards de instructor/admin.
+        estudiantes = self._user_repository.get_by_ids(
+            list({a.estudiante_id for a in asignaciones})
+        )
+        completitud = self._progreso_repository.get_completitud_por_asignaciones(
+            [a.id for a in asignaciones]
+        )
+
         resultados = []
         for asignacion in asignaciones:
-            estudiante = self._user_repository.get_by_id(asignacion.estudiante_id)
+            estudiante = estudiantes.get(asignacion.estudiante_id)
             if estudiante is None:
                 continue
             if (
@@ -54,19 +62,7 @@ class FiltrarEstudiantesQuery:
                     nombre_completo=estudiante.nombre_completo,
                     laboratorio_id=asignacion.laboratorio_id,
                     estado_asignacion=asignacion.estado.value,
-                    porcentaje_completitud=self._porcentaje_completitud(asignacion),
+                    porcentaje_completitud=round(completitud.get(asignacion.id, 0.0), 2),
                 )
             )
         return resultados
-
-    def _porcentaje_completitud(self, asignacion: Asignacion) -> float:
-        progreso = self._progreso_repository.get_by_asignacion(asignacion.id)
-        if progreso is None:
-            return 0.0
-
-        secciones = self._progreso_repository.get_secciones(progreso.id)
-        if not secciones:
-            return 0.0
-
-        completadas = sum(1 for s in secciones if s.estado == EstadoProgresoSeccion.COMPLETADA)
-        return round(completadas / len(secciones) * 100, 2)

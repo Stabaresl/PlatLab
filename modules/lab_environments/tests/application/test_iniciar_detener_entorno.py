@@ -2,13 +2,6 @@ import uuid
 
 import pytest
 
-from modules.laboratories.domain.entities import Laboratorio, Seccion
-from modules.laboratories.domain.value_objects import (
-    EstadoLaboratorio,
-    NivelDificultad,
-    TipoLaboratorio,
-)
-from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.lab_environments.application.dtos import DetenerEntornoDTO, IniciarEntornoDTO
 from modules.lab_environments.application.use_cases.aprovisionar_entorno import (
     AprovisionarEntornoUseCase,
@@ -24,6 +17,13 @@ from modules.lab_environments.domain.exceptions import (
 from modules.lab_environments.domain.value_objects import EstadoEntorno
 from modules.lab_environments.infrastructure.repositories import EntornoRepository
 from modules.lab_environments.tests.application.conftest import FakeContenedorProvider
+from modules.laboratories.domain.entities import Laboratorio, Seccion
+from modules.laboratories.domain.value_objects import (
+    EstadoLaboratorio,
+    NivelDificultad,
+    TipoLaboratorio,
+)
+from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.progress.domain.entities import Progreso, ProgresoSeccion
 from modules.progress.domain.value_objects import EstadoProgresoSeccion
 from modules.progress.infrastructure.repositories import ProgresoRepository
@@ -171,7 +171,9 @@ def test_iniciar_entorno_sin_cupo_lanza_rate_limited(fake_docker):
     lab2, seccion2 = _crear_lab_con_seccion_practica()
     progreso2 = _crear_progreso(seccion2, uuid.uuid4())
     _build_iniciar_uc(max_concurrentes=1).execute(
-        IniciarEntornoDTO(asignacion_id=progreso2.asignacion_id, seccion_id=seccion2.id, estudiante_id=progreso2.estudiante_id)
+        IniciarEntornoDTO(
+            asignacion_id=progreso2.asignacion_id, seccion_id=seccion2.id, estudiante_id=progreso2.estudiante_id
+        )
     )
 
     with pytest.raises(EntornoNoDisponibleError):

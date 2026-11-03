@@ -31,7 +31,7 @@ def cachear(
     redis = redis_client or RedisClient()
     cacheado = redis.get(clave)
     if cacheado is not None:
-        return pickle.loads(base64.b64decode(cacheado))
+        return pickle.loads(base64.b64decode(cacheado))  # nosec B301 — ver docstring: Redis privado, sin escritura externa
 
     valor = calcular()
     redis.set(clave, base64.b64encode(pickle.dumps(valor)).decode("ascii"), ttl_seconds=ttl_seconds)

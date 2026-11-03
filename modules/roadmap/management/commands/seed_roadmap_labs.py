@@ -28,7 +28,11 @@ from modules.laboratories.application.use_cases.definir_flag import DefinirFlagU
 from modules.laboratories.application.use_cases.publicar_laboratorio import (
     PublicarLaboratorioUseCase,
 )
-from modules.laboratories.domain.value_objects import ComandoSimulado, EntornoPractica, TipoLaboratorio
+from modules.laboratories.domain.value_objects import (
+    ComandoSimulado,
+    EntornoPractica,
+    TipoLaboratorio,
+)
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.roadmap.application.dtos import AgregarNodoDTO, CrearCategoriaDTO
 from modules.roadmap.application.use_cases.agregar_nodo import AgregarNodoUseCase
@@ -349,7 +353,7 @@ class Command(BaseCommand):
                         self.style.SUCCESS(f"  -> agregado a '{categoria.nombre}' en posición {posicion}")
                     )
                 else:
-                    self.stdout.write(f"  = ya estaba en el roadmap")
+                    self.stdout.write("  = ya estaba en el roadmap")
 
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("Listo — roadmap sembrado."))

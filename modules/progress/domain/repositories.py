@@ -48,6 +48,10 @@ class IProgresoRepository(Protocol):
         """
         ...
 
+    def asignaciones_con_historial(self, asignacion_ids: list[uuid.UUID]) -> set[uuid.UUID]:
+        """Batch: subconjunto de `asignacion_ids` cuyo Progreso tiene ≥1 HistorialCompletitud."""
+        ...
+
     def get_seccion(
         self, progreso_id: uuid.UUID, seccion_id: uuid.UUID
     ) -> ProgresoSeccion | None: ...

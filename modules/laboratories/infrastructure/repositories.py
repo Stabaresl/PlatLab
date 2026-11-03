@@ -67,6 +67,13 @@ class LaboratorioRepository:
         model = LaboratorioModel.objects.filter(id=laboratorio_id).prefetch_related("temas").first()
         return laboratorio_to_entity(model) if model else None
 
+    def get_by_ids(self, laboratorio_ids: list[uuid.UUID]) -> dict[uuid.UUID, Laboratorio]:
+        """Batch por id (2 consultas: laboratorios + temas) — evita N+1 en el roadmap."""
+        if not laboratorio_ids:
+            return {}
+        modelos = LaboratorioModel.objects.filter(id__in=laboratorio_ids).prefetch_related("temas")
+        return {m.id: laboratorio_to_entity(m) for m in modelos}
+
     def update(self, laboratorio: Laboratorio) -> Laboratorio:
         model = LaboratorioModel.objects.get(id=laboratorio.id)
         model.nombre = laboratorio.nombre

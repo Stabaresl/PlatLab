@@ -48,14 +48,17 @@ class CachedLaboratorioRepository:
         instructor_id: uuid.UUID | None = None,
         nivel_dificultad: str | None = None,
         tema: str | None = None,
+        nombre: str | None = None,
     ) -> list[Laboratorio]:
-        clave = self._clave_catalogo(instructor_id, nivel_dificultad, tema)
+        # `nombre` faltaba en esta firma: `GET /laboratories/?nombre=x` llegaba
+        # acá con un kwarg desconocido y respondía 500 (TypeError).
+        clave = self._clave_catalogo(instructor_id, nivel_dificultad, tema, nombre)
         cacheado = self._redis.get(clave)
         if cacheado is not None:
             return [self._deserializar(item) for item in json.loads(cacheado)]
 
         resultado = self._repo.find_catalogo(
-            instructor_id=instructor_id, nivel_dificultad=nivel_dificultad, tema=tema
+            instructor_id=instructor_id, nivel_dificultad=nivel_dificultad, tema=tema, nombre=nombre
         )
         payload = json.dumps([self._serializar(lab) for lab in resultado])
         self._redis.set(clave, payload, ttl_seconds=self._ttl)
@@ -75,9 +78,13 @@ class CachedLaboratorioRepository:
         return self._redis.get(_VERSION_KEY) or "0"
 
     def _clave_catalogo(
-        self, instructor_id: uuid.UUID | None, nivel_dificultad: str | None, tema: str | None
+        self,
+        instructor_id: uuid.UUID | None,
+        nivel_dificultad: str | None,
+        tema: str | None,
+        nombre: str | None = None,
     ) -> str:
-        crudo = f"{self._version_catalogo()}:{instructor_id}:{nivel_dificultad}:{tema}"
+        crudo = f"{self._version_catalogo()}:{instructor_id}:{nivel_dificultad}:{tema}:{nombre}"
         return f"catalogo_labs:{hashlib.sha256(crudo.encode()).hexdigest()}"
 
     def _serializar(self, laboratorio: Laboratorio) -> dict:
@@ -89,6 +96,7 @@ class CachedLaboratorioRepository:
             "estado": laboratorio.estado.value,
             "tipo": laboratorio.tipo.value,
             "temas": laboratorio.temas,
+            "visible_en_catalogo": laboratorio.visible_en_catalogo,
             "origen_id": str(laboratorio.origen_id) if laboratorio.origen_id else None,
             "instructor_id": (
                 str(laboratorio.instructor_id) if laboratorio.instructor_id else None
@@ -106,6 +114,7 @@ class CachedLaboratorioRepository:
             estado=EstadoLaboratorio(data["estado"]),
             tipo=TipoLaboratorio(data["tipo"]),
             temas=data["temas"],
+            visible_en_catalogo=data.get("visible_en_catalogo", False),
             origen_id=uuid.UUID(data["origen_id"]) if data["origen_id"] else None,
             instructor_id=(uuid.UUID(data["instructor_id"]) if data["instructor_id"] else None),
             created_at=datetime.fromisoformat(data["created_at"]),

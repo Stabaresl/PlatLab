@@ -18,5 +18,11 @@ class INotificacionRepository(Protocol):
     def update(self, notificacion: Notificacion) -> Notificacion: ...
 
     def find_por_usuario(
-        self, user_id: uuid.UUID, leida: bool | None = None
+        self,
+        user_id: uuid.UUID,
+        leida: bool | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list[Notificacion]: ...
+
+    def contar_por_usuario(self, user_id: uuid.UUID, leida: bool | None = None) -> int: ...

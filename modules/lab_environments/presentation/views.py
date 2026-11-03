@@ -6,7 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.lab_environments.application.dtos import (
     DetenerEntornoDTO,
     IniciarEntornoDTO,
@@ -19,6 +18,8 @@ from modules.lab_environments.application.use_cases.detener_entorno import Deten
 from modules.lab_environments.application.use_cases.iniciar_entorno import IniciarEntornoUseCase
 from modules.lab_environments.infrastructure.docker_provider import DockerContenedorProvider
 from modules.lab_environments.infrastructure.repositories import EntornoRepository
+from modules.laboratories.infrastructure.repositories import LaboratorioRepository
+from modules.progress.infrastructure.asignacion_estado_provider import AsignacionEstadoProvider
 from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
@@ -61,6 +62,8 @@ class EntornoStartView(APIView):
             max_concurrentes=settings.LAB_ENV_MAX_CONCURRENTES,
             idle_timeout_minutos=settings.LAB_ENV_IDLE_MINUTES,
             max_lifetime_minutos=settings.LAB_ENV_MAX_LIFETIME_MINUTES,
+            max_por_estudiante=settings.LAB_ENV_MAX_POR_ESTUDIANTE,
+            estado_asignacion_provider=AsignacionEstadoProvider(),
         ).execute(
             IniciarEntornoDTO(
                 asignacion_id=_parsear_uuid(assignment_id),

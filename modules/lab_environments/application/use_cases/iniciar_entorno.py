@@ -8,6 +8,8 @@ from modules.lab_environments.domain.exceptions import (
 )
 from modules.lab_environments.domain.repositories import IEntornoRepository
 from modules.laboratories.domain.repositories import ILaboratorioRepository
+from modules.progress.domain.exceptions import AsignacionVencidaError
+from modules.progress.domain.ports import IEstadoAsignacionProvider
 from modules.progress.domain.repositories import IProgresoRepository
 from modules.progress.domain.value_objects import EstadoProgresoSeccion
 from modules.shared.application.base_use_case import BaseUseCase
@@ -18,7 +20,13 @@ _PROGRESO_NO_ENCONTRADO_MSG = "Progreso no encontrado."
 _SECCION_NO_ENCONTRADA_MSG = "Sección no encontrada."
 _BLOQUEADA_MSG = "Esta sección todavía está bloqueada."
 _SIN_ENTORNO_MSG = "Esta sección no tiene un entorno de práctica real configurado."
-_SIN_CUPO_MSG = "Todos los entornos de práctica están ocupados en este momento. Reintentá en unos minutos."
+_SIN_CUPO_MSG = (
+    "Todos los entornos de práctica están ocupados en este momento. Reintenta en unos minutos."
+)
+_CUPO_ESTUDIANTE_MSG = (
+    "Ya tienes el máximo de entornos de práctica encendidos. Detén uno antes de iniciar otro."
+)
+_VENCIDA_MSG = "Este laboratorio venció. Ya no se puede continuar."
 
 
 class IniciarEntornoUseCase(BaseUseCase[IniciarEntornoDTO, EntornoResultDTO]):
@@ -51,12 +59,16 @@ class IniciarEntornoUseCase(BaseUseCase[IniciarEntornoDTO, EntornoResultDTO]):
         max_concurrentes: int = 5,
         idle_timeout_minutos: int = 20,
         max_lifetime_minutos: int = 120,
+        max_por_estudiante: int = 2,
+        estado_asignacion_provider: IEstadoAsignacionProvider | None = None,
     ):
         super().__init__(unit_of_work, event_dispatcher)
         self._entorno_repository = entorno_repository
         self._progreso_repository = progreso_repository
         self._laboratorio_repository = laboratorio_repository
         self._max_concurrentes = max_concurrentes
+        self._max_por_estudiante = max_por_estudiante
+        self._estado_asignacion_provider = estado_asignacion_provider
         self._idle_timeout_minutos = idle_timeout_minutos
         self._max_lifetime_minutos = max_lifetime_minutos
         self._entorno_existente = None
@@ -66,6 +78,14 @@ class IniciarEntornoUseCase(BaseUseCase[IniciarEntornoDTO, EntornoResultDTO]):
         progreso = self._progreso_repository.get_by_asignacion(input_dto.asignacion_id)
         if progreso is None or not progreso.es_propio_de(input_dto.estudiante_id):
             raise NotFoundError(_PROGRESO_NO_ENCONTRADO_MSG)
+
+        # Misma regla que flags/secciones/examen (RF-32): una asignación
+        # vencida deja ver el material pero no seguir practicando — antes un
+        # estudiante vencido podía seguir levantando contenedores.
+        if self._estado_asignacion_provider is not None:
+            estado = self._estado_asignacion_provider.obtener_estado(input_dto.asignacion_id)
+            if estado is not None and estado.vencida:
+                raise AsignacionVencidaError(_VENCIDA_MSG)
 
         progreso_seccion = self._progreso_repository.get_seccion(progreso.id, input_dto.seccion_id)
         if progreso_seccion is None:
@@ -84,6 +104,15 @@ class IniciarEntornoUseCase(BaseUseCase[IniciarEntornoDTO, EntornoResultDTO]):
             self._entorno_existente = existente
             self._progreso = progreso
             return
+
+        # Cupo por estudiante antes que el global: sin esto, un solo
+        # estudiante podía abrir un entorno por cada sección práctica y
+        # agotar el cupo de toda la plataforma (o de su sala).
+        if (
+            self._entorno_repository.contar_activos_por_estudiante(input_dto.estudiante_id)
+            >= self._max_por_estudiante
+        ):
+            raise EntornoNoDisponibleError(_CUPO_ESTUDIANTE_MSG)
 
         if self._entorno_repository.contar_activos() >= self._max_concurrentes:
             raise EntornoNoDisponibleError(_SIN_CUPO_MSG)

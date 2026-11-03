@@ -39,7 +39,16 @@ class ListarLaboratoriosQuery:
         filtros_repo = especificacion.aplicar({}) if especificacion else {}
 
         laboratorios = self._repo.find_catalogo(instructor_id=filtro.instructor_id, **filtros_repo)
-        return [self._a_list_item(lab, filtro.estudiante_id) for lab in laboratorios]
+
+        # Una sola consulta para todo el catálogo en vez de una por card
+        # (N+1 medido en loadtests/: el catálogo de estudiante costaba ~3x
+        # el anónimo). Providers que solo implementan `esta_inscrito`
+        # (fakes de tests) siguen funcionando por la rama de compatibilidad.
+        inscritos: set | None = None
+        if filtro.estudiante_id is not None and hasattr(self._inscripcion, "laboratorios_inscritos"):
+            inscritos = self._inscripcion.laboratorios_inscritos(filtro.estudiante_id)
+
+        return [self._a_list_item(lab, filtro.estudiante_id, inscritos) for lab in laboratorios]
 
     def _construir_especificacion(
         self, filtro: ListarLaboratoriosFiltroDTO
@@ -56,11 +65,18 @@ class ListarLaboratoriosQuery:
         return especificacion
 
     def _a_list_item(
-        self, laboratorio: Laboratorio, estudiante_id: uuid.UUID | None
+        self,
+        laboratorio: Laboratorio,
+        estudiante_id: uuid.UUID | None,
+        inscritos: set | None = None,
     ) -> LaboratorioListItemDTO:
         inscrito = None
         if estudiante_id is not None:
-            inscrito = self._inscripcion.esta_inscrito(estudiante_id, laboratorio.id)
+            inscrito = (
+                laboratorio.id in inscritos
+                if inscritos is not None
+                else self._inscripcion.esta_inscrito(estudiante_id, laboratorio.id)
+            )
         return LaboratorioListItemDTO(
             id=laboratorio.id,
             nombre=laboratorio.nombre,

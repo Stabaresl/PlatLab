@@ -4,7 +4,7 @@ from modules.assignments.domain.repositories import IAsignacionRepository
 from modules.laboratories.domain.entities import Laboratorio
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.progress.domain.repositories import IProgresoRepository
-from modules.roadmap.application.completitud import esta_completado_por_estudiante
+from modules.roadmap.application.completitud import laboratorios_completados_por_estudiante
 from modules.roadmap.application.dtos import (
     CategoriaRoadmapItemDTO,
     NodoRoadmapItemDTO,
@@ -45,10 +45,18 @@ class ListarRoadmapQuery:
         self._progreso_repository = progreso_repository
 
     def execute(self, estudiante_id: uuid.UUID | None = None) -> list[CategoriaRoadmapItemDTO]:
+        # Completitud del estudiante calculada UNA vez para todo el árbol,
+        # no por nodo (ver `laboratorios_completados_por_estudiante`).
+        completados_ids: set[uuid.UUID] | None = None
+        if estudiante_id is not None:
+            completados_ids = laboratorios_completados_por_estudiante(
+                self._asignacion_repository, self._progreso_repository, estudiante_id
+            )
+
         resultado = []
         for categoria in self._categoria_repository.find_todas():
             nodos = self._nodo_repository.find_por_categoria(categoria.id)
-            items = self._a_items(nodos, estudiante_id)
+            items = self._a_items(nodos, completados_ids)
             resultado.append(
                 CategoriaRoadmapItemDTO(
                     id=categoria.id, nombre=categoria.nombre, orden=categoria.orden, nodos=items
@@ -57,24 +65,13 @@ class ListarRoadmapQuery:
         return resultado
 
     def _a_items(
-        self, nodos: list[NodoRoadmap], estudiante_id: uuid.UUID | None
+        self, nodos: list[NodoRoadmap], completados_ids: set[uuid.UUID] | None
     ) -> list[NodoRoadmapItemDTO]:
-        labs: dict[uuid.UUID, Laboratorio] = {}
-        for nodo in nodos:
-            laboratorio = self._laboratorio_repository.get_by_id(nodo.laboratorio_id)
-            if laboratorio is not None:
-                labs[nodo.laboratorio_id] = laboratorio
+        labs: dict[uuid.UUID, Laboratorio] = self._laboratorio_repository.get_by_ids(
+            [n.laboratorio_id for n in nodos]
+        )
 
-        completados: dict[uuid.UUID, bool] = {}
-        if estudiante_id is not None:
-            for nodo in nodos:
-                completados[nodo.laboratorio_id] = esta_completado_por_estudiante(
-                    self._asignacion_repository,
-                    self._progreso_repository,
-                    estudiante_id,
-                    nodo.laboratorio_id,
-                )
-
+        # completados_ids=None => visitante anónimo, sin estado por nodo.
         items = []
         for nodo in nodos:
             laboratorio = labs.get(nodo.laboratorio_id)
@@ -89,10 +86,10 @@ class ListarRoadmapQuery:
             ]
 
             estado = None
-            if estudiante_id is not None:
-                if completados.get(nodo.laboratorio_id):
+            if completados_ids is not None:
+                if nodo.laboratorio_id in completados_ids:
                     estado = _ESTADO_COMPLETADO
-                elif all(completados.get(n.laboratorio_id) for n in anteriores):
+                elif all(n.laboratorio_id in completados_ids for n in anteriores):
                     estado = _ESTADO_DISPONIBLE
                 else:
                     estado = _ESTADO_BLOQUEADO

@@ -35,3 +35,9 @@ Thumbs.db
 
 # Claude Code (config/estado local, no del proyecto)
 .claude/
+# Pruebas de carga — datos generados con tokens (preparar_carga) y resultados
+loadtests/datos_carga.json
+loadtests/resultados/
+
+# Capturas y snapshots de las herramientas de navegador (revisión visual)
+.playwright-mcp/

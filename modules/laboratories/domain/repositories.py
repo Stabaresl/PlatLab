@@ -37,6 +37,10 @@ class ILaboratorioRepository(Protocol):
 
     def get_by_id(self, laboratorio_id: uuid.UUID) -> Laboratorio | None: ...
 
+    def get_by_ids(self, laboratorio_ids: list[uuid.UUID]) -> dict[uuid.UUID, Laboratorio]:
+        """Batch por id — para listados que resuelven varios laboratorios a la vez (roadmap)."""
+        ...
+
     def update(self, laboratorio: Laboratorio) -> Laboratorio:
         """Persiste nombre/descripción/dificultad/estado/temas — no crea ni borra filas."""
         ...

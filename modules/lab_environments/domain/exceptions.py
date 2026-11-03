@@ -1,4 +1,8 @@
-from modules.shared.domain.exceptions import BusinessRuleViolationError, ForbiddenError, RateLimitedError
+from modules.shared.domain.exceptions import (
+    BusinessRuleViolationError,
+    ForbiddenError,
+    RateLimitedError,
+)
 
 
 class SeccionSinEntornoRealError(BusinessRuleViolationError):

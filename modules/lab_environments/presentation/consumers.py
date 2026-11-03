@@ -96,7 +96,10 @@ class TerminalConsumer(AsyncWebsocketConsumer):
         if ahora - self._last_touch < _TOUCH_ACTIVITY_INTERVAL_SECONDS:
             return
         self._last_touch = ahora
-        await database_sync_to_async(self._repo.update)(self._entorno)
+        sigue_activo = await database_sync_to_async(self._repo.tocar_actividad)(self._entorno.id)
+        if not sigue_activo:
+            # Lo detuvo el estudiante desde otra pestaña o el reaper.
+            await self.close(code=4409)
 
     async def disconnect(self, close_code):
         reader = getattr(self, "_reader_task", None)

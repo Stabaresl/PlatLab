@@ -23,6 +23,14 @@ class IEntornoRepository(Protocol):
         """RNF rendimiento: cuenta entornos `iniciando`/`activo` en toda la plataforma."""
         ...
 
+    def contar_activos_por_estudiante(self, estudiante_id: uuid.UUID) -> int:
+        """Entornos `iniciando`/`activo` de un estudiante (cupo por estudiante)."""
+        ...
+
+    def tocar_actividad(self, entorno_id: uuid.UUID) -> bool:
+        """Actualiza solo `ultima_actividad` si sigue activo; False si ya no lo está."""
+        ...
+
     def get_todos_activos(self) -> list[EntornoActivo]:
         """Candidatos a evaluar por el reaper de inactividad (Celery Beat)."""
         ...

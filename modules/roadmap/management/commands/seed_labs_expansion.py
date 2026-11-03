@@ -31,7 +31,11 @@ from modules.laboratories.application.use_cases.editar_laboratorio import Editar
 from modules.laboratories.application.use_cases.publicar_laboratorio import (
     PublicarLaboratorioUseCase,
 )
-from modules.laboratories.domain.value_objects import ComandoSimulado, EntornoPractica, TipoLaboratorio
+from modules.laboratories.domain.value_objects import (
+    ComandoSimulado,
+    EntornoPractica,
+    TipoLaboratorio,
+)
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.roadmap.application.dtos import AgregarNodoDTO
 from modules.roadmap.application.use_cases.agregar_nodo import AgregarNodoUseCase
@@ -42,7 +46,6 @@ from modules.roadmap.infrastructure.repositories import (
 from modules.shared.domain.exceptions import DomainError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
-from modules.users.domain.value_objects import Email
 from modules.users.infrastructure.repositories import UserRepository
 
 _ADMIN_EMAIL = "admin@platlab.demo"

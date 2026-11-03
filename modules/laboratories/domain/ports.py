@@ -14,6 +14,10 @@ class IEstadoInscripcionProvider(Protocol):
 
     def esta_inscrito(self, estudiante_id: uuid.UUID, laboratorio_id: uuid.UUID) -> bool: ...
 
+    def laboratorios_inscritos(self, estudiante_id: uuid.UUID) -> set[uuid.UUID]:
+        """Batch: ids de laboratorios con inscripción vigente — evita una consulta por card del catálogo."""
+        ...
+
 
 class SinInscripcionProvider:
     """
@@ -25,3 +29,6 @@ class SinInscripcionProvider:
 
     def esta_inscrito(self, estudiante_id: uuid.UUID, laboratorio_id: uuid.UUID) -> bool:
         return False
+
+    def laboratorios_inscritos(self, estudiante_id: uuid.UUID) -> set[uuid.UUID]:
+        return set()

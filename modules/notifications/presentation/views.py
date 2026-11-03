@@ -16,7 +16,7 @@ from modules.notifications.presentation.serializers import ListarNotificacionesQ
 from modules.shared.domain.exceptions import NotFoundError
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
-from modules.shared.presentation.pagination import ListaPagination
+from modules.shared.presentation.pagination import parametros_pagina, respuesta_paginada
 
 _ID_INVALIDO_MSG = "Notificación no encontrada."
 
@@ -50,16 +50,18 @@ class NotificationViewSet(ViewSet):
         query_serializer = ListarNotificacionesQuerySerializer(data=request.query_params)
         query_serializer.is_valid(raise_exception=True)
 
-        resultado = ListarNotificacionesQuery(NotificacionRepository()).execute(
+        limit, offset = parametros_pagina(request)
+        resultado, total = ListarNotificacionesQuery(NotificacionRepository()).execute_paginado(
             ListarNotificacionesDTO(
                 user_id=request.user.id,
                 leida=query_serializer.validated_data.get("leida"),
-            )
+            ),
+            limit=limit,
+            offset=offset,
         )
-        serializados = [_serializar(item) for item in resultado]
-        paginator = ListaPagination()
-        pagina = paginator.paginate_queryset(serializados, request, view=self)
-        return paginator.get_paginated_response(pagina)
+        return respuesta_paginada(
+            request, [_serializar(item) for item in resultado], total, limit, offset
+        )
 
     @action(detail=True, methods=["patch"], url_path="read")
     def marcar_leida(self, request, pk=None):
