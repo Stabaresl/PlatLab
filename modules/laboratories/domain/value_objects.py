@@ -1,5 +1,8 @@
+import re
 from dataclasses import dataclass, field
 from enum import Enum
+
+from modules.shared.domain.exceptions import ValidationError
 
 IMAGENES_PRACTICA_PERMITIDAS: frozenset[str] = frozenset(
     {
@@ -69,6 +72,27 @@ class ComandoSimulado:
 
     comando: str
     salida: str
+    # Expresión regular opcional (sintaxis compatible con JS y Python) para
+    # aceptar variantes del mismo comando — `nmap -p- 10.0.0.5` y
+    # `nmap 10.0.0.5 -p-` — en vez de exigir el texto exacto. Si coincide,
+    # gana sobre los comandos genéricos de la consola.
+    patron: str | None = None
+
+    def __post_init__(self):
+        if self.patron:
+            if len(self.patron) > 300:
+                raise ValidationError("El patrón de un comando simulado admite hasta 300 caracteres.")
+            try:
+                re.compile(self.patron)
+            except re.error as exc:
+                raise ValidationError(f"Patrón inválido para «{self.comando}»: {exc}") from exc
+
+    def a_dict(self) -> dict:
+        return {"comando": self.comando, "salida": self.salida, "patron": self.patron}
+
+    @classmethod
+    def desde_dict(cls, data: dict) -> "ComandoSimulado":
+        return cls(comando=data["comando"], salida=data["salida"], patron=data.get("patron") or None)
 
 
 @dataclass(frozen=True)
@@ -85,6 +109,31 @@ class EntornoPractica:
     prompt: str = "root@lab:~#"
     banner: str = ""
     comandos: list[ComandoSimulado] = field(default_factory=list)
+    # Escenario de la consola (JSON que interpreta el frontend, ver
+    # `frontend/src/lib/shell/`): usuario, host, directorio inicial, sistema
+    # de archivos y hosts de la red con sus puertos/servicios/respuestas
+    # HTTP. Con él la consola se comporta como una máquina (ls, cd, cat,
+    # grep, nmap, curl, nc...) en vez de un guion de texto exacto.
+    escenario: dict = field(default_factory=dict)
+
+    def a_dict(self) -> dict:
+        return {
+            "prompt": self.prompt,
+            "banner": self.banner,
+            "comandos": [c.a_dict() for c in self.comandos],
+            "escenario": self.escenario or {},
+        }
+
+    @classmethod
+    def desde_dict(cls, data: dict | None) -> "EntornoPractica | None":
+        if not data:
+            return None
+        return cls(
+            prompt=data.get("prompt") or "root@lab:~#",
+            banner=data.get("banner") or "",
+            comandos=[ComandoSimulado.desde_dict(c) for c in data.get("comandos", [])],
+            escenario=data.get("escenario") or {},
+        )
 
 
 @dataclass(frozen=True)
@@ -100,3 +149,26 @@ class PasoGuia:
     titulo: str
     instrucciones: str
     comando_sugerido: str | None = None
+    # Lo que la persona debería ver al ejecutar el paso (texto plano, se
+    # muestra como bloque de consola) — el "Expected output" de los labs de
+    # AWS: le confirma que va bien antes de seguir.
+    resultado_esperado: str | None = None
+
+    def a_dict(self) -> dict:
+        return {
+            "orden": self.orden,
+            "titulo": self.titulo,
+            "instrucciones": self.instrucciones,
+            "comando_sugerido": self.comando_sugerido,
+            "resultado_esperado": self.resultado_esperado,
+        }
+
+    @classmethod
+    def desde_dict(cls, data: dict) -> "PasoGuia":
+        return cls(
+            orden=data["orden"],
+            titulo=data["titulo"],
+            instrucciones=data["instrucciones"],
+            comando_sugerido=data.get("comando_sugerido"),
+            resultado_esperado=data.get("resultado_esperado"),
+        )

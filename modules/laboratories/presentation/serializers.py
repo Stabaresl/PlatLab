@@ -1,3 +1,5 @@
+import json
+
 from rest_framework import serializers
 
 from modules.laboratories.domain.value_objects import (
@@ -8,6 +10,7 @@ from modules.laboratories.domain.value_objects import (
     TipoPregunta,
 )
 from modules.laboratories.infrastructure.markdown_renderer import renderizar_markdown
+from modules.shared.domain.exceptions import ValidationError as DomainValidationError
 
 
 def _markdown_a_html(texto: str) -> str:
@@ -79,28 +82,42 @@ class ComandoSimuladoRequestSerializer(serializers.Serializer):
 
     comando = serializers.CharField(max_length=200, trim_whitespace=False)
     salida = serializers.CharField(trim_whitespace=False)
+    patron = serializers.CharField(max_length=300, required=False, allow_null=True, allow_blank=True)
+
+
+_ESCENARIO_MAX_BYTES = 200_000
 
 
 class EntornoPracticaRequestSerializer(serializers.Serializer):
     """
     Guion completo de la consola simulada de una sección práctica —
     autoría del instructor/administrador, sin ejecución real (ver
-    `EntornoPractica` en el dominio).
+    `EntornoPractica` en el dominio). `escenario` es opcional: sin él, la
+    consola sigue funcionando con los comandos del guion + los básicos.
     """
 
     prompt = serializers.CharField(max_length=100, required=False, default="root@lab:~#")
     banner = serializers.CharField(required=False, allow_blank=True, default="")
     comandos = ComandoSimuladoRequestSerializer(many=True, required=False, default=list)
+    escenario = serializers.JSONField(required=False, default=dict)
+
+    def validate_escenario(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("El escenario debe ser un objeto JSON.")
+        if len(json.dumps(value)) > _ESCENARIO_MAX_BYTES:
+            raise serializers.ValidationError("El escenario es demasiado grande (máx. 200 KB).")
+        return value
 
     def create(self, validated_data):
-        return EntornoPractica(
-            prompt=validated_data["prompt"],
-            banner=validated_data["banner"],
-            comandos=[
-                ComandoSimulado(comando=c["comando"], salida=c["salida"])
-                for c in validated_data["comandos"]
-            ],
-        )
+        try:
+            return EntornoPractica(
+                prompt=validated_data["prompt"],
+                banner=validated_data["banner"],
+                comandos=[ComandoSimulado.desde_dict(c) for c in validated_data["comandos"]],
+                escenario=validated_data.get("escenario") or {},
+            )
+        except DomainValidationError as exc:
+            raise serializers.ValidationError({"comandos": exc.message}) from exc
 
     def to_internal_value(self, data):
         validated = super().to_internal_value(data)
@@ -116,6 +133,9 @@ class PasoGuiaRequestSerializer(serializers.Serializer):
     comando_sugerido = serializers.CharField(
         max_length=500, required=False, allow_null=True, trim_whitespace=False
     )
+    resultado_esperado = serializers.CharField(
+        max_length=4000, required=False, allow_null=True, allow_blank=True, trim_whitespace=False
+    )
 
     def create(self, validated_data):
         return PasoGuia(
@@ -123,6 +143,7 @@ class PasoGuiaRequestSerializer(serializers.Serializer):
             titulo=validated_data["titulo"],
             instrucciones=_markdown_a_html(validated_data["instrucciones"]),
             comando_sugerido=validated_data.get("comando_sugerido"),
+            resultado_esperado=validated_data.get("resultado_esperado") or None,
         )
 
     def to_internal_value(self, data):

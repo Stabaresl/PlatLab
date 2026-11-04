@@ -11,4 +11,4 @@ select = ["E", "F", "I"]
 # (patrón estándar de Django para separar base/dev/prod).
 # E501 en seeds: son contenido didáctico (teoría, salidas de consola simuladas)
 # donde partir los strings empeora la lectura.
-per-file-ignores = { "config/settings/dev.py" = ["F401", "F403", "F405"], "config/settings/prod.py" = ["F401", "F403", "F405"], "modules/*/management/commands/seed_*.py" = ["E501"] }
+per-file-ignores = { "config/settings/dev.py" = ["F401", "F403", "F405"], "config/settings/prod.py" = ["F401", "F403", "F405"], "modules/*/management/commands/seed_*.py" = ["E501"], "modules/*/management/commands/_contenido_*.py" = ["E501"] }

@@ -6,6 +6,8 @@
 // API comparten origen: rutas relativas, así la misma imagen funciona por
 // localhost y por la IP de la red sin recompilar. VITE_API_URL fuerza un
 // backend explícito en cualquiera de los dos casos.
+import type { Escenario } from "../lib/shell/escenario"
+
 const BASE: string =
   import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "/api/v1" : "http://localhost:8000/api/v1")
 // Origen del backend: con BASE relativa es el de la página misma.
@@ -845,6 +847,8 @@ export interface UsuarioItem {
   nombre_completo: string
   rol: Rol
   is_active: boolean
+  date_joined?: string | null
+  last_login?: string | null
 }
 
 export function listUsers(params?: { rol?: Rol; is_active?: boolean }) {
@@ -987,12 +991,15 @@ export function getProgresoOverview(assignmentId: string) {
 export interface ComandoSimulado {
   comando: string
   salida: string
+  patron?: string | null
 }
 
 export interface EntornoPractica {
   prompt: string
   banner: string
   comandos: ComandoSimulado[]
+  // Máquina simulada (archivos, red, servicios) que interpreta lib/shell.
+  escenario?: Escenario
 }
 
 export interface PasoGuia {
@@ -1000,6 +1007,7 @@ export interface PasoGuia {
   titulo: string
   instrucciones: string
   comando_sugerido: string | null
+  resultado_esperado?: string | null
 }
 
 export interface ContenidoSeccion {
@@ -1193,4 +1201,120 @@ export function listAudit(params?: { accion?: string; actor?: string; desde?: st
   // paginación (20) alcanza de sobra.
   const qs = new URLSearchParams(params as unknown as Record<string, string>).toString()
   return api<PaginatedResponse<RegistroAuditoriaItem>>(`/audit/${qs ? `?${qs}` : ""}`).then((res) => res.results)
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios — tabla completa del panel de admin (paginada en el servidor)
+// ---------------------------------------------------------------------------
+
+export function buscarUsuarios(params: { buscar?: string; rol?: Rol | ""; activo?: "true" | "false" | ""; limit: number; offset: number }) {
+  const qs = new URLSearchParams({ limit: String(params.limit), offset: String(params.offset) })
+  if (params.buscar?.trim()) qs.set("nombre", params.buscar.trim())
+  if (params.rol) qs.set("rol", params.rol)
+  if (params.activo) qs.set("activo", params.activo)
+  return api<PaginatedResponse<UsuarioItem>>(`/users/?${qs.toString()}`)
+}
+
+// ---------------------------------------------------------------------------
+// Salas privadas — /api/v1/salas
+// ---------------------------------------------------------------------------
+
+export type EstadoSala = "abierta" | "cerrada" | "finalizada"
+
+export interface Sala {
+  id: string
+  nombre: string
+  descripcion: string
+  codigo: string
+  laboratorio: { id: string; nombre: string; nivel: string }
+  anfitrion: { id: string; nombre: string }
+  capacidad: number
+  participantes: number
+  completados: number
+  estado: EstadoSala
+  acepta_ingresos: boolean
+  fecha_fin: string | null
+  created_at: string | null
+  mi_asignacion_id: string | null
+  mi_posicion_final: number | null
+}
+
+export interface ParticipanteTablero {
+  estudiante_id: string
+  nombre: string
+  puesto: number
+  secciones_completadas: number
+  secciones_total: number
+  porcentaje: number
+  mejor_puntaje: number | null
+  completado: boolean
+  completado_antes: boolean
+  posicion_final: number | null
+  fecha_completado: string | null
+  ultima_actividad: string | null
+  unido_en: string | null
+  es_yo: boolean
+}
+
+export interface SalaDetalle extends Sala {
+  es_anfitrion: boolean
+  tablero: ParticipanteTablero[]
+}
+
+export interface VistaPreviaSala {
+  codigo: string
+  nombre: string
+  descripcion: string
+  laboratorio: { nombre: string; nivel: string }
+  anfitrion: string
+  capacidad: number
+  participantes: number
+  acepta_ingresos: boolean
+  ya_participo: boolean
+  sala_id: string | null
+}
+
+export interface LaboratorioParaSala {
+  id: string
+  nombre: string
+  descripcion: string
+  nivel_dificultad: NivelDificultad
+  tipo: TipoLaboratorio
+  secciones: number
+}
+
+export function listSalas() {
+  return api<Sala[]>("/salas/")
+}
+
+export function getSala(id: string) {
+  return api<SalaDetalle>(`/salas/${id}/`)
+}
+
+export function crearSala(body: { nombre: string; laboratorio_id: string; descripcion?: string; capacidad?: number; fecha_fin?: string | null }) {
+  return api<Sala>("/salas/", { method: "POST", body: JSON.stringify(body) })
+}
+
+export function vistaPreviaSala(codigo: string) {
+  return api<VistaPreviaSala>(`/salas/codigo/${encodeURIComponent(codigo)}/`)
+}
+
+export function unirseSala(codigo: string) {
+  return api<{ sala_id: string; asignacion_id: string; ya_era_participante: boolean; completado_antes: boolean }>("/salas/unirse/", {
+    method: "POST",
+    body: JSON.stringify({ codigo }),
+  })
+}
+
+export function cambiarEstadoSala(id: string, estado: EstadoSala) {
+  return api<{ estado: EstadoSala }>(`/salas/${id}/estado/`, { method: "POST", body: JSON.stringify({ estado }) })
+}
+
+export function laboratoriosParaSala() {
+  return api<LaboratorioParaSala[]>("/salas/laboratorios-disponibles/")
+}
+
+/** "AB3K9P" → "AB3-K9P": más fácil de dictar y de copiar del tablero. */
+export function formatearCodigoSala(codigo: string) {
+  return codigo.length === 6 ? `${codigo.slice(0, 3)}-${codigo.slice(3)}` : codigo
 }

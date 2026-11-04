@@ -351,3 +351,27 @@ h1, h2, h3, h4, h5, h6 {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- Botón mínimo de herramientas (consola, tablas) ----
+   default · hover · focus-visible · active · disabled */
+.consola-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  transition: color var(--dur-fast) var(--ease-tactical), border-color var(--dur-fast) var(--ease-tactical);
+}
+.consola-btn:hover { color: var(--text-heading); border-color: var(--border-strong); }
+.consola-btn:focus-visible { outline: 2px solid var(--signal-cyan); outline-offset: 1px; color: var(--text-heading); }
+.consola-btn:active { transform: translateY(1px); }
+.consola-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.consola-btn[data-estado="ok"] { color: var(--signal-green); border-color: var(--signal-green-dim); }
+
+/* Raíz sin scroll horizontal en móvil (320 px). */
+html, body { overflow-x: clip; }

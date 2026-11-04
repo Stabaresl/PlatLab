@@ -8,7 +8,6 @@ from modules.laboratories.domain.entities import (
 )
 from modules.laboratories.domain.value_objects import (
     AyudaProgresiva,
-    ComandoSimulado,
     EntornoPractica,
     EstadoLaboratorio,
     NivelDificultad,
@@ -57,50 +56,19 @@ def dockerfile_seccion_to_entity(model: DockerfileSeccionModel) -> DockerfileSec
 
 
 def entorno_practica_to_entity(data: dict | None) -> EntornoPractica | None:
-    if not data:
-        return None
-    return EntornoPractica(
-        prompt=data.get("prompt") or "root@lab:~#",
-        banner=data.get("banner") or "",
-        comandos=[
-            ComandoSimulado(comando=c["comando"], salida=c["salida"])
-            for c in data.get("comandos", [])
-        ],
-    )
+    return EntornoPractica.desde_dict(data)
 
 
 def entorno_practica_to_dict(entorno: EntornoPractica | None) -> dict | None:
-    if entorno is None:
-        return None
-    return {
-        "prompt": entorno.prompt,
-        "banner": entorno.banner,
-        "comandos": [{"comando": c.comando, "salida": c.salida} for c in entorno.comandos],
-    }
+    return entorno.a_dict() if entorno is not None else None
 
 
 def pasos_guia_to_entity(data: list[dict] | None) -> list[PasoGuia]:
-    return [
-        PasoGuia(
-            orden=p["orden"],
-            titulo=p["titulo"],
-            instrucciones=p["instrucciones"],
-            comando_sugerido=p.get("comando_sugerido"),
-        )
-        for p in (data or [])
-    ]
+    return [PasoGuia.desde_dict(p) for p in (data or [])]
 
 
 def pasos_guia_to_list(pasos: list[PasoGuia]) -> list[dict]:
-    return [
-        {
-            "orden": p.orden,
-            "titulo": p.titulo,
-            "instrucciones": p.instrucciones,
-            "comando_sugerido": p.comando_sugerido,
-        }
-        for p in pasos
-    ]
+    return [p.a_dict() for p in pasos]
 
 
 def seccion_to_entity(model: SeccionModel) -> Seccion:

@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from modules.laboratories.application.dtos import EditarSeccionDTO, SeccionResultDTO
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.laboratories.domain.services import (
@@ -18,12 +20,7 @@ _ORDEN_DUPLICADO_MSG = "Ya existe una sección con ese orden en este laboratorio
 
 def _sanitizar_pasos(pasos: list[PasoGuia]) -> list[PasoGuia]:
     return [
-        PasoGuia(
-            orden=p.orden,
-            titulo=p.titulo,
-            instrucciones=sanitizar_contenido_html(p.instrucciones),
-            comando_sugerido=p.comando_sugerido,
-        )
+        replace(p, instrucciones=sanitizar_contenido_html(p.instrucciones))
         for p in pasos
     ]
 

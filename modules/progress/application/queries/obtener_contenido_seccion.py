@@ -52,26 +52,7 @@ class ObtenerContenidoSeccionQuery:
             estado=progreso_seccion.estado.value,
             objetivos=seccion.objetivos,
             duracion_estimada_minutos=seccion.duracion_estimada_minutos,
-            pasos_guia=[
-                {
-                    "orden": p.orden,
-                    "titulo": p.titulo,
-                    "instrucciones": p.instrucciones,
-                    "comando_sugerido": p.comando_sugerido,
-                }
-                for p in seccion.pasos_guia
-            ],
-            entorno_practica=(
-                {
-                    "prompt": seccion.entorno_practica.prompt,
-                    "banner": seccion.entorno_practica.banner,
-                    "comandos": [
-                        {"comando": c.comando, "salida": c.salida}
-                        for c in seccion.entorno_practica.comandos
-                    ],
-                }
-                if seccion.entorno_practica
-                else None
-            ),
+            pasos_guia=[p.a_dict() for p in seccion.pasos_guia],
+            entorno_practica=seccion.entorno_practica.a_dict() if seccion.entorno_practica else None,
             entorno_real_disponible=bool(seccion.imagen_practica),
         )

@@ -99,7 +99,13 @@ def test_obtener_contenido_seccion_en_progreso_devuelve_contenido():
     assert resultado.objetivos == ["Objetivo de prueba"]
     assert resultado.duracion_estimada_minutos == 12
     assert resultado.pasos_guia == [
-        {"orden": 1, "titulo": "Paso", "instrucciones": "<p>hacé esto</p>", "comando_sugerido": None}
+        {
+            "orden": 1,
+            "titulo": "Paso",
+            "instrucciones": "<p>hacé esto</p>",
+            "comando_sugerido": None,
+            "resultado_esperado": None,
+        }
     ]
 
 
