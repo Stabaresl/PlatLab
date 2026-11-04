@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 import { logout, type PerfilJugador } from "../pages/api"
@@ -20,14 +20,11 @@ const ROLE_LABELS: Record<string, string> = {
 export default function Navbar({ variant = "solid" }: { variant?: "solid" | "transparent" }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const [authed, setAuthed] = useState(false)
-  const [role, setRole] = useState<string | null>(null)
+  // Se leen en cada render: useLocation() ya re-renderiza al cambiar de ruta
+  // (login, logout, refresh que cambia el rol).
+  const authed = !!localStorage.getItem("token")
+  const role = localStorage.getItem("role")
   const { perfil, load: loadPerfil } = useGamificationStore()
-
-  useEffect(() => {
-    setAuthed(!!localStorage.getItem("token"))
-    setRole(localStorage.getItem("role"))
-  }, [location.pathname])
 
   useEffect(() => {
     if (authed && role === "estudiante" && !perfil) loadPerfil()
@@ -55,7 +52,7 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
             P
           </span>
           <span
-            className="text-lg sm:text-xl font-bold tracking-wide"
+            className="hidden min-[400px]:inline text-lg sm:text-xl font-bold tracking-wide"
             style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}
           >
             PLAT<span style={{ color: "var(--signal-amber)" }}>::</span>LAB
@@ -87,6 +84,17 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
             >
               Roadmap
             </Link>
+            {authed && (
+              <Link
+                to="/salas"
+                className="text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"
+                style={{ color: location.pathname.startsWith("/salas") ? "var(--signal-amber)" : "var(--text-muted)", fontFamily: "var(--font-mono)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-heading)" }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = location.pathname.startsWith("/salas") ? "var(--signal-amber)" : "var(--text-muted)" }}
+              >
+                Salas
+              </Link>
+            )}
             <Link
               to="/about"
               className="text-xs uppercase tracking-wide no-underline transition-colors px-2 py-1"

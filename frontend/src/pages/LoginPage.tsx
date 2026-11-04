@@ -30,7 +30,9 @@ export default function LoginPage() {
       setTokens(data.access, data.refresh)
       localStorage.setItem("role", data.rol)
       setLocalProfile({ email: email.toLowerCase() })
-      navigate("/dashboard")
+      // Solo rutas internas ("/salas/unirse/ABC123"): un "siguiente" externo sería una redirección abierta.
+      const siguiente = new URLSearchParams(window.location.search).get("siguiente")
+      navigate(siguiente && siguiente.startsWith("/") && !siguiente.startsWith("//") ? siguiente : "/dashboard")
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo iniciar sesión.")
     } finally {

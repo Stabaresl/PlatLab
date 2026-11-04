@@ -52,6 +52,15 @@ class IProgresoRepository(Protocol):
         """Batch: subconjunto de `asignacion_ids` cuyo Progreso tiene ≥1 HistorialCompletitud."""
         ...
 
+    def resumen_por_asignaciones(self, asignacion_ids: list[uuid.UUID]) -> dict[uuid.UUID, dict]:
+        """
+        Batch para tableros (salas): por asignación, `secciones_completadas`,
+        `secciones_total`, `mejor_puntaje` (examen, o None), `completado`
+        (≥1 HistorialCompletitud), `fecha_completado` (el primero) y
+        `ultima_actividad`. Pocas consultas sin importar cuántos participantes.
+        """
+        ...
+
     def get_seccion(
         self, progreso_id: uuid.UUID, seccion_id: uuid.UUID
     ) -> ProgresoSeccion | None: ...

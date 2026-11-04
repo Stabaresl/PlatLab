@@ -45,6 +45,14 @@ class AsignacionRepository:
             estado__in=_ESTADOS_VIGENTES,
         ).exists()
 
+    def get_vigente(self, estudiante_id: uuid.UUID, laboratorio_id: uuid.UUID) -> Asignacion | None:
+        model = AsignacionModel.objects.filter(
+            estudiante_id=estudiante_id,
+            laboratorio_id=laboratorio_id,
+            estado__in=_ESTADOS_VIGENTES,
+        ).first()
+        return asignacion_to_entity(model) if model else None
+
     def find_por_instructor(self, instructor_id: uuid.UUID) -> list[Asignacion]:
         modelos = AsignacionModel.objects.filter(instructor_id=instructor_id).order_by(
             "-fecha_invitacion"

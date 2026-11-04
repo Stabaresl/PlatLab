@@ -6,6 +6,7 @@ from modules.gamification.domain.entities import (
     Logro,
     LogroDesbloqueado,
     PerfilJugador,
+    RecompensaSala,
     Titulo,
     TituloDesbloqueado,
     XpOtorgado,
@@ -26,6 +27,7 @@ from modules.gamification.infrastructure.models import (
     LogroDesbloqueadoModel,
     LogroModel,
     PerfilJugadorModel,
+    RecompensaSalaModel,
     TituloDesbloqueadoModel,
     TituloModel,
     XpOtorgadoModel,
@@ -248,3 +250,26 @@ class TituloDesbloqueadoRepository:
         model.equipado = desbloqueo.equipado
         model.save(update_fields=["equipado"])
         return titulo_desbloqueado_to_entity(model)
+
+
+class RecompensaSalaRepository:
+    def existe(self, estudiante_id: uuid.UUID, sala_id: uuid.UUID) -> bool:
+        return RecompensaSalaModel.objects.filter(estudiante_id=estudiante_id, sala_id=sala_id).exists()
+
+    def add(self, recompensa: RecompensaSala) -> RecompensaSala:
+        m = RecompensaSalaModel.objects.create(
+            id=recompensa.id,
+            estudiante_id=recompensa.estudiante_id,
+            sala_id=recompensa.sala_id,
+            posicion=recompensa.posicion,
+            xp=recompensa.xp,
+        )
+        return RecompensaSala(
+            id=m.id, estudiante_id=m.estudiante_id, sala_id=m.sala_id, posicion=m.posicion, xp=m.xp, fecha=m.fecha
+        )
+
+    def contar_por_estudiante(self, estudiante_id: uuid.UUID) -> int:
+        return RecompensaSalaModel.objects.filter(estudiante_id=estudiante_id).count()
+
+    def contar_primeros_puestos(self, estudiante_id: uuid.UUID) -> int:
+        return RecompensaSalaModel.objects.filter(estudiante_id=estudiante_id, posicion=1).count()

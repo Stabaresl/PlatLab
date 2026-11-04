@@ -7,6 +7,7 @@ from modules.gamification.domain.entities import (
     Logro,
     LogroDesbloqueado,
     PerfilJugador,
+    RecompensaSala,
     Titulo,
     TituloDesbloqueado,
     XpOtorgado,
@@ -29,6 +30,16 @@ class IXpOtorgadoRepository(Protocol):
     def contar_por_estudiante(self, estudiante_id: uuid.UUID) -> int: ...
 
     def find_laboratorio_ids_por_estudiante(self, estudiante_id: uuid.UUID) -> set[uuid.UUID]: ...
+
+
+class IRecompensaSalaRepository(Protocol):
+    def existe(self, estudiante_id: uuid.UUID, sala_id: uuid.UUID) -> bool: ...
+
+    def add(self, recompensa: RecompensaSala) -> RecompensaSala: ...
+
+    def contar_por_estudiante(self, estudiante_id: uuid.UUID) -> int: ...
+
+    def contar_primeros_puestos(self, estudiante_id: uuid.UUID) -> int: ...
 
 
 class ILogroRepository(Protocol):

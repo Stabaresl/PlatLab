@@ -5,6 +5,7 @@ from modules.notifications.domain.value_objects import TipoNotificacion
 from modules.notifications.infrastructure.celery_tasks import despachar_notificacion_task
 from modules.notifications.infrastructure.destinatarios_provider import AdministradoresProvider
 from modules.reports.domain.events import ReportResolved
+from modules.rooms.domain.events import SalaCompletadaPorEstudiante
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.users.domain.events import (
     InstructorVerificationRequested,
@@ -120,7 +121,20 @@ def _on_logro_desbloqueado(event: LogroDesbloqueadoEvent) -> None:
     )
 
 
+def _on_sala_completada(event: SalaCompletadaPorEstudiante) -> None:
+    medalla = {1: "🥇 primer", 2: "🥈 segundo", 3: "🥉 tercer"}.get(event.posicion)
+    puesto = f"en el {medalla} puesto" if medalla else f"en el puesto {event.posicion}"
+    despachar_notificacion_task.delay(
+        user_id=str(event.estudiante_id),
+        tipo=TipoNotificacion.SALA_COMPLETADA.value,
+        mensaje=f"¡Terminaste la sala «{event.sala_nombre}» {puesto}! Revisa tu XP y tus logros en el perfil.",
+        entidad_tipo="sala",
+        entidad_id=str(event.sala_id),
+    )
+
+
 def registrar_listeners(dispatcher: EventDispatcher) -> None:
+    dispatcher.subscribe(SalaCompletadaPorEstudiante, _on_sala_completada)
     """
     HE-13/UC-11: suscribe los listeners de Notifications al
     `EventDispatcher` compartido (singleton, ver

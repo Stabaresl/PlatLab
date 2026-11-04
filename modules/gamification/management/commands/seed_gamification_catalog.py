@@ -97,6 +97,39 @@ _LOGROS = [
         "criterio_valor": None,
         "rareza": RarezaCosmetico.EPICO,
     },
+    # --- Salas privadas -------------------------------------------------------
+    {
+        "clave": "primera_sala",
+        "nombre": "Trabajo en Equipo",
+        "descripcion": "Terminaste el laboratorio de tu primera sala.",
+        "tipo_criterio": TipoCriterioLogro.SALAS_COMPLETADAS,
+        "criterio_valor": "1",
+        "rareza": RarezaCosmetico.POCO_COMUN,
+    },
+    {
+        "clave": "5_salas",
+        "nombre": "Veterano de Salas",
+        "descripcion": "Terminaste 5 salas.",
+        "tipo_criterio": TipoCriterioLogro.SALAS_COMPLETADAS,
+        "criterio_valor": "5",
+        "rareza": RarezaCosmetico.EPICO,
+    },
+    {
+        "clave": "primer_puesto_sala",
+        "nombre": "Primero en Cruzar la Meta",
+        "descripcion": "Fuiste la primera persona en terminar el laboratorio de una sala.",
+        "tipo_criterio": TipoCriterioLogro.PRIMER_PUESTO_SALA,
+        "criterio_valor": "1",
+        "rareza": RarezaCosmetico.RARO,
+    },
+    {
+        "clave": "3_primeros_puestos",
+        "nombre": "Imparable",
+        "descripcion": "Ganaste el primer puesto en 3 salas.",
+        "tipo_criterio": TipoCriterioLogro.PRIMER_PUESTO_SALA,
+        "criterio_valor": "3",
+        "rareza": RarezaCosmetico.LEGENDARIO,
+    },
 ]
 
 # cada cosmético apunta a la `clave` del logro que lo desbloquea
@@ -221,6 +254,38 @@ _COSMETICOS = [
         "color": "255,215,0",
         "logro_clave": "25_laboratorios",
     },
+    {
+        "clave": "insignia_sala",
+        "nombre": "Insignia: Sala Superada",
+        "tipo": TipoCosmetico.INSIGNIA,
+        "rareza": RarezaCosmetico.POCO_COMUN,
+        "color": "56,214,245",
+        "logro_clave": "primera_sala",
+    },
+    {
+        "clave": "marco_podio",
+        "nombre": "Marco Podio",
+        "tipo": TipoCosmetico.MARCO,
+        "rareza": RarezaCosmetico.RARO,
+        "color": "255,176,32",
+        "logro_clave": "primer_puesto_sala",
+    },
+    {
+        "clave": "aura_campeon",
+        "nombre": "Aura de Campeón",
+        "tipo": TipoCosmetico.AURA,
+        "rareza": RarezaCosmetico.LEGENDARIO,
+        "color": "255,138,0",
+        "logro_clave": "3_primeros_puestos",
+    },
+    {
+        "clave": "audifonos_equipo",
+        "nombre": "Audífonos de Equipo",
+        "tipo": TipoCosmetico.AUDIFONOS,
+        "rareza": RarezaCosmetico.EPICO,
+        "color": "186,85,255",
+        "logro_clave": "5_salas",
+    },
 ]
 
 # cada título apunta a la `clave` del logro que lo desbloquea
@@ -273,6 +338,27 @@ _TITULOS = [
         "descripcion": "Otorgado al completar 25 laboratorios.",
         "rareza": RarezaCosmetico.MITICO,
         "logro_clave": "25_laboratorios",
+    },
+    {
+        "clave": "jugador_equipo",
+        "nombre": "Jugador de Equipo",
+        "descripcion": "Otorgado al terminar tu primera sala.",
+        "rareza": RarezaCosmetico.POCO_COMUN,
+        "logro_clave": "primera_sala",
+    },
+    {
+        "clave": "campeon_sala",
+        "nombre": "Campeón de Sala",
+        "descripcion": "Otorgado al llegar primero en una sala.",
+        "rareza": RarezaCosmetico.RARO,
+        "logro_clave": "primer_puesto_sala",
+    },
+    {
+        "clave": "imparable",
+        "nombre": "Imparable",
+        "descripcion": "Otorgado al ganar el primer puesto en 3 salas.",
+        "rareza": RarezaCosmetico.LEGENDARIO,
+        "logro_clave": "3_primeros_puestos",
     },
 ]
 

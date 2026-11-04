@@ -20,6 +20,7 @@ class TipoNotificacion(str, Enum):
     LABORATORIO_RECHAZADO = "laboratorio_rechazado"
     LOGRO_DESBLOQUEADO = "logro_desbloqueado"
     SOLICITUD_INSTRUCTOR = "solicitud_instructor"
+    SALA_COMPLETADA = "sala_completada"
 
 
 class CanalNotificacion(str, Enum):

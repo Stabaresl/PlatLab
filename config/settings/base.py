@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'modules.lab_environments',
     'modules.roadmap',
     'modules.gamification',
+    'modules.rooms',
 ]
 
 MIDDLEWARE = [

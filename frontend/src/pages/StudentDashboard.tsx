@@ -16,6 +16,7 @@ import {
   type NivelDificultad,
 } from "./api"
 import Navbar from "../components/Navbar"
+import AccesoSalas from "../components/salas/AccesoSalas"
 import Footer from "../components/Footer"
 import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
@@ -168,6 +169,7 @@ export default function StudentDashboard() {
         <main className="flex-1">
           <div className="mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10" style={{ maxWidth: "1200px" }}>
             <TerminalHeader title="Panel del Estudiante" subtitle="Bienvenido de vuelta" prompt="whoami → estudiante" />
+            <div className="mb-6 sm:mb-8"><AccesoSalas rol="estudiante" /></div>
 
             <AnimatePresence>
               {error && (

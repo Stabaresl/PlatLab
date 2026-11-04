@@ -1,5 +1,6 @@
 import uuid
 
+from modules.gamification.application.desbloqueo import desbloquear_logro
 from modules.gamification.application.dtos import (
     LogroDesbloqueadoResultDTO,
     ProcesarCompletitudDTO,
@@ -7,11 +8,8 @@ from modules.gamification.application.dtos import (
 )
 from modules.gamification.domain.entities import (
     XP_POR_DIFICULTAD,
-    CosmeticoDesbloqueado,
     Logro,
-    LogroDesbloqueado,
     PerfilJugador,
-    TituloDesbloqueado,
     XpOtorgado,
 )
 from modules.gamification.domain.events import LogroDesbloqueadoEvent
@@ -147,19 +145,15 @@ class ProcesarCompletitudLaboratorio(
             if not cumplido:
                 continue
 
-            self._logro_desbloqueado_repository.add(
-                LogroDesbloqueado(estudiante_id=estudiante_id, logro_id=logro.id)
+            desbloquear_logro(
+                estudiante_id,
+                logro,
+                self._logro_desbloqueado_repository,
+                self._cosmetico_repository,
+                self._cosmetico_desbloqueado_repository,
+                self._titulo_repository,
+                self._titulo_desbloqueado_repository,
             )
-            for cosmetico in self._cosmetico_repository.find_por_logro(logro.id):
-                if not self._cosmetico_desbloqueado_repository.existe(estudiante_id, cosmetico.id):
-                    self._cosmetico_desbloqueado_repository.add(
-                        CosmeticoDesbloqueado(estudiante_id=estudiante_id, cosmetico_id=cosmetico.id)
-                    )
-            for titulo in self._titulo_repository.find_por_logro(logro.id):
-                if not self._titulo_desbloqueado_repository.existe(estudiante_id, titulo.id):
-                    self._titulo_desbloqueado_repository.add(
-                        TituloDesbloqueado(estudiante_id=estudiante_id, titulo_id=titulo.id)
-                    )
             desbloqueados_ahora.append(logro)
 
         return desbloqueados_ahora

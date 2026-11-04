@@ -15,6 +15,7 @@ import {
   type EstadoLaboratorio,
 } from "./api"
 import Navbar from "../components/Navbar"
+import AccesoSalas from "../components/salas/AccesoSalas"
 import Footer from "../components/Footer"
 import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
@@ -163,6 +164,7 @@ export default function InstructorDashboard() {
                 </Button>
               }
             />
+            <div className="mb-6 sm:mb-8"><AccesoSalas rol="instructor" /></div>
 
             <AnimatePresence>
               {error && (

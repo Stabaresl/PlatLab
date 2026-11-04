@@ -15,6 +15,10 @@ class TipoCriterioLogro(str, Enum):
     # criterio se desbloquea desde `CompletarOnboardingUseCase`, disparado
     # al terminar el tour de bienvenida, no al completar un laboratorio.
     TOUR_COMPLETADO = "tour_completado"
+    # Salas privadas — los evalúa `OtorgarRecompensaSalaUseCase` al terminar
+    # el laboratorio de una sala (no `ProcesarCompletitudLaboratorio`).
+    SALAS_COMPLETADAS = "salas_completadas"  # criterio_valor = N
+    PRIMER_PUESTO_SALA = "primer_puesto_sala"
 
 
 class RarezaCosmetico(str, Enum):

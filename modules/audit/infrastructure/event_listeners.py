@@ -24,6 +24,12 @@ from modules.laboratories.domain.events import (
 from modules.progress.domain.events import ExamGraded, FlagValidated, LabCompleted, SectionCompleted
 from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.reports.domain.events import ReportResolved, ReportSubmitted
+from modules.rooms.domain.events import (
+    EstadoSalaCambiado,
+    EstudianteSeUnioASala,
+    SalaCompletadaPorEstudiante,
+    SalaCreada,
+)
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.users.domain.events import (
     InstructorVerificationRequested,
@@ -211,6 +217,26 @@ def _on_report_resolved(event: ReportResolved) -> None:
     _registrar(event.estudiante_id, "report_resolved", "reporte", event.reporte_id)
 
 
+# --- Rooms --------------------------------------------------------------------
+
+
+def _on_sala_creada(event: SalaCreada) -> None:
+    metadata = {"laboratorio_id": str(event.laboratorio_id)}
+    _registrar(event.anfitrion_id, "room_created", "sala", event.sala_id, metadata=metadata)
+
+
+def _on_estado_sala_cambiado(event: EstadoSalaCambiado) -> None:
+    _registrar(event.actor_id, "room_state_changed", "sala", event.sala_id, metadata={"estado": event.estado})
+
+
+def _on_estudiante_se_unio(event: EstudianteSeUnioASala) -> None:
+    _registrar(event.estudiante_id, "room_joined", "sala", event.sala_id)
+
+
+def _on_sala_completada(event: SalaCompletadaPorEstudiante) -> None:
+    _registrar(event.estudiante_id, "room_completed", "sala", event.sala_id, metadata={"posicion": event.posicion})
+
+
 def registrar_listeners(dispatcher: EventDispatcher) -> None:
     """
     UC-12/RF-33: suscribe Audit a TODOS los eventos de dominio existentes
@@ -252,3 +278,8 @@ def registrar_listeners(dispatcher: EventDispatcher) -> None:
 
     dispatcher.subscribe(ReportSubmitted, _on_report_submitted)
     dispatcher.subscribe(ReportResolved, _on_report_resolved)
+
+    dispatcher.subscribe(SalaCreada, _on_sala_creada)
+    dispatcher.subscribe(EstadoSalaCambiado, _on_estado_sala_cambiado)
+    dispatcher.subscribe(EstudianteSeUnioASala, _on_estudiante_se_unio)
+    dispatcher.subscribe(SalaCompletadaPorEstudiante, _on_sala_completada)

@@ -35,11 +35,16 @@ const LabPreviewPage = lazy(() => import("./pages/LabPreviewPage"))
 const RoadmapPage = lazy(() => import("./pages/RoadmapPage"))
 const RoadmapAdminPage = lazy(() => import("./pages/RoadmapAdminPage"))
 const ProfilePage = lazy(() => import("./pages/ProfilePage"))
+const SalasPage = lazy(() => import("./pages/SalasPage"))
+const SalaDetallePage = lazy(() => import("./pages/SalaDetallePage"))
+const UnirseSalaPage = lazy(() => import("./pages/UnirseSalaPage"))
 
 const token = () => localStorage.getItem("token")
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  if (!token()) return <Navigate to="/login" replace />
+  const { pathname, search } = useLocation()
+  // Recuerda a dónde iba (ej. el enlace de invitación a una sala) para volver tras el login.
+  if (!token()) return <Navigate to={`/login?siguiente=${encodeURIComponent(pathname + search)}`} replace />
   return <>{children}</>
 }
 
@@ -93,6 +98,9 @@ function AnimatedRoutes() {
           <Route path="/roadmap" element={<RoadmapPage />} />
           <Route path="/roadmap/admin" element={<ProtectedRoute><RoadmapAdminPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/salas" element={<ProtectedRoute><SalasPage /></ProtectedRoute>} />
+          <Route path="/salas/unirse/:codigo" element={<ProtectedRoute><UnirseSalaPage /></ProtectedRoute>} />
+          <Route path="/salas/:id" element={<ProtectedRoute><SalaDetallePage /></ProtectedRoute>} />
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/signup" element={<PublicRoute><SignUpPage /></PublicRoute>} />
           <Route path="/oauth/:provider/callback" element={<OAuthCallbackPage />} />

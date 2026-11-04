@@ -23,6 +23,24 @@ class PerfilJugadorModel(models.Model):
         return f"PerfilJugador(estudiante={self.estudiante_id}, nivel={self.nivel})"
 
 
+class RecompensaSalaModel(models.Model):
+    """Bono de XP por terminar una sala (ver `RecompensaSala`). `sala_id`: id suelto a rooms."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    estudiante_id = models.UUIDField()
+    sala_id = models.UUIDField()
+    posicion = models.PositiveSmallIntegerField()
+    xp = models.PositiveIntegerField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "gamification_recompensa_sala"
+        constraints = [
+            models.UniqueConstraint(fields=["estudiante_id", "sala_id"], name="uq_recompensa_estudiante_sala"),
+        ]
+        indexes = [models.Index(fields=["estudiante_id"], name="idx_recompensa_estudiante")]
+
+
 class XpOtorgadoModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     estudiante_id = models.UUIDField()

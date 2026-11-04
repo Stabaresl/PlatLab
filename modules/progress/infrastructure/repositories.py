@@ -92,6 +92,59 @@ class ProgresoRepository:
             resultado[asignacion_id] = completadas / total * 100
         return resultado
 
+    def resumen_por_asignaciones(self, asignacion_ids: list[uuid.UUID]) -> dict[uuid.UUID, dict]:
+        if not asignacion_ids:
+            return {}
+        progresos = {
+            pid: {"asignacion_id": aid, "ultima_actividad": ultima}
+            for pid, aid, ultima in ProgresoModel.objects.filter(
+                asignacion_id__in=asignacion_ids
+            ).values_list("id", "asignacion_id", "ultima_actividad")
+        }
+        if not progresos:
+            return {}
+
+        resumen: dict[uuid.UUID, dict] = {
+            datos["asignacion_id"]: {
+                "secciones_completadas": 0,
+                "secciones_total": 0,
+                "mejor_puntaje": None,
+                "completado": False,
+                "fecha_completado": None,
+                "ultima_actividad": datos["ultima_actividad"],
+            }
+            for datos in progresos.values()
+        }
+
+        def _de(progreso_id):
+            return resumen[progresos[progreso_id]["asignacion_id"]]
+
+        for progreso_id, estado in ProgresoSeccionModel.objects.filter(
+            progreso_id__in=progresos.keys()
+        ).values_list("progreso_id", "estado"):
+            fila = _de(progreso_id)
+            fila["secciones_total"] += 1
+            if estado == EstadoProgresoSeccion.COMPLETADA.value:
+                fila["secciones_completadas"] += 1
+
+        for progreso_id, puntaje in ResultadoExamenModel.objects.filter(
+            progreso_id__in=progresos.keys()
+        ).values_list("progreso_id", "puntaje"):
+            fila = _de(progreso_id)
+            valor = float(puntaje)
+            if fila["mejor_puntaje"] is None or valor > fila["mejor_puntaje"]:
+                fila["mejor_puntaje"] = valor
+
+        for progreso_id, fecha in HistorialCompletitudModel.objects.filter(
+            progreso_id__in=progresos.keys()
+        ).values_list("progreso_id", "fecha_completado"):
+            fila = _de(progreso_id)
+            fila["completado"] = True
+            if fila["fecha_completado"] is None or fecha < fila["fecha_completado"]:
+                fila["fecha_completado"] = fecha
+
+        return resumen
+
     def asignaciones_con_historial(self, asignacion_ids: list[uuid.UUID]) -> set[uuid.UUID]:
         """Batch: de estas asignaciones, cuáles tienen ≥1 `HistorialCompletitud` (laboratorio terminado)."""
         if not asignacion_ids:

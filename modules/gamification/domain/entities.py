@@ -111,6 +111,30 @@ class XpOtorgado(BaseEntity):
         BaseEntity.__init__(self, id=self.id)
 
 
+XP_POR_PUESTO_SALA = {1: 150, 2: 110, 3: 80}
+XP_SALA_POR_DEFECTO = 50
+
+
+@dataclass(eq=False)
+class RecompensaSala(BaseEntity):
+    """
+    Bono por terminar el laboratorio de una sala, según el puesto de llegada
+    (1.º 150 XP, 2.º 110, 3.º 80, resto 50). Único por `(estudiante_id,
+    sala_id)`: se suma al XP normal del laboratorio, que se otorga una sola
+    vez por laboratorio aunque se repita en varias salas.
+    """
+
+    estudiante_id: uuid.UUID
+    sala_id: uuid.UUID
+    posicion: int
+    xp: int
+    fecha: datetime = field(default_factory=ahora_utc)
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+
+    def __post_init__(self):
+        BaseEntity.__init__(self, id=self.id)
+
+
 @dataclass(eq=False)
 class Logro(BaseEntity):
     """Catálogo de logros — sembrado por `seed_gamification_catalog`, sin UI de autoría en v1."""

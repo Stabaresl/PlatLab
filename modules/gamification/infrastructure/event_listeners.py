@@ -3,12 +3,17 @@ import uuid
 from modules.assignments.infrastructure.repositories import AsignacionRepository
 from modules.gamification.application.dtos import ProcesarCompletitudDTO
 from modules.gamification.application.procesar_completitud import ProcesarCompletitudLaboratorio
+from modules.gamification.application.use_cases.otorgar_recompensa_sala import (
+    OtorgarRecompensaSalaDTO,
+    OtorgarRecompensaSalaUseCase,
+)
 from modules.gamification.infrastructure.repositories import (
     CosmeticoDesbloqueadoRepository,
     CosmeticoRepository,
     LogroDesbloqueadoRepository,
     LogroRepository,
     PerfilJugadorRepository,
+    RecompensaSalaRepository,
     TituloDesbloqueadoRepository,
     TituloRepository,
     XpOtorgadoRepository,
@@ -17,6 +22,7 @@ from modules.laboratories.infrastructure.repositories import LaboratorioReposito
 from modules.progress.domain.events import ExamGraded, LabCompleted
 from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.roadmap.infrastructure.repositories import NodoRoadmapRepository
+from modules.rooms.domain.events import SalaCompletadaPorEstudiante
 from modules.shared.infrastructure.event_dispatcher import EventDispatcher
 from modules.shared.infrastructure.unit_of_work import BaseUnitOfWork
 
@@ -73,6 +79,25 @@ def _on_lab_completed(event: LabCompleted) -> None:
     _procesar(estudiante_id, laboratorio_id)
 
 
+def _on_sala_completada(event: SalaCompletadaPorEstudiante) -> None:
+    """Bono por puesto de llegada + logros de salas (además del XP normal del laboratorio)."""
+    OtorgarRecompensaSalaUseCase(
+        unit_of_work=BaseUnitOfWork(),
+        event_dispatcher=EventDispatcher(),
+        perfil_repository=PerfilJugadorRepository(),
+        recompensa_repository=RecompensaSalaRepository(),
+        logro_repository=LogroRepository(),
+        logro_desbloqueado_repository=LogroDesbloqueadoRepository(),
+        cosmetico_repository=CosmeticoRepository(),
+        cosmetico_desbloqueado_repository=CosmeticoDesbloqueadoRepository(),
+        titulo_repository=TituloRepository(),
+        titulo_desbloqueado_repository=TituloDesbloqueadoRepository(),
+    ).execute(
+        OtorgarRecompensaSalaDTO(estudiante_id=event.estudiante_id, sala_id=event.sala_id, posicion=event.posicion)
+    )
+
+
 def registrar_listeners(dispatcher: EventDispatcher) -> None:
     dispatcher.subscribe(ExamGraded, _on_exam_graded)
     dispatcher.subscribe(LabCompleted, _on_lab_completed)
+    dispatcher.subscribe(SalaCompletadaPorEstudiante, _on_sala_completada)
