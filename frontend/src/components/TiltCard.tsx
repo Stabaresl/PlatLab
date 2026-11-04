@@ -9,6 +9,16 @@ import MouseGlow, { trackGlow, untrackGlow } from "./MouseGlow"
 // tokens (--signal-*) en vez de colores fijos — reemplaza al cubo 3D
 // decorativo del ejemplo por una técnica aplicable a cards con datos
 // reales (números, estados), no a un objeto sin información.
+const LAYOUT_HEREDADO: CSSProperties = {
+  display: "inherit",
+  flexDirection: "inherit",
+  flexWrap: "inherit",
+  alignItems: "inherit",
+  justifyContent: "inherit",
+  gap: "inherit",
+  gridTemplateColumns: "inherit",
+}
+
 export default function TiltCard({
   children,
   glowColor = "56,214,245",
@@ -54,7 +64,10 @@ export default function TiltCard({
       style={style}
     >
       {!reduced && <MouseGlow color={glowColor} size={glowSize} opacity={glowOpacity} />}
-      <div className="relative z-10 h-full">{children}</div>
+      {/* Hereda el layout del contenedor (flex/grid, dirección, alineación, gap):
+          sin esto, las clases `flex justify-between` de quien usa la tarjeta
+          solo afectaban a este envoltorio y el contenido quedaba apilado. */}
+      <div className="relative z-10 h-full w-full min-w-0" style={LAYOUT_HEREDADO}>{children}</div>
     </div>
   )
 }
