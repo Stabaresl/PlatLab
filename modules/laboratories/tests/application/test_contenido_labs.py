@@ -9,7 +9,7 @@ from django.core.management import call_command
 
 from modules.laboratories.infrastructure.content_sanitizer import sanitizar_contenido_html
 from modules.laboratories.infrastructure.models import ExamenModel, LaboratorioModel, PreguntaModel, SeccionModel
-from modules.laboratories.management.commands.actualizar_contenido_labs import LABS
+from modules.laboratories.management.commands.actualizar_contenido_labs import LABS, _entorno, _especificaciones
 
 _FLAG = re.compile(r"FLAG\{[a-z0-9_]+\}")
 
@@ -23,6 +23,25 @@ def test_cada_laboratorio_trae_guia_completa(lab):
         assert titulo and instrucciones and comando and esperado, titulo
     assert lab["flag"]["pista"] and lab["flag"]["paso_a_paso"]
     assert lab["resumen_cierre"]
+
+
+@pytest.mark.parametrize("lab", LABS, ids=[lab["nombre"] for lab in LABS])
+def test_cada_laboratorio_trae_especificaciones_y_sobreviven_al_sanitizador(lab):
+    """Objetivo, alcance y qué se entrega, sin ambigüedad; la ficha no la borra el sanitizador."""
+    esp = lab["especificaciones"]
+    assert esp["objetivo"] and esp["alcance"] and esp["entregar"]
+    entorno = _entorno(lab["secciones"][1]["entorno"])
+    ficha = sanitizar_contenido_html(_especificaciones(lab, entorno))
+    assert 'class="especificaciones"' in ficha
+    assert "Formato de la flag" in ficha and "Qué entregas" in ficha
+
+
+def test_cesar_explica_el_sentido_del_desplazamiento():
+    """−3/+3 generaba dudas: la guía tiene que decir hacia dónde se mueve cada letra."""
+    cesar = next(lab for lab in LABS if lab["nombre"] == "Cifrado César y Frecuencia")
+    texto = cesar["secciones"][0]["html"] + json.dumps(cesar["especificaciones"], ensure_ascii=False)
+    assert "hacia adelante" in texto and "hacia atrás" in texto
+    assert "LRGM" in texto  # el error típico (+3 en vez de −3) está explicado
 
 
 @pytest.mark.parametrize("lab", LABS, ids=[lab["nombre"] for lab in LABS])
@@ -63,5 +82,7 @@ def test_actualizar_contenido_aplica_guia_escenario_y_examen():
     assert len(practica.pasos_guia) == 6
     assert practica.pasos_guia[-1]["resultado_esperado"]
     assert practica.entorno_practica["escenario"]["red"][0]["ip"] == "192.168.56.20"
+    assert 'class="especificaciones"' in practica.contenido_teorico
+    assert practica.contenido_teorico.count("Especificaciones del reto") == 1  # idempotente: no se duplica
     examen = ExamenModel.objects.get(laboratorio_id=lab.id)
     assert PreguntaModel.objects.filter(examen_id=examen.id).count() == 4

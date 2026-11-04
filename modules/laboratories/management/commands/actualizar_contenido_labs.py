@@ -55,6 +55,56 @@ def _entorno(datos: dict | None) -> EntornoPractica | None:
     )
 
 
+# Filas comunes de la ficha de especificaciones: iguales en los 12 laboratorios,
+# por eso no se repiten en cada archivo de contenido.
+_FORMATO_FLAG = (
+    "<code>FLAG{...}</code> completa, tal como aparece: «FLAG» en mayúsculas, las llaves y lo de "
+    "adentro sin cambiar nada (minúsculas, números y guion bajo). Sin espacios ni comillas: "
+    "distingue mayúsculas de minúsculas."
+)
+_DONDE_SE_ENTREGA = (
+    "En la casilla <strong>Entrega la flag</strong>, debajo de la consola. Equivocarte no resta: "
+    "a los 5 intentos fallidos se abre una pista y a los 15, el paso a paso."
+)
+_LA_CONSOLA = (
+    "Es simulada: responde a los comandos de la guía y a los básicos de Linux (<code>ls</code>, "
+    "<code>cat</code>, <code>grep</code>, <code>cd</code>…). Escribe <code>help</code> para ver la lista."
+)
+
+
+def _especificaciones(datos: dict, entorno: EntornoPractica | None) -> str:
+    """
+    Ficha «Especificaciones del reto» de la práctica: qué máquina eres, a qué
+    apuntas, qué está dentro del alcance, qué se entrega y en qué formato, más
+    las convenciones propias del laboratorio (las que generan dudas, como el
+    sentido del desplazamiento en César).
+    """
+    esp = datos.get("especificaciones")
+    if not esp:
+        return ""
+    usuario_host = entorno.prompt.split(":")[0] if entorno else "estudiante@kali"
+    ip = (entorno.escenario or {}).get("ip") if entorno else None
+    equipo = f"<code>{usuario_host}</code>" + (f" · <code>{ip}</code>" if ip else "")
+    filas = [
+        ("Tu equipo", equipo),
+        ("Objetivo", esp["objetivo"]),
+        ("Alcance", esp["alcance"]),
+        ("Qué entregas", esp["entregar"]),
+        ("Formato de la flag", _FORMATO_FLAG),
+        ("Dónde se entrega", _DONDE_SE_ENTREGA),
+        ("La consola", _LA_CONSOLA),
+    ]
+    html = (
+        '<div class="especificaciones"><h3>Especificaciones del reto</h3><table><tbody>'
+        + "".join(f"<tr><th>{campo}</th><td>{valor}</td></tr>" for campo, valor in filas)
+        + "</tbody></table>"
+    )
+    if esp.get("convenciones"):
+        items = "".join(f"<li>{c}</li>" for c in esp["convenciones"])
+        html += f"<h4>Convenciones de este laboratorio</h4><ul>{items}</ul>"
+    return html + "</div>"
+
+
 def _pasos(pasos: list[tuple]) -> list[PasoGuia]:
     return [
         PasoGuia(
@@ -121,10 +171,11 @@ class Command(BaseCommand):
         secciones = sorted(repo.get_secciones(lab.id), key=lambda s: s.orden)
         for seccion, sdatos in zip(secciones, datos["secciones"], strict=False):
             entorno = _entorno(sdatos.get("entorno"))
+            html = sdatos["html"] + (_especificaciones(datos, entorno) if sdatos.get("entorno") else "")
             actualizada = replace(
                 seccion,
                 titulo=sdatos["titulo"],
-                contenido_teorico=sanitizar_contenido_html(sdatos["html"]),
+                contenido_teorico=sanitizar_contenido_html(html),
                 objetivos=sdatos["objetivos"],
                 duracion_estimada_minutos=sdatos["duracion"],
                 pasos_guia=_pasos(sdatos.get("pasos", [])),

@@ -53,19 +53,40 @@ CESAR = {
                 "<div class=\"escenario\"><p>Interceptaste un mensaje entre dos participantes de un reto "
                 "de seguridad. Por la forma, parece cifrado con algo muy simple.</p></div>"
                 "<h3>Desplazar el alfabeto</h3>"
-                "<p>César reemplaza cada letra por la que está <em>n</em> posiciones más adelante. Con "
-                "<em>n = 3</em>:</p>"
-                "<table><thead><tr><th>Claro</th><th>A</th><th>B</th><th>C</th><th>…</th><th>X</th><th>Y</th><th>Z</th></tr></thead>"
-                "<tbody><tr><td>Cifrado</td><td>D</td><td>E</td><td>F</td><td>…</td><td>A</td><td>B</td><td>C</td></tr></tbody></table>"
-                "<p>Para descifrar se desplaza en sentido contrario. Números y símbolos no cambian.</p>"
+                "<p>César reemplaza cada letra por la que está <em>n</em> posiciones <strong>más adelante</strong> "
+                "en el alfabeto. Ese <em>n</em> es la <strong>clave</strong>. Al llegar a la Z se vuelve a "
+                "empezar por la A. Con clave 3:</p>"
+                "<pre>Original:  A B C D E F G H I J K L M N O P Q R S T U V W X Y Z\n"
+                "Cifrado:   D E F G H I J K L M N O P Q R S T U V W X Y Z A B C</pre>"
+                "<p>Así, <code>HOLA</code> se cifra como <code>KROD</code>: H+3=K, O+3=R, L+3=O, A+3=D.</p>"
+                "<div class=\"importante\"><p><strong>Cómo leer los signos en este laboratorio.</strong> "
+                "<strong>+3</strong> (o «clave 3») es mover cada letra 3 posiciones <strong>hacia adelante</strong>: "
+                "A→D. Eso es <em>cifrar</em>. <strong>−3</strong> es mover cada letra 3 posiciones "
+                "<strong>hacia atrás</strong>: D→A. Eso es <em>descifrar</em> un mensaje cifrado con clave 3. "
+                "Moverse 3 hacia atrás da lo mismo que moverse 23 hacia adelante, porque el alfabeto tiene 26 letras.</p></div>"
+                "<table><thead><tr><th>Regla</th><th>Qué pasa</th></tr></thead><tbody>"
+                "<tr><td>Alfabeto</td><td>El inglés de 26 letras: no hay Ñ ni tildes.</td></tr>"
+                "<tr><td>Mayúsculas y minúsculas</td><td>Se desplazan igual y conservan su tipo: <code>a</code>+3 es <code>d</code>, <code>A</code>+3 es <code>D</code>.</td></tr>"
+                "<tr><td>Números, espacios y símbolos</td><td>No cambian: <code>{</code>, <code>}</code>, <code>_</code> y <code>7</code> quedan igual.</td></tr>"
+                "</tbody></table>"
                 "<h3>Por qué es inseguro</h3>"
-                "<ul><li><strong>Fuerza bruta</strong>: solo hay 25 desplazamientos posibles; se prueban todos en segundos.</li>"
+                "<ul><li><strong>Fuerza bruta</strong>: solo hay 25 desplazamientos posibles (el 26 deja el texto igual); se prueban todos en segundos.</li>"
                 "<li><strong>Frecuencia</strong>: en español la letra más común es la E. La letra más repetida del mensaje cifrado probablemente es una E desplazada.</li>"
                 "<li><strong>Texto conocido</strong>: si sabes una palabra del original, comparas letra con letra y obtienes la clave.</li></ul>"
                 "<h3>César con tr</h3>"
-                "<p><code>tr</code> traduce caracteres de un conjunto a otro. Desplazar −3 es decirle que la "
-                "A se vuelve X, la B se vuelve Y… y lo mismo en minúsculas:</p>"
-                "<pre>tr 'A-Za-z' 'X-ZA-Wx-za-w'</pre>"
+                "<p><code>tr</code> cambia cada carácter del primer conjunto por el que está <strong>en la misma "
+                "posición</strong> del segundo. Si el segundo conjunto es el alfabeto empezando en la X, la A "
+                "(primera del primer conjunto) se vuelve X, la B se vuelve Y, la D se vuelve A… es decir, cada "
+                "letra retrocede 3:</p>"
+                "<pre>tr 'A-Za-z' 'X-ZA-Wx-za-w'\n"
+                "    A B C D E … Z   (primer conjunto)\n"
+                "    X Y Z A B … W   (segundo: 'X-Z' y luego 'A-W')</pre>"
+                "<table><thead><tr><th>Desplazamiento</th><th>Segundo conjunto de tr</th><th>Ejemplo</th></tr></thead><tbody>"
+                "<tr><td>−1 (atrás 1)</td><td><code>'ZA-Yza-y'</code></td><td>B→A</td></tr>"
+                "<tr><td>−2 (atrás 2)</td><td><code>'YZA-Xyza-x'</code></td><td>C→A</td></tr>"
+                "<tr><td>−3 (atrás 3)</td><td><code>'X-ZA-Wx-za-w'</code></td><td>D→A</td></tr>"
+                "<tr><td>+3 (adelante 3, cifrar)</td><td><code>'D-ZA-Cd-za-c'</code></td><td>A→D</td></tr>"
+                "</tbody></table>"
             ),
             "pasos": [],
             "entorno": None,
@@ -83,16 +104,38 @@ CESAR = {
                 "empiezan por <code>FLAG{</code>: úsalo.</p>"
             ),
             "pasos": [
-                ("Lee el mensaje", "<p>Mira el texto cifrado. Observa que las llaves <code>{}</code> no cambiaron.</p>", "cat mensaje_cifrado.txt", "IODJ{fhvdu_hv_wulyldo}"),
+                ("Lee el mensaje", "<p>Mira el texto cifrado. Observa que las llaves <code>{}</code> y el guion bajo no cambiaron: César solo mueve letras.</p>", "cat mensaje_cifrado.txt", "IODJ{fhvdu_hv_wulyldo}"),
                 (
                     "Deduce la clave",
-                    "<p>Si <code>IODJ</code> corresponde a <code>FLAG</code>: de F a I hay 3 letras (F→G→H→I). "
-                    "Comprueba con la segunda: L + 3 = O. La clave es 3.</p>",
+                    "<p>La pista dice que el original empieza por <code>FLAG</code>, y el cifrado empieza por "
+                    "<code>IODJ</code>. Compara letra con letra contando hacia adelante en el alfabeto:</p>"
+                    "<table><thead><tr><th>Original</th><th>Cifrado</th><th>Cuenta</th></tr></thead><tbody>"
+                    "<tr><td>F</td><td>I</td><td>F→G→H→I: 3 adelante</td></tr>"
+                    "<tr><td>L</td><td>O</td><td>L→M→N→O: 3 adelante</td></tr>"
+                    "<tr><td>A</td><td>D</td><td>A→B→C→D: 3 adelante</td></tr>"
+                    "<tr><td>G</td><td>J</td><td>G→H→I→J: 3 adelante</td></tr>"
+                    "</tbody></table>"
+                    "<p>Las cuatro dan lo mismo: se cifró con <strong>clave 3</strong> (+3). Para descifrar "
+                    "harás lo contrario, <strong>−3</strong>.</p>",
                     "cat pista.txt",
                     "Texto conocido: el original empieza por FLAG{",
                 ),
-                ("Prueba un desplazamiento equivocado", "<p>Con −1 obtienes basura: así se ve un intento fallido de fuerza bruta.</p>", "cat mensaje_cifrado.txt | tr 'A-Za-z' 'ZA-Yza-y'", "HNCI{eguct_gu_vtkxkcn}"),
-                ("Descifra con −3", "<p>Aplica la clave correcta. Copia el resultado y entrégalo.</p>", "cat mensaje_cifrado.txt | tr 'A-Za-z' 'X-ZA-Wx-za-w'", "FLAG{...}"),
+                (
+                    "Prueba un desplazamiento equivocado (−1)",
+                    "<p>Mueve cada letra solo 1 posición hacia atrás (I→H, O→N). El resultado no empieza por "
+                    "<code>FLAG</code>: así se ve un intento fallido de fuerza bruta.</p>",
+                    "cat mensaje_cifrado.txt | tr 'A-Za-z' 'ZA-Yza-y'",
+                    "HNCI{eguct_gu_vtkxkcn}",
+                ),
+                (
+                    "Descifra con −3",
+                    "<p>Ahora mueve cada letra 3 posiciones hacia atrás (I→F, O→L, D→A, J→G). Si el resultado "
+                    "empieza por <code>FLAG{</code>, lo lograste: cópialo completo y entrégalo.</p>"
+                    "<div class=\"aviso\"><p>Si te sale <code>LRGM{…}</code>, moviste las letras hacia adelante "
+                    "(+3) y cifraste el mensaje otra vez. Revisa que el segundo conjunto de <code>tr</code> empiece en la X.</p></div>",
+                    "cat mensaje_cifrado.txt | tr 'A-Za-z' 'X-ZA-Wx-za-w'",
+                    "FLAG{...}",
+                ),
             ],
             "entorno": {
                 "prompt": "estudiante@kali:~/reto$",
@@ -109,8 +152,20 @@ CESAR = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "El archivo <code>~/reto/mensaje_cifrado.txt</code>. No hay red ni servidores.",
+        "alcance": "Solo descifrar. La clave está entre 1 y 25; la pista (<code>pista.txt</code>) te da el inicio del texto original.",
+        "entregar": "El mensaje descifrado completo: ese texto es la flag y empieza por <code>FLAG{</code>.",
+        "convenciones": [
+            "<strong>Clave 3 o +3</strong>: quien cifró movió cada letra 3 posiciones <strong>hacia adelante</strong> (A→D, X→A).",
+            "<strong>−3</strong>: mueves cada letra 3 posiciones <strong>hacia atrás</strong> (D→A, A→X). Eso es descifrar. Da lo mismo que +23.",
+            "Alfabeto inglés de 26 letras, sin Ñ. Mayúsculas y minúsculas se mueven igual y conservan su tipo.",
+            "<code>{</code>, <code>}</code>, <code>_</code> y los números no cambian.",
+            "Si el resultado no empieza por <code>FLAG{</code>, la clave o el sentido están mal. Con +3 en lugar de −3 obtienes <code>LRGM{…}</code>.",
+        ],
+    },
     "flag": {
-        "pista": "El desplazamiento correcto es 3, el clásico de Julio César: para descifrar, desplaza −3.",
+        "pista": "Se cifró con clave 3 (cada letra 3 posiciones hacia adelante): para descifrar, mueve cada letra 3 hacia atrás (−3).",
         "paso_a_paso": "cat mensaje_cifrado.txt | tr 'A-Za-z' 'X-ZA-Wx-za-w'",
     },
     "examen": [
@@ -220,6 +275,17 @@ HASHES = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "El hash de la cuenta <code>admin</code>, en <code>~/auditoria/hash_objetivo.txt</code>.",
+        "alcance": "Solo las 20 palabras de <code>wordlist.txt</code>: la contraseña está ahí, no hace falta inventar otras.",
+        "entregar": "La flag que imprime <code>./verificar</code> cuando le das la contraseña correcta. La contraseña en sí <strong>no</strong> es la flag.",
+        "convenciones": [
+            "El archivo tiene la forma <code>usuario:hash</code>: el hash es lo que va después de los dos puntos.",
+            "Un MD5 son 32 caracteres hexadecimales (0-9 y a-f) en minúsculas.",
+            "Usa <code>echo -n</code>: sin <code>-n</code>, echo agrega un salto de línea al final y el hash sale distinto.",
+            "<code>md5sum</code> imprime el hash seguido de <code>  -</code> (indica que leyó de la entrada, no de un archivo): ignora ese guion al comparar.",
+        ],
+    },
     "flag": {
         "pista": "Calcula el MD5 de cada palabra de wordlist.txt (echo -n palabra | md5sum) y compáralo con el hash de admin.",
         "paso_a_paso": "La palabra es superman: echo -n superman | md5sum coincide con el hash. Luego ./verificar superman entrega la flag.",
@@ -333,6 +399,16 @@ RSA = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "El archivo <code>~/mensaje.enc</code> y tu par de claves en <code>~/claves/</code>.",
+        "alcance": "Solo descifrar con tus propias claves; no hay que romper ni generar claves nuevas.",
+        "entregar": "El texto que sale al descifrar con la clave privada: ese texto es la flag.",
+        "convenciones": [
+            "<code>clave_publica.pem</code> sirve para cifrar y verificar firmas; <code>clave_privada.pem</code>, para descifrar y firmar.",
+            "<code>-inkey</code> recibe el archivo de la clave y <code>-in</code>, el archivo que quieres descifrar.",
+            "El error que sale al intentarlo con la pública es esperado: es parte del ejercicio.",
+        ],
+    },
     "flag": {
         "pista": "openssl pkeyutl -decrypt necesita la clave privada, nunca la pública.",
         "paso_a_paso": "openssl pkeyutl -decrypt -inkey claves/clave_privada.pem -in mensaje.enc",
@@ -454,6 +530,16 @@ ESTEGO = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "La imagen <code>~/evidencia/foto.jpg</code>.",
+        "alcance": "La evidencia es de solo lectura. El archivo que extraigas queda en tu directorio personal (<code>~</code>), no en <code>evidencia/</code>.",
+        "entregar": "La flag que está dentro del archivo que extraes con steghide.",
+        "convenciones": [
+            "La contraseña de steghide va en minúsculas y sin espacios.",
+            "En <code>steghide extract</code>, <code>-sf</code> es el archivo portador (la foto) y <code>-p</code>, la contraseña.",
+            "Si steghide responde «could not extract any data», la contraseña está mal; la imagen no se daña por intentarlo.",
+        ],
+    },
     "flag": {
         "pista": "Los metadatos (exiftool) dicen que la clave es el grupo de investigación que dicta el curso, en minúsculas.",
         "paso_a_paso": "steghide extract -sf evidencia/foto.jpg -p gaia y luego cat secreto.txt",

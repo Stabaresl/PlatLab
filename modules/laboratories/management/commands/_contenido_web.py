@@ -47,6 +47,14 @@ def _http_login(ip: str, nombre: str, flag: str) -> dict:
     }
 
 
+# Convenciones que comparten los laboratorios de inyección SQL.
+_CONVENCIONES_SQLI = [
+    "El payload va en el campo <code>username</code>; en <code>password</code> pon cualquier cosa (por ejemplo <code>x</code>).",
+    "El comentario es <code>-- </code>: dos guiones <strong>y un espacio</strong>. Sin el espacio, MySQL no lo toma como comentario.",
+    "Las comillas son simples y rectas: <code>'</code>. Las tipográficas (‘ ’) que pone el corrector de un procesador de texto no funcionan.",
+    "<code>--data-urlencode</code> codifica espacios y comillas por ti; <code>-d</code> manda el valor tal cual.",
+]
+
 _TEORIA_SQLI = (
     "<h3>El patrón vulnerable</h3>"
     "<p>Una aplicación arma la consulta pegando lo que escribe el usuario:</p>"
@@ -152,6 +160,12 @@ SQLI_BASICO = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "<code>intranet.lab</code> · <code>192.168.56.30</code>, formulario <code>POST /login.php</code> con los campos <code>username</code> y <code>password</code>.",
+        "alcance": "Solo el formulario de ingreso. No hace falta tocar MySQL (el 3306 está filtrado) ni SSH.",
+        "entregar": "La flag que muestra la página cuando entras como admin: «Bienvenido, admin. FLAG{...}». Copia solo desde <code>FLAG{</code> hasta <code>}</code>.",
+        "convenciones": _CONVENCIONES_SQLI,
+    },
     "flag": {
         "pista": "' OR '1'='1 solo no basta porque AND se evalúa antes que OR: termina el usuario con un comentario SQL (-- con espacio).",
         "paso_a_paso": "curl -s http://192.168.56.30/login.php --data-urlencode \"username=' OR '1'='1' -- \" -d 'password=x'",
@@ -256,6 +270,16 @@ XSS = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "<code>tienda.lab</code> · <code>192.168.56.31</code>, el parámetro <code>q</code> de <code>GET /buscar</code>.",
+        "alcance": "Solo el buscador. La consola muestra el HTML como texto: el script no se ejecuta, pero se ve reflejado, y eso es lo que demuestra la falla.",
+        "entregar": "La flag del comentario HTML que agrega el servidor al final de la respuesta cuando tu <code>&lt;script&gt;</code> vuelve sin escapar.",
+        "convenciones": [
+            "Escribe la URL entre comillas dobles para que la consola no interprete <code>&lt;</code>, <code>&gt;</code>, <code>?</code> ni <code>&amp;</code>.",
+            "«Sin escapar» significa que vuelve <code>&lt;script&gt;</code> tal cual; «escapado» sería <code>&amp;lt;script&amp;gt;</code>, que el navegador muestra como texto.",
+            "Basta con <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>: no hace falta robar ninguna cookie real.",
+        ],
+    },
     "flag": {
         "pista": "Si el parámetro q aparece tal cual en el HTML, prueba con una etiqueta <script>. Pon la URL entre comillas dobles.",
         "paso_a_paso": 'curl -s "http://192.168.56.31/buscar?q=<script>alert(1)</script>" — la flag aparece en el comentario HTML del final.',
@@ -349,6 +373,12 @@ SQLI_DEMO = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "Portal de empleados <code>portal.lab</code> · <code>192.168.56.10</code>, <code>POST /login.php</code>. En el entorno real: <code>http://127.0.0.1:5000/login</code>, dentro de tu contenedor.",
+        "alcance": "Solo el formulario de ingreso, con autorización por escrito del cliente. <code>config.php.bak</code> ya está en tu directorio: no hay que descargar nada.",
+        "entregar": "La flag que aparece al entrar como admin. Copia solo desde <code>FLAG{</code> hasta <code>}</code>.",
+        "convenciones": _CONVENCIONES_SQLI,
+    },
     "flag": {
         "pista": "Un comentario SQL (-- con espacio) al final del usuario anula la verificación de la contraseña.",
         "paso_a_paso": "curl -s http://192.168.56.10/login.php --data-urlencode \"username=' OR '1'='1' -- \" -d 'password=x'",
@@ -484,6 +514,17 @@ BLIND = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "<code>clientes.lab</code> · <code>192.168.56.32</code>, <code>POST /login.php</code>, campo <code>username</code>.",
+        "alcance": "Solo ese campo. La página nunca muestra errores: responde «Usuario existe.» o «Usuario no encontrado.», nada más.",
+        "entregar": "El contenido de <code>(SELECT flag FROM secretos)</code>: 30 caracteres que empiezan por <code>FLAG{</code> y terminan en <code>}</code>.",
+        "convenciones": [
+            "«Verdadero» es la respuesta «Usuario existe.»; «falso», «Usuario no encontrado.». Esa diferencia es todo lo que sabes del servidor.",
+            "<code>SUBSTRING(x, pos, 1)</code> cuenta desde 1: la posición 1 es el primer carácter, no la 0.",
+            "La comparación <code>='F'</code> distingue mayúsculas: la flag empieza por F mayúscula.",
+            "En la consola simulada el servidor reconoce las preguntas de la guía; para extraer el resto usa <code>blind.sh</code>.",
+        ],
+    },
     "flag": {
         "pista": "Confirma el oráculo con AND 1=1 y AND 1=2. Luego lee blind.sh y ejecútalo: hace la extracción por ti.",
         "paso_a_paso": "bash blind.sh — imprime la flag completa tras extraerla carácter por carácter.",

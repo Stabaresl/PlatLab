@@ -164,6 +164,15 @@ TCP_IP = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "<code>servidor.lab</code> · <code>192.168.56.20</code>",
+        "alcance": "Solo ese equipo, puertos TCP del 1 al 65535. No necesitas usuario ni contraseña.",
+        "entregar": "La flag que imprime el servicio no documentado cuando te conectas con <code>nc</code>.",
+        "convenciones": [
+            "«Puertos comunes» son los ~1000 que revisa <code>nmap</code> sin opciones; «todos» es <code>-p-</code> (del 1 al 65535).",
+            "Un puerto que no está en <code>/etc/services</code> no está prohibido ni oculto: solo no tiene un servicio estándar asignado.",
+        ],
+    },
     "flag": {
         "pista": "El escaneo por defecto solo mira los puertos comunes: prueba nmap con -p- para revisarlos todos.",
         "paso_a_paso": "1) nmap -p- 192.168.56.20 muestra el puerto 31337 abierto.\n2) nc 192.168.56.20 31337 se conecta y el servicio imprime la flag.",
@@ -303,6 +312,15 @@ NMAP = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "La subred <code>192.168.56.0/24</code> y, en detalle, <code>ftp.lab</code> · <code>192.168.56.21</code>",
+        "alcance": "Solo <code>192.168.56.0/24</code> (así lo dice <code>alcance.txt</code>). Escaneos TCP: no hace falta escanear UDP.",
+        "entregar": "La flag que aparece dentro de la versión (el banner) de uno de los servicios de ftp.lab. Copia solo <code>FLAG{...}</code>, sin el nombre del programa ni los paréntesis.",
+        "convenciones": [
+            "<code>-sn</code> solo descubre qué equipos responden (no mira puertos); <code>-sV</code> pregunta a cada puerto abierto qué programa y versión corre.",
+            "<code>/24</code> son las 256 direcciones de <code>192.168.56.0</code> a <code>192.168.56.255</code>.",
+        ],
+    },
     "flag": {
         "pista": "La flag está en la versión que anuncia uno de los servicios: usa nmap -sV sobre ftp.lab.",
         "paso_a_paso": "1) nmap -sV 192.168.56.21\n2) La columna VERSION del puerto 21 incluye la flag (también la ves con nc 192.168.56.21 21).",
@@ -433,6 +451,16 @@ SNIFFING = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "El archivo <code>captura.pcap.txt</code>: la captura ya exportada a texto (no hay que capturar en vivo).",
+        "alcance": "Solo leer el archivo. La víctima es <code>192.168.56.40</code> y el servidor, <code>intranet.lab</code> (<code>192.168.56.60</code>).",
+        "entregar": "El valor del campo <code>password</code> del POST de login: ese valor es la flag completa (empieza por <code>FLAG{</code>). No incluyas <code>password=</code>, el usuario ni el <code>&amp;</code>.",
+        "convenciones": [
+            "Cada paquete empieza en una línea con su número; las líneas sangradas debajo son su contenido (cabeceras y cuerpo).",
+            "<code>grep -A3 POST</code> muestra la línea que contiene POST y las 3 que le siguen.",
+            "En <code>username=admin&amp;password=...</code>, el <code>&amp;</code> separa campos y el <code>=</code> separa nombre y valor.",
+        ],
+    },
     "flag": {
         "pista": "Las credenciales de un login viajan en una petición POST: busca 'POST' y mira las líneas siguientes.",
         "paso_a_paso": "grep -A3 POST captura.pcap.txt muestra username=admin&password=... ; el valor de password es la flag.",
@@ -542,6 +570,15 @@ ARP = {
             },
         },
     ],
+    "especificaciones": {
+        "objetivo": "Tu propio equipo (<code>pc-sala</code>), su tabla ARP y el registro <code>/var/log/arpwatch.log</code>.",
+        "alcance": "Solo lectura: no hay que atacar a nadie ni modificar la tabla ARP.",
+        "entregar": "El código de incidente que dejó el SOC en el registro de arpwatch (tiene forma de flag).",
+        "convenciones": [
+            "La MAC «legítima» de cada equipo es la de la tabla de la misión. Si tu tabla ARP muestra otra MAC para esa IP, la entrada está envenenada.",
+            "Una MAC son 6 pares hexadecimales separados por dos puntos, por ejemplo <code>aa:bb:cc:00:11:22</code>. Da igual si está en mayúsculas o minúsculas.",
+        ],
+    },
     "flag": {
         "pista": "Si dos IP distintas tienen la misma MAC, una de las dos respuestas ARP es falsa. El código del incidente está en /var/log/arpwatch.log.",
         "paso_a_paso": "1) arp -a muestra 192.168.56.1 y 192.168.56.50 con la MAC aa:bb:cc:00:11:22.\n2) grep FLAG /var/log/arpwatch.log devuelve el código de incidente.",

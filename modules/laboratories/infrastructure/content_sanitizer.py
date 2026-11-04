@@ -56,7 +56,7 @@ _ALLOWED_PROTOCOLS = ["http", "https", "mailto"]
 # `class` solo con nombres conocidos: sin esto un instructor podría colar
 # utilidades de Tailwind ("fixed inset-0 z-50 ...") y dibujar una capa
 # encima de la plataforma (falso login, botón falso).
-_CLASES_PERMITIDAS = {"nota", "aviso", "tip", "importante", "escenario"}
+_CLASES_PERMITIDAS = {"nota", "aviso", "tip", "importante", "escenario", "especificaciones"}
 _PREFIJOS_CLASE_PERMITIDOS = ("language-",)
 
 

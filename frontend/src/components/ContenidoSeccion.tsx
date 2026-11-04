@@ -42,6 +42,18 @@ const _ESTILOS = `
 .sec-content .importante > :first-child::before { content: "Importante · "; color: var(--signal-amber); font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .sec-content .escenario > :first-child::before { content: "Escenario · "; color: var(--text-muted); font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .sec-content .nota > * + *, .sec-content .tip > * + *, .sec-content .aviso > * + *, .sec-content .importante > * + *, .sec-content .escenario > * + * { margin-top: 0.5rem; }
+/* Ficha "Especificaciones del reto": qué eres, a qué apuntas, qué entregas. */
+.sec-content .especificaciones { border: 1px solid var(--border-amber); border-top-width: 3px; border-top-color: var(--signal-amber); background: var(--surface-raised); padding: 0.9rem 1rem 1rem; }
+.sec-content .especificaciones > * + * { margin-top: 0.6rem; }
+.sec-content .especificaciones > h3 { margin-top: 0; font-family: var(--font-mono); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--signal-amber); }
+.sec-content .especificaciones table { display: table; table-layout: fixed; }
+.sec-content .especificaciones th { width: 10.5rem; color: var(--text-muted); font-size: 0.6875rem; border-bottom-color: var(--border-hairline); }
+.sec-content .especificaciones td code { white-space: normal; overflow-wrap: anywhere; }
+.sec-content .especificaciones h4 { margin-top: 1rem; }
+@media (max-width: 560px) {
+  .sec-content .especificaciones table, .sec-content .especificaciones tbody, .sec-content .especificaciones tr, .sec-content .especificaciones th, .sec-content .especificaciones td { display: block; width: auto; }
+  .sec-content .especificaciones th { border-bottom: 0; padding-bottom: 0; }
+}
 `
 
 export function ContenidoHtml({ html }: { html: string }) {
