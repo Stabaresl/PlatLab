@@ -8,6 +8,7 @@ import { Button } from "./ui/button"
 import StatusDot from "./StatusDot"
 import NotificationBell from "./NotificationBell"
 import AvatarBadge from "./AvatarBadge"
+import MarcaPlatlab from "./marca/MarcaPlatlab"
 
 const ROLE_LABELS: Record<string, string> = {
   estudiante: "Estudiante",
@@ -44,19 +45,8 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "tra
       }}
     >
       <div className="mx-auto flex items-center justify-between px-4 sm:px-6 md:px-8 h-16" style={{ maxWidth: "1400px" }}>
-        <Link to="/" data-tour="logo" className="flex items-center gap-2 no-underline select-none group">
-          <span
-            className="chamfer-sm flex items-center justify-center w-8 h-8 text-sm font-bold shrink-0"
-            style={{ backgroundColor: "var(--signal-amber)", color: "#0a0700", fontFamily: "var(--font-mono)" }}
-          >
-            P
-          </span>
-          <span
-            className="hidden min-[400px]:inline text-lg sm:text-xl font-bold tracking-wide"
-            style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}
-          >
-            PLAT<span style={{ color: "var(--signal-amber)" }}>::</span>LAB
-          </span>
+        <Link to="/" data-tour="logo" aria-label="PlatLAB, inicio" className="flex items-center no-underline select-none">
+          <MarcaPlatlab tamano={32} textoClassName="hidden min-[400px]:inline text-lg sm:text-xl" />
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">

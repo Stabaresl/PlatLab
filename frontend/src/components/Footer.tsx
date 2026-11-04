@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom"
 import StatusDot from "./StatusDot"
 import { API_ORIGIN } from "../pages/api"
 import logoGaia from "../assets/logo-gaia.png"
+import MarcaPlatlab from "./marca/MarcaPlatlab"
 
 const GAIA_URL = "https://gaia.manizales.unal.edu.co/grupo_inv/grupo-de-investigacion-en-ambientes-inteligentes-adaptativos-gaia/"
 
@@ -13,9 +14,8 @@ export default function Footer() {
       <div className="w-full mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-8 sm:py-10" style={{ maxWidth: "1400px" }}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 md:gap-12">
           <div className="col-span-2 sm:col-span-1 flex flex-col gap-2 sm:gap-3">
-            <span className="text-lg sm:text-xl font-bold tracking-wide" style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}>
-              PLAT<span style={{ color: "var(--signal-amber)" }}>::</span>LAB
-            </span>
+            <MarcaPlatlab tamano={30} />
+
             <p className="text-xs sm:text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
               Plataforma de laboratorios interactivos para aprender ciberseguridad
               mediante la práctica en entornos reales controlados.
