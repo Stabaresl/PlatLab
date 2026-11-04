@@ -1,19 +1,42 @@
 # PlatLAB
 
-Plataforma de laboratorios prácticos de ciberseguridad / hacking ético. Un
-instructor publica laboratorios (teoría + práctica guiada + flags + examen
-final), invita estudiantes, y cada estudiante resuelve el laboratorio desde
-una consola en el navegador — ya sea una terminal **simulada** (guion de
-comandos predefinido) o una terminal **real**, conectada por WebSocket a un
-contenedor Docker descartable y aislado por estudiante.
+Plataforma de laboratorios prácticos de ciberseguridad y hacking ético. Cada laboratorio
+trae teoría, una práctica guiada paso a paso en una consola dentro del navegador, una
+*flag* que demuestra que resolviste el reto y un examen final. Los instructores publican
+laboratorios, invitan estudiantes o abren **salas** con código para trabajar en grupo; el
+administrador revisa lo que se publica y gestiona las cuentas.
 
-Backend en Django (arquitectura hexagonal por módulos) + frontend en React.
-Documentación funcional y técnica extendida, sprint a sprint, en
-[`Documentación/`](./Documentación).
+- **Para estudiantes**: 12 laboratorios en 3 pistas (redes, web, criptografía), consola Linux simulada, progreso visual, XP, logros y un avatar que se viste con lo que ganas.
+- **Para instructores**: laboratorios propios, invitaciones por correo, salas en vivo para hasta 100 personas y seguimiento del avance de cada estudiante.
+- **Para administradores**: usuarios, revisión de laboratorios, solicitudes de instructor y el mapa de aprendizaje.
+
+Backend en Django (arquitectura hexagonal por módulos) y frontend en React. La documentación
+funcional y técnica extendida, sprint a sprint, está en [`Documentación/`](./Documentación);
+el sistema visual, en [`design.md`](./design.md).
 
 ---
 
-## Instalación rápida (para usar la plataforma)
+## Índice
+
+**Para usar la plataforma**
+- [Empieza en 5 minutos](#empieza-en-5-minutos)
+- [Credenciales de prueba](#credenciales-de-prueba)
+- [Primer recorrido según tu rol](#primer-recorrido-según-tu-rol)
+- [Funciones en detalle](#funciones-en-detalle)
+  - [Laboratorios](#laboratorios) · [Examen final](#examen-final) · [Roadmap](#roadmap) · [Salas privadas](#salas-privadas) · [Invitaciones](#invitaciones) · [Progreso, XP y avatar](#progreso-xp-y-avatar) · [Panel del administrador](#panel-del-administrador)
+- [Probar las invitaciones paso a paso](#probar-las-invitaciones-paso-a-paso)
+- [Usarla en un aula (modo red)](#usarla-en-un-aula-modo-red)
+- [Glosario](#glosario)
+
+**Para desarrollar**
+- [Stack](#stack) · [Requisitos previos](#requisitos-previos) · [Arranque en modo desarrollo](#arranque-en-modo-desarrollo) · [Frontend](#frontend)
+- [Crear o editar el contenido de un laboratorio](#crear-o-editar-el-contenido-de-un-laboratorio)
+- [Correr sin Docker](#correr-sin-docker-backend-nativo) · [Tests](#tests) · [Variables de entorno](#variables-de-entorno)
+- [Solución de problemas comunes](#solución-de-problemas-comunes) · [Estructura del proyecto](#estructura-del-proyecto)
+
+---
+
+## Empieza en 5 minutos
 
 Solo necesitas **Docker Desktop** (Windows/macOS) o **Docker Engine + compose** (Linux), encendido. No hace falta instalar Python, Node ni Bun: todo se construye dentro de Docker.
 
@@ -27,12 +50,12 @@ cd PlatLab
 | Windows | Doble clic en **`instalar.cmd`** (o en PowerShell: `.\platlab.ps1`) |
 | Linux / macOS | `bash platlab.sh` |
 
-El instalador revisa los requisitos, crea el `.env` con claves aleatorias, construye las imágenes (también las de los laboratorios), levanta todo, carga los laboratorios, el mapa de aprendizaje y los logros, y al final te muestra la dirección para entrar. La primera vez tarda varios minutos; después arranca en segundos.
+El instalador revisa los requisitos, crea el `.env` con claves aleatorias, construye las imágenes (también las de los laboratorios), levanta todo, carga los 12 laboratorios con sus guías, el mapa de aprendizaje, los logros y una sala de prueba, y al final te muestra la dirección para entrar. La primera vez tarda varios minutos; después arranca en segundos.
 
 Te pregunta **cómo se va a usar**:
 
-- **Solo en este computador**: entra por `http://localhost:8080`, con las cuentas demo de la tabla de [credenciales](#credenciales-de-prueba). Nadie más en la red puede entrar.
-- **En red / aula**: otros equipos entran por `http://<IP-de-este-equipo>:8080`. Las cuentas demo quedan desactivadas (sus contraseñas están en este README) y creas tu cuenta de administrador; la contraseña se genera y se muestra una sola vez. En Windows, abre el puerto en el firewall (el instalador lo hace si lo ejecutas como administrador, o te da el comando) y verifica que tu red esté marcada como *Privada*.
+- **Solo en este computador** (lo normal para probar): entras por `http://localhost:8080` con las [cuentas demo](#credenciales-de-prueba). Nadie más en la red puede entrar.
+- **En red / aula**: otros equipos entran por la IP de este. Ver [Usarla en un aula](#usarla-en-un-aula-modo-red).
 
 Para el día a día (en Linux/macOS cambia `.\platlab.ps1` por `bash platlab.sh`):
 
@@ -47,26 +70,170 @@ Para el día a día (en Linux/macOS cambia `.\platlab.ps1` por `bash platlab.sh`
 
 Opciones sin preguntas, por ejemplo para preparar varios equipos: `.\platlab.ps1 instalar -Modo red -Puerto 8090 -AdminEmail profe@universidad.edu.co -SinPreguntas` (en Linux: `--modo red --puerto 8090 --admin-email ... --si`).
 
-**Cómo queda armado.** Todo entra por un único puerto, servido por el contenedor `gateway` (Caddy). Ese contenedor entrega la interfaz ya compilada, hace de proxy hacia la API y el WebSocket de la terminal, y sirve los archivos subidos de forma aislada (`docker-compose.local.yml`, `frontend/Dockerfile`, `frontend/docker/Caddyfile`). El backend corre con `config.settings.local`: `DEBUG` apagado y sobre HTTP, porque en una red local no hay dominio para un certificado. Para publicarlo en internet con HTTPS existe `docker-compose.prod.yml`.
+**Cómo queda armado.** Todo entra por un único puerto, servido por el contenedor `gateway` (Caddy): entrega la interfaz ya compilada, hace de proxy hacia la API y el WebSocket de la terminal, y sirve los archivos subidos de forma aislada (`docker-compose.local.yml`, `frontend/Dockerfile`, `frontend/docker/Caddyfile`). El backend corre con `config.settings.local`: `DEBUG` apagado y sobre HTTP, porque en una red local no hay dominio para un certificado. Para publicarlo en internet con HTTPS existe `docker-compose.prod.yml`.
 
-> El instalador y el entorno de desarrollo comparten proyecto de Docker: si después de instalar quieres volver al modo desarrollo (código montado, recarga en caliente, puerto 8000), basta con `docker compose up -d`. Para volver al modo instalado: `.\platlab.ps1 iniciar`.
+> El instalador y el entorno de desarrollo comparten proyecto de Docker: para volver al modo desarrollo (código montado, puerto 8000) basta con `docker compose up -d`; para volver al modo instalado, `.\platlab.ps1 iniciar`.
 
 ---
 
-## Índice
+## Credenciales de prueba
 
-- [Instalación rápida (para usar la plataforma)](#instalación-rápida-para-usar-la-plataforma)
-- [Stack](#stack)
-- [Requisitos previos](#requisitos-previos)
-- [Instalación y arranque (Docker — recomendado)](#instalación-y-arranque-docker--recomendado)
-- [Frontend](#frontend)
-- [Credenciales de prueba](#credenciales-de-prueba)
-- [Probar el flujo completo](#probar-el-flujo-completo)
-- [Correr sin Docker (backend nativo)](#correr-sin-docker-backend-nativo)
-- [Tests](#tests)
-- [Variables de entorno](#variables-de-entorno)
-- [Solución de problemas comunes](#solución-de-problemas-comunes)
-- [Estructura del proyecto](#estructura-del-proyecto)
+Las crea el instalador en modo «solo este computador» (o `seed_demo_data` en desarrollo):
+
+| Rol | Email | Contraseña |
+|---|---|---|
+| Administrador | `admin@platlab.demo` | `Admin1234` |
+| Instructor | `instructor@platlab.demo` | `Instructor1234` |
+| Estudiante | `estudiante@platlab.demo` | `Estudiante1234` |
+
+Estas contraseñas son públicas: el modo **red / aula** desactiva estas cuentas. Para cuentas reales usa `python manage.py create_production_users --admin-email ...` (genera la contraseña y la muestra una sola vez). Cualquier persona puede crear su propia cuenta de estudiante en **Registrarse**.
+
+> La sesión se guarda por navegador. Para tener dos cuentas abiertas a la vez (por ejemplo, instructor y estudiante), usa una ventana de incógnito para la segunda.
+
+---
+
+## Primer recorrido según tu rol
+
+Al entrar por primera vez, un **tour de bienvenida** señala las partes de la pantalla (y al terminarlo ganas el logro «Primeros Pasos»).
+
+### Estudiante (`estudiante@platlab.demo`)
+
+1. **Panel del estudiante** (`/dashboard`). Arriba está tu **núcleo de progreso**: una esfera 3D donde cada laboratorio asignado es una esfera más pequeña en órbita y sus lunas son las secciones. Al terminar un laboratorio, su esfera viaja y se suma al núcleo. Debajo: tus laboratorios con su avance, tus calificaciones y los próximos vencimientos.
+2. **Roadmap** (`/roadmap`). El camino recomendado: 3 pistas de 4 laboratorios. El siguiente laboratorio disponible tiene la etiqueta «Siguiente»; los demás se desbloquean al terminar el anterior. Haz clic en uno disponible para inscribirte.
+3. **Resolver un laboratorio**. La teoría se lee y se marca como completada. En la práctica tienes la guía a la izquierda (especificaciones del reto, tareas numeradas con «Copiar» / «Ejecutar en consola» y el resultado esperado) y la consola a la derecha. Cuando encuentres la flag, entrégala en **Entrega la flag**.
+4. **Examen final**. Se habilita al completar todas las secciones. Lee las [reglas](#examen-final) antes de empezar: no se puede salir a mitad de camino.
+5. **Salas**. Si tu instructor te da un código, escríbelo en el recuadro del panel o en **Salas**. Prueba con `PRUEBA`, la sala demo.
+6. **Mi perfil** (`/profile`, desde tu avatar en la barra). Nivel y XP, tu avatar, logros, títulos e inventario con un probador para ver cómo te queda cada pieza.
+7. **Ser instructor**. Al final del panel, «Convertirme en instructor» envía una solicitud con tu ORCID; un administrador la aprueba.
+
+### Instructor (`instructor@platlab.demo`)
+
+1. **Panel del instructor**. Tus laboratorios (borrador, en revisión, publicado), los estudiantes con su porcentaje de avance y el acceso a salas.
+2. **Invitar estudiantes**. Botón arriba a la derecha: eliges un laboratorio publicado, pegas los correos y opcionalmente una fecha de vencimiento. Ver [paso a paso](#probar-las-invitaciones-paso-a-paso).
+3. **Salas → Nueva sala**. Eliges laboratorio, cupo (hasta 100) y cierre opcional; compartes el código o el enlace y sigues el tablero en vivo.
+4. **Crear un laboratorio** (`/laboratorios/nuevo`). Secciones de teoría y práctica, flags, examen y la consola de cada práctica. Al terminar lo envías a revisión: un administrador lo aprueba antes de publicarse.
+
+### Administrador (`admin@platlab.demo`)
+
+1. **Panel del administrador**: tabla de todos los usuarios (búsqueda, filtros por rol y estado, cambio de rol, habilitar o deshabilitar), cola de laboratorios en revisión, solicitudes de instructor y actividad reciente.
+2. **Roadmap → Editar roadmap** (`/roadmap/admin`): crea pistas y ordena los laboratorios predeterminados.
+3. **Catálogo**: decide qué laboratorios de instructores se muestran en el catálogo público.
+
+El **catálogo** (`/laboratorios`) se puede ver sin iniciar sesión.
+
+---
+
+## Funciones en detalle
+
+### Laboratorios
+
+Cada laboratorio tiene esta forma, inspirada en los laboratorios de AWS:
+
+| Parte | Qué contiene |
+|---|---|
+| **Teoría** | Escenario, objetivos, explicación con tablas y avisos (nota, consejo, atención, importante). Se marca como completada. |
+| **Práctica** | La ficha **Especificaciones del reto** (tu equipo, objetivo, alcance, qué entregas, formato de la flag, dónde se entrega y las convenciones del laboratorio), tareas numeradas con su comando y el **resultado esperado**, y la consola. |
+| **Flag** | Un texto con forma `FLAG{...}` que aparece al resolver el reto. Se entrega completa y distingue mayúsculas. |
+| **Ayuda progresiva** | A los 5 intentos fallidos de flag se abre una pista; a los 15, el paso a paso. Equivocarse no resta. |
+| **Examen final** | 4 preguntas de opción múltiple o respuesta abierta. Ver [reglas](#examen-final). |
+| **Conclusión** | Qué aprendiste y cómo se defiende un sistema real. |
+
+**La consola.** Casi todos los laboratorios usan una **consola simulada**: una máquina Linux que corre en tu navegador, con archivos, red y servicios propios del ejercicio. Entiende `ls`, `cd`, `cat`, `grep` con tuberías, `nmap` (`-sn`, `-sV`, `-p-`), `curl`, `nc`, `ping`, `ip`, `arp`, `md5sum`, `tr`, `base64` y más; `help` muestra la lista, Tab completa y las flechas recorren el historial. No ejecuta nada real.
+
+El laboratorio «SQL Injection: Bypass de Login» además ofrece un **entorno real**: un contenedor Docker propio y descartable con la aplicación vulnerable, conectado por WebSocket (xterm.js). Se apaga solo si queda inactivo.
+
+**Las 12 prácticas**
+
+| Pista | Laboratorios |
+|---|---|
+| Fundamentos de Redes | Introducción a TCP/IP · Escaneo de Puertos con Nmap · Sniffing de Tráfico Básico · ARP Spoofing: Detectando un Man-in-the-Middle |
+| Seguridad Web | SQL Injection: Nivel Básico · Cross-Site Scripting Reflejado · SQL Injection: Bypass de Login · Inyección SQL a Ciegas (Blind SQLi) |
+| Criptografía Aplicada | Cifrado César y Frecuencia · Hashes y Fuerza Bruta Básica · Introducción a Cifrado Asimétrico · Esteganografía: Mensajes Ocultos en Imágenes |
+
+**Vencimientos.** Una asignación puede tener fecha límite. Al vencer, el laboratorio queda en solo lectura: se puede revisar, pero no entregar flags ni presentar el examen.
+
+### Examen final
+
+- **3 intentos.** Si repruebas los 3, el examen se bloquea **24 horas** contadas desde el último; la pantalla muestra una cuenta regresiva. Después vuelves a tener 3. Aprobar también reinicia la cuenta (puedes volver a presentarlo para mejorar la nota).
+- **Se aprueba con 60 %.** Solo aprobar cuenta como laboratorio terminado: en el panel, en el XP, en los logros y en el tablero de las salas.
+- **No se puede salir.** Al empezar, el examen ocupa toda la pantalla. El botón Atrás muestra un aviso; recargar o cerrar la pestaña pide confirmación y **entrega lo que llevas**. Si esa entrega no alcanza a llegar, el intento cuenta como 0.
+- Las preguntas solo llegan al empezar un intento: abrir el examen ya cuenta como presentarlo.
+
+Estas reglas las aplica el servidor (`modules/progress`, `PoliticaDeIntentosExamen`), no solo la pantalla.
+
+### Roadmap
+
+El camino curado por la plataforma: pistas con laboratorios en orden. Cada uno se desbloquea al terminar el anterior de su pista. Cada pista muestra cuántos llevas, los caminos ya recorridos se ven en verde y el siguiente paso tiene la etiqueta «Siguiente». Inscribirse en un nodo crea la asignación al instante.
+
+### Salas privadas
+
+Para trabajar un laboratorio en grupo, con hora de inicio y competencia sana.
+
+- Las crean instructores y administradores: laboratorio publicado, cupo de 1 a 100 y cierre opcional.
+- Cada sala tiene un **código de 6 caracteres** (sin letras ni números que se confundan) y un enlace `/salas/unirse/CÓDIGO`.
+- Cada estudiante recibe **su propio laboratorio** y, si lo hay, su propio entorno real.
+- El **tablero en vivo** muestra el avance de cada participante, su examen y su puesto, junto a un lobby 3D donde cada persona orbita más cerca del centro a medida que avanza.
+- Al terminar (aprobando el examen), el puesto da un bono de XP: **150 / 110 / 80**, y 50 para el resto. Hay logros y títulos propios de las salas.
+- El anfitrión puede cerrar los ingresos o finalizar la sala.
+
+Prueba rápida: entra como estudiante y usa el código `PRUEBA` (lo crea el instalador o `seed_sala_demo`).
+
+### Invitaciones
+
+El instructor invita por correo a estudiantes **ya registrados** a uno de sus laboratorios publicados, con un vencimiento opcional. El estudiante recibe una notificación y ve la invitación en su panel con **Aceptar / Rechazar**. Desde ahí, el instructor ve su avance en su panel.
+
+### Progreso, XP y avatar
+
+- **XP por laboratorio terminado**, según su dificultad: básico 50, intermedio 100, avanzado 150 (más el bono de sala). Hay 11 niveles.
+- **12 logros**: el tour de bienvenida, 1, 5, 10 y 25 laboratorios, completar cada pista del roadmap, salas terminadas y primeros puestos. Cada logro muestra su avance (por ejemplo, 3/5) y qué recompensa da.
+- **Recompensas**: títulos (uno equipado a la vez, se muestra bajo tu avatar) y piezas para el avatar: hoodie, gafas, máscara, gorra, audífonos, mochila, guantes, zapatos, insignias, aura y marco.
+- **Avatar ilustrado**: eliges uno de 8 personajes (o subes tu foto) y cada pieza equipada se dibuja puesta en su lugar del cuerpo.
+- **Inventario con probador**: la colección completa, con lo que te falta y qué logro lo da. Al pasar el mouse por una pieza, aunque esté bloqueada, tu avatar se la prueba.
+- **Notificaciones**: la campana de la barra avisa de invitaciones, vencimientos, decisiones sobre tu solicitud de instructor y resultados de salas.
+
+### Panel del administrador
+
+- **Usuarios**: todos, paginados, con búsqueda por nombre o correo y filtros por rol y estado. Cambiar el rol y habilitar o deshabilitar se hace en la misma fila.
+- **Solicitudes de instructor**: los datos de quien la envió junto a lo que dice OpenAlex de su ORCID (consulta automática en segundo plano). Se aprueba o se rechaza con un motivo.
+- **Revisión de laboratorios**: los que los instructores enviaron, con vista previa completa antes de aprobar o rechazar.
+- **Catálogo público** y **actividad reciente** (registro de auditoría).
+
+---
+
+## Probar las invitaciones paso a paso
+
+1. Abre una **ventana de incógnito** (Ctrl+Shift+N) y crea un estudiante en `http://localhost:8080/signup`, por ejemplo `ana@prueba.co`.
+2. En tu ventana normal entra como `instructor@platlab.demo` / `Instructor1234`.
+3. En el panel del instructor pulsa **Invitar estudiantes**, elige «SQL Injection: Bypass de Login» (el laboratorio publicado del instructor demo), escribe `ana@prueba.co` y envía. El resultado debe decir «invitado».
+4. En la ventana de Ana aparece la notificación y la invitación con **Aceptar / Rechazar**. Al aceptar, el laboratorio entra en órbita en su núcleo de progreso y **Continuar** lo abre.
+5. Como instructor, Ana aparece en tu panel con su avance.
+
+Con una **sala** es todavía más directo: como instructor, **Salas → Nueva sala**, y Ana entra con el código.
+
+---
+
+## Usarla en un aula (modo red)
+
+1. Instala con `.\platlab.ps1 instalar -Modo red -AdminEmail tu@correo.com`. Crea un administrador con una contraseña que se muestra **una sola vez** y desactiva las cuentas demo.
+2. En Windows, la red debe estar marcada como **Privada**. Si no ejecutas la consola como administrador, el instalador te imprime el comando para abrir el puerto en el firewall.
+3. Los demás entran a `http://<IP-que-muestra-el-instalador>:8080` y se registran.
+4. Para que alguien sea instructor: cámbiale el rol en **Panel admin → Usuarios**, o que lo pida desde su panel con su ORCID y tú apruebas la solicitud.
+5. Para volver a las cuentas demo: `.\platlab.ps1 instalar -Modo local`.
+
+---
+
+## Glosario
+
+| Término | Qué es |
+|---|---|
+| **Flag** | El texto `FLAG{...}` que prueba que resolviste la práctica. |
+| **Asignación** | Tu inscripción a un laboratorio (por roadmap, invitación o sala). Puede tener vencimiento. |
+| **Sección** | Una parte del laboratorio: teoría o práctica. Se desbloquean en orden. |
+| **Especificaciones del reto** | La ficha al inicio de cada práctica: qué máquina eres, a qué apuntas y qué entregas. |
+| **Pista** | Un grupo de laboratorios del roadmap (por ejemplo, Seguridad Web). |
+| **Sala** | Un grupo que resuelve el mismo laboratorio con un código, un tablero y premios por puesto. |
+| **Núcleo de progreso** | La esfera del panel del estudiante: cada laboratorio terminado se le suma. |
+| **Consola simulada / entorno real** | Máquina Linux en el navegador / contenedor Docker propio por estudiante. |
 
 ---
 
@@ -82,8 +249,8 @@ Opciones sin preguntas, por ejemplo para preparar varios equipos: `.\platlab.ps1
 **Frontend**
 - React 19 + TypeScript + Vite
 - Tailwind CSS 4 + shadcn/ui (Radix UI)
-- framer-motion (animaciones)
-- xterm.js (terminal real por WebSocket)
+- framer-motion (animaciones) y three.js (núcleo de progreso, lobby de salas y globo de la portada, en carga diferida)
+- xterm.js (terminal real por WebSocket) y un intérprete de consola propio (`frontend/src/lib/shell`)
 
 **Infraestructura**: Docker Compose (`postgres`, `redis`, `docker-proxy`, `web`, `worker`, `worker-entornos`, `beat` y, en la instalación local, `gateway`).
 
@@ -91,7 +258,7 @@ Opciones sin preguntas, por ejemplo para preparar varios equipos: `.\platlab.ps1
 
 ## Requisitos previos
 
-Para **usar** la plataforma basta con Docker (ver [Instalación rápida](#instalación-rápida-para-usar-la-plataforma)). Para **desarrollar**, instala además:
+Para **usar** la plataforma basta con Docker (ver [Empieza en 5 minutos](#empieza-en-5-minutos)). Para **desarrollar**, instala además:
 
 | Herramienta | Versión mínima | Para qué | Verificar con |
 |---|---|---|---|
@@ -104,34 +271,20 @@ Para **usar** la plataforma basta con Docker (ver [Instalación rápida](#instal
 
 ---
 
-## Instalación y arranque (Docker — recomendado)
+## Arranque en modo desarrollo
 
-Este es el modo de **desarrollo**: el código del repo se monta dentro de los contenedores. Todo el backend (API, workers, beat, base de datos, Redis) corre en Docker, y el mismo Docker que los corre es el que el backend usa para levantar los laboratorios ("Docker-outside-of-Docker").
-
-### 1. Clonar el repositorio
+En este modo el código del repo se monta dentro de los contenedores. Todo el backend (API, workers, beat, base de datos, Redis) corre en Docker, y el mismo Docker que los corre es el que el backend usa para levantar los laboratorios ("Docker-outside-of-Docker").
 
 ```bash
 git clone <url-del-repo>
 cd PlatLab
+cp .env.example .env          # los valores de ejemplo sirven para desarrollo local
+docker compose up --build     # en segundo plano: docker compose up -d --build
 ```
-
-### 2. Configurar variables de entorno
-
-```bash
-cp .env.example .env
-```
-
-Los valores de `.env.example` funcionan para desarrollo local. Para cambiar contraseñas de Postgres o activar OAuth real, edita `.env` (ver [Variables de entorno](#variables-de-entorno)).
 
 `.env` **nunca** se sube al repositorio (está en `.gitignore`): cada quien mantiene el suyo.
 
-### 3. Levantar los servicios
-
-```bash
-docker compose up --build
-```
-
-Esto levanta (la primera vez descarga imágenes y puede tardar unos minutos):
+Servicios que levanta (la primera vez descarga imágenes y puede tardar unos minutos):
 
 - `postgres`: base de datos (sin puerto publicado; ver `docker-compose.override.example.yml` si necesitas entrar desde el host)
 - `redis`: caché, broker de Celery y refresh tokens (sin puerto publicado)
@@ -141,25 +294,21 @@ Esto levanta (la primera vez descarga imágenes y puede tardar unos minutos):
 - `worker-entornos`: Celery con hilos, dedicado a levantar contenedores de laboratorio
 - `beat`: tareas periódicas (expira asignaciones vencidas, apaga entornos inactivos)
 
-Solo `web` corre las migraciones al arrancar (`docker/entrypoint.sh`); los workers esperan a que esté sano.
+Solo `web` corre las migraciones al arrancar (`docker/entrypoint.sh`); los workers esperan a que esté sano. Uvicorn en desarrollo **no recarga el código solo**: después de cambiar el backend, `docker compose restart web`.
 
-En segundo plano: `docker compose up -d --build`. Logs: `docker compose logs -f web`. Para parar: `docker compose down` (con `-v` además borras los datos).
-
-### 4. Cargar datos de demo
-
-Con los contenedores corriendo:
+**Cargar los datos de demo** (con los contenedores corriendo):
 
 ```bash
-docker compose exec web python manage.py seed_demo_data
-docker compose exec web python manage.py seed_roadmap_labs
-docker compose exec web python manage.py seed_labs_expansion
-docker compose exec web python manage.py seed_gamification_catalog
-docker compose exec web python manage.py actualizar_contenido_labs   # guías paso a paso, consola realista y examen
+docker compose exec web python manage.py seed_demo_data              # usuarios demo, laboratorio y asignación
+docker compose exec web python manage.py seed_roadmap_labs           # pistas del roadmap
+docker compose exec web python manage.py seed_labs_expansion         # el resto de los 12 laboratorios
+docker compose exec web python manage.py seed_gamification_catalog   # logros, cosméticos y títulos
+docker compose exec web python manage.py actualizar_contenido_labs   # guías, especificaciones, consola y examen
 docker compose exec web python manage.py seed_sala_demo              # sala de prueba con el código PRUEBA
-docker build -t platlab-target-sqli:latest docker/targets/sqli-login   # imagen del laboratorio con terminal real
+docker build -t platlab-target-sqli:latest docker/targets/sqli-login # imagen del laboratorio con terminal real
 ```
 
-`seed_demo_data` crea los tres usuarios de prueba, un laboratorio plantilla publicado en el catálogo, una copia del instructor con examen y una asignación aceptada del estudiante. Los tres siguientes cargan el mapa de aprendizaje, los laboratorios adicionales y el catálogo de logros y títulos. `actualizar_contenido_labs` pone a los 12 laboratorios su guía estilo AWS (escenario, objetivos, tareas con comando y resultado esperado), la máquina simulada de la consola, la ayuda de la flag, el examen y la conclusión; actualiza en su lugar, así que no borra el avance de nadie. Todos son idempotentes: correrlos de nuevo no duplica datos.
+Todos son idempotentes: correrlos de nuevo no duplica datos. `actualizar_contenido_labs` actualiza en su lugar, así que no borra el avance de nadie. `seed_demo_data --activar-cuentas-demo` reactiva las cuentas demo si antes instalaste en modo red.
 
 El backend queda en `http://localhost:8000/api/v1/`.
 
@@ -185,39 +334,26 @@ VITE_API_URL=http://localhost:8000/api/v1
 
 Los botones de login social (Google/GitHub) están ocultos por defecto porque no hay credenciales OAuth configuradas: es lo esperado en un entorno de prueba, no un error.
 
----
-
-## Credenciales de prueba
-
-Creadas por `seed_demo_data`. Un rol por usuario:
-
-| Rol | Email | Contraseña |
-|---|---|---|
-| Administrador | `admin@platlab.demo` | `Admin1234` |
-| Instructor | `instructor@platlab.demo` | `Instructor1234` |
-| Estudiante | `estudiante@platlab.demo` | `Estudiante1234` |
-
-Estas contraseñas son públicas: el instalador en modo **red / aula** desactiva estas cuentas. Para cuentas reales usa `python manage.py create_production_users --admin-email ...` (genera la contraseña y la muestra una sola vez).
+Antes de tocar la interfaz, lee [`design.md`](./design.md): fija colores, tipografía, movimiento, el fondo ASCII, el avatar y las reglas de cada tipo de pantalla.
 
 ---
 
-## Probar el flujo completo
+## Crear o editar el contenido de un laboratorio
 
-Con backend + frontend arriba y las semillas cargadas:
+Los 12 laboratorios predeterminados viven como datos en `modules/laboratories/management/commands/_contenido_{redes,web,cripto}.py` y se aplican con `actualizar_contenido_labs` (`--solo "Nombre exacto"` para uno solo). Cada laboratorio define:
 
-1. **Como estudiante** (`estudiante@platlab.demo`): en el Dashboard verás el laboratorio asignado. Ábrelo: cada sección práctica es un espacio de trabajo con la guía a la izquierda (objetivos, tareas numeradas con «Copiar» / «Ejecutar en consola», resultado esperado y casilla de hecho) y la consola a la derecha. Envía la flag y presenta el examen final.
-2. **Consola simulada vs. real**: la simulada es una máquina Linux en tu navegador (archivos, red, `ls`, `cd`, `cat`, `grep` con tuberías, `nmap`, `curl`, `nc`, `ping`, `md5sum`, Tab para completar); no ejecuta nada real. La real es xterm.js conectado por WebSocket a un contenedor Docker propio y descartable.
-3. **Salas**: como estudiante entra a **Salas** y escribe el código `PRUEBA` (lo crea `seed_sala_demo`). Recibes el laboratorio con tu propio entorno y apareces en el tablero en vivo. Como instructor o admin, en **Salas → Nueva sala** eliges un laboratorio publicado, el cupo (hasta 100) y un cierre opcional; compartes el código o el enlace de invitación y sigues el tablero (avance, examen, puestos). Quien termina gana un bono de XP según su puesto (150 / 110 / 80 / 50) y logros y títulos de sala.
-4. **Como estudiante, pedir ser instructor**: desde el Dashboard, con un ORCID. La solicitud queda pendiente; la plataforma consulta OpenAlex en segundo plano y guarda lo que encontró.
-5. **Como administrador** (`admin@platlab.demo`): panel con la tabla completa de usuarios (búsqueda por nombre o correo, filtros por rol y estado, cambio de rol, habilitar o deshabilitar), cola de revisión de laboratorios, actividad reciente y **solicitudes de instructor**, donde ves los datos de quien se inscribió junto a lo que dice OpenAlex de su ORCID, y apruebas o rechazas con un motivo.
-6. **Como instructor** (`instructor@platlab.demo`): la copia del laboratorio duplicada del catálogo, con edición de secciones, flags y examen.
-7. **Catálogo público** (`/laboratorios`, sin login): los laboratorios publicados.
+- `descripcion`, `resumen_cierre` (la conclusión) y dos `secciones` (teoría y práctica) con `titulo`, `duracion`, `objetivos`, `html` y `pasos`: tuplas `(título, instrucciones HTML, comando sugerido, resultado esperado)`.
+- `entorno` de la práctica: la máquina de la consola simulada (formato abajo).
+- `especificaciones`: `objetivo`, `alcance`, `entregar` y `convenciones` (lista). El comando les suma las filas comunes (tu equipo, formato de la flag, dónde se entrega, la consola) y arma la ficha «Especificaciones del reto».
+- `flag` (`pista` y `paso_a_paso`) y `examen` (lista de preguntas con `tipo`, `opciones` y `respuesta`).
 
-Si algo no carga, revisa [Solución de problemas comunes](#solución-de-problemas-comunes).
+El HTML pasa por un sanitizador con lista blanca (`content_sanitizer.py`): tablas, `pre`, `code`, `kbd` y los avisos `<div class="nota|aviso|tip|importante|escenario|especificaciones">`. Los tests de `modules/laboratories/tests/application/test_contenido_labs.py` comprueban que cada laboratorio esté completo, que la flag exista en la máquina simulada y que el HTML sobreviva al sanitizador.
+
+Los instructores crean los suyos desde la interfaz (`/laboratorios/nuevo`); la máquina simulada y el resultado esperado de cada paso, por ahora, se definen por la API de secciones.
 
 ### La máquina de la consola simulada
 
-La consola de cada sección práctica se arma con `entorno_practica` (API `PUT/PATCH` de secciones). Además del guion de siempre (`comandos`, ahora con `patron` opcional para aceptar variantes), admite un `escenario` que describe la máquina. El intérprete vive en `frontend/src/lib/shell/` y los 12 laboratorios de `modules/laboratories/management/commands/_contenido_*.py` sirven de ejemplo.
+La consola de cada sección práctica se arma con `entorno_practica`. Además del guion (`comandos`, con `patron` opcional para aceptar variantes), admite un `escenario` que describe la máquina. El intérprete vive en `frontend/src/lib/shell/`.
 
 ```json
 {
@@ -240,6 +376,14 @@ La consola de cada sección práctica se arma con `entorno_practica` (API `PUT/P
 - `http[].cuando` es una expresión regular contra los datos enviados y la query: permite responder distinto según el payload (inyección, XSS). `{{param}}` refleja el parámetro tal cual.
 - `efectos` crea archivos cuando una línea coincide con el patrón.
 - Cada paso de la guía admite `resultado_esperado`, que se muestra como bloque bajo el comando.
+
+### API del examen
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET /api/v1/progress/{asignacion}/exam/` | Estado: intentos restantes, bloqueo, si quedó un intento abierto. No devuelve preguntas. |
+| `POST /api/v1/progress/{asignacion}/exam/iniciar/` | Abre un intento y entrega las preguntas (o `iniciado: false` si está bloqueado). Cierra como 0 un intento abandonado. |
+| `POST /api/v1/progress/{asignacion}/exam/` | Entrega y califica el intento abierto. |
 
 ---
 
@@ -279,12 +423,22 @@ celery -A config beat -l info
 
 ## Tests
 
-**Backend** (pytest contra `config.settings.test`: Celery en modo síncrono, no necesita worker):
+**Backend** (pytest contra `config.settings.test`: Celery en modo síncrono, no necesita worker). En modo desarrollo:
 
 ```bash
 docker compose exec web pytest
 docker compose exec web ruff check .
 ```
+
+Con la plataforma instalada (la imagen de `web` es de producción y no trae pytest), construye una imagen de pruebas y córrela contra la misma base:
+
+```bash
+docker build -t platlab-pruebas --build-arg REQUIREMENTS_FILE=requirements/dev.txt .
+docker run --rm --network platlab_default --env-file .env -e POSTGRES_HOST=postgres \
+  -v "$(pwd):/app" -w /app platlab-pruebas pytest -q
+```
+
+En PowerShell cambia `$(pwd)` por `${PWD}`. pytest crea su propia base `test_*`: no toca los datos de la instalación.
 
 **Frontend** (tipos + lint):
 
@@ -334,8 +488,17 @@ Abre Docker Desktop y espera a que diga *Engine running*. En Linux: `sudo system
 **El instalador falla descargando imágenes (`no such host`, `timeout`)**
 Es la red: el instalador reintenta solo cuatro veces. Si sigue fallando, revisa la conexión (o el proxy de la red de la institución) y vuelve a ejecutarlo; retoma sin perder nada.
 
+**Las cuentas demo dicen «credenciales inválidas»**
+Probablemente instalaste antes en modo red, que las desactiva. Reinstala en modo local (`.\platlab.ps1 instalar -Modo local`) o corre `python manage.py seed_demo_data --activar-cuentas-demo`.
+
 **Otros equipos de la red no logran entrar (modo red / aula)**
 Comprueba que entras desde el propio equipo con `http://<IP>:8080`. Si ahí funciona, es el firewall: en Windows ejecuta el instalador como administrador o crea la regla que te sugiere, y marca la red como *Privada*. Si la IP del equipo cambió (DHCP), solo usa la nueva: no hace falta reinstalar.
+
+**No veo los cambios después de actualizar**
+El navegador guarda la versión anterior: recarga con Ctrl+F5. En modo desarrollo, el backend necesita `docker compose restart web`.
+
+**El examen dice que está bloqueado**
+Reprobaste los 3 intentos: la pantalla muestra cuándo se desbloquea (24 h después del último). Es la regla, no un error.
 
 **`docker compose up` falla en `docker-proxy` con error sobre `/var/run/docker.sock`**
 En Windows, confirma que Docker Desktop usa el backend **WSL2** (Settings → General → "Use the WSL 2 based engine").
@@ -347,7 +510,7 @@ Otro programa ya usa ese puerto. Detenlo o elige otro: `.\platlab.ps1 instalar -
 Confirma que el backend esté arriba en `http://localhost:8000` y que `CORS_ALLOWED_ORIGINS` en `.env` incluya la URL exacta del frontend (por defecto `http://localhost:5173`).
 
 **La terminal "real" de un laboratorio se queda en "conectando..."**
-- Confirma que existe la imagen del laboratorio: `docker images platlab-target-sqli` (el instalador la construye; en desarrollo, ver el paso 4).
+- Confirma que existe la imagen del laboratorio: `docker images platlab-target-sqli` (el instalador la construye; en desarrollo, ver los datos de demo).
 - Confirma que Docker está corriendo y revisa `docker compose logs -f worker-entornos web` por errores del SDK de Docker.
 - Si corres el backend fuera de Docker, usa `uvicorn` (no `runserver`, que no soporta WebSockets).
 
@@ -369,14 +532,28 @@ Backend organizado por módulos con arquitectura hexagonal (domain / application
 ```
 PlatLab/
 ├── config/                    # settings (dev, local, prod, test), urls, asgi, celery
-├── modules/                   # authentication, users, laboratories, assignments,
-│                              # progress, lab_environments, reports, notifications,
-│                              # audit, gamification, roadmap, shared
+├── modules/
+│   ├── authentication/        # registro, login, JWT, OAuth
+│   ├── users/                 # usuarios, roles, solicitudes de instructor (OpenAlex)
+│   ├── laboratories/          # laboratorios, secciones, flags, exámenes, contenido de los 12 labs
+│   ├── assignments/           # asignaciones e invitaciones, vencimientos
+│   ├── progress/              # avance por sección, flags, examen (intentos y bloqueo)
+│   ├── lab_environments/      # contenedores Docker por estudiante y terminal por WebSocket
+│   ├── rooms/                 # salas privadas con código y tablero
+│   ├── roadmap/               # pistas y nodos del mapa de aprendizaje
+│   ├── gamification/          # XP, niveles, logros, cosméticos, títulos, avatar
+│   ├── notifications/, audit/, reports/
+│   └── shared/                # casos de uso base, eventos, unit of work
 ├── docker/                    # entrypoint.sh + targets vulnerables de los laboratorios
-├── frontend/                  # React + Vite + Tailwind + shadcn/ui (+ Dockerfile del gateway)
+├── frontend/                  # React + Vite (+ Dockerfile del gateway)
+│   └── src/
+│       ├── pages/             # una pantalla por archivo; api.ts es el cliente de la API
+│       ├── components/        # three/ (escenas 3D), avatar/, examen/, movimiento/, marca/, salas/, ui/
+│       └── lib/shell/         # intérprete de la consola simulada
 ├── loadtests/                 # pruebas de carga (Locust) y de estrés de laboratorios
 ├── requirements/              # base / dev / prod + constraints.txt (versiones congeladas)
 ├── Documentación/             # documentación funcional y técnica por sprint
+├── design.md                  # sistema visual de la interfaz
 ├── docker-compose.yml         # desarrollo
 ├── docker-compose.local.yml   # instalación local / aula (platlab.ps1, platlab.sh)
 ├── docker-compose.prod.yml    # servidor en internet con HTTPS (Caddy)

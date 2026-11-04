@@ -42,6 +42,19 @@ Escala de Tailwind (4 pt). Esquinas cortadas `chamfer` / `chamfer-sm` (marca de 
   - Perfil: piezas equipadas flotando alrededor del avatar (`.flotar`), brillo único al aparecer un logro ganado, inventario con la colección completa (lo bloqueado dice qué logro lo da).
   - Urgencia: `.pulso-alerta` (opacidad) solo en vencimientos de ≤2 días.
 
+## Fondo
+- Dashboards, roadmap, perfil, catálogo, detalle de laboratorio y salas usan `FondoAscii` (`HeroBackground texture="ascii"`): lluvia de caracteres ámbar muy tenue, la misma de la tarjeta del encabezado, con un halo alrededor del puntero.
+- Es un canvas fijo del tamaño de la ventana (portal a `<body>`, z-index 0): el contenido va en una capa `relative z-10`. El centro se atenúa con una máscara para no competir con los paneles.
+- No va en la vista del laboratorio ni en el examen: ahí manda la concentración.
+
+## Examen final
+- Al empezar, el examen ocupa toda la pantalla (`ModoExamen`, portal con z-index 1100) y pide pantalla completa. Atrás muestra «No puedes salir del examen»; recargar o cerrar pide confirmación y entrega lo respondido (`fetch` con `keepalive`).
+- Reglas del backend (`PoliticaDeIntentosExamen`): 3 intentos; tras 3 reprobados, 24 h de bloqueo con cuenta regresiva visible. Un intento abierto que no se entregó cuenta como 0. Se aprueba con 60 %, y solo aprobar cuenta como laboratorio terminado (dashboard, XP, salas).
+
+## Avatar
+- `AvatarPersonaje` (SVG): cada personaje predeterminado tiene rasgos propios (`lib/avatarRasgos.ts`) y cada tipo de cosmético se dibuja en su lugar del cuerpo. `vista="cabeza"` para la barra y el selector.
+- El inventario tiene un probador: al señalar una pieza (aunque esté bloqueada) el avatar se la pone.
+
 ## Marca
 - Isotipo `components/marca/IsoPlatlab.tsx`: marco de esquinas cortadas, núcleo ámbar y un satélite cian en órbita (el mismo lenguaje del núcleo de progreso). El satélite se mueve con JS; acelera al pasar el puntero.
 - Logotipo `MarcaPlatlab`: isotipo + "PLAT::LAB" en JetBrains Mono con los "::" en ámbar; las letras se decodifican al cargar y al pasar el puntero.
