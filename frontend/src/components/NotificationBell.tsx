@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useNavigate } from "react-router-dom"
+import { AnimatePresence, motion } from "framer-motion"
 import { listNotifications, markNotificationRead, refrescarSesion, ApiError, type Notificacion } from "../pages/api"
 import { relativeTime, TONE_COLOR, type ActivityTone } from "./ActivityTimeline"
 import { IconBell } from "./icons"
+import useReducedMotion from "../hooks/useReducedMotion"
 
 const TIPO_TONE: Record<string, ActivityTone> = {
   instructor_aprobado: "success",
@@ -66,6 +68,7 @@ function rutaDeNotificacion(n: Notificacion): string | null {
 // tipo de problema.
 export default function NotificationBell() {
   const navigate = useNavigate()
+  const reduced = useReducedMotion()
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
@@ -192,22 +195,29 @@ export default function NotificationBell() {
         </span>
       )}
 
-      {open && panelPos &&
-        createPortal(
-          <div
-            ref={panelRef}
-            className="chamfer-sm p-3 max-h-[70vh] overflow-y-auto"
-            style={{
-              position: "fixed",
-              top: panelPos.top,
-              left: panelPos.left,
-              width: `min(${PANEL_WIDTH}px, calc(100vw - ${VIEWPORT_MARGIN * 2}px))`,
-              zIndex: 1000,
-              backgroundColor: "var(--canvas-raised)",
-              border: "1px solid var(--border-default)",
-              boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
-            }}
-          >
+      {createPortal(
+        <AnimatePresence>
+          {open && panelPos && (
+            <motion.div
+              key="notif-panel"
+              ref={panelRef}
+              initial={reduced ? false : { opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.16, ease: [0.19, 1, 0.22, 1] }}
+              className="chamfer-sm p-3 max-h-[70vh] overflow-y-auto"
+              style={{
+                position: "fixed",
+                top: panelPos.top,
+                left: panelPos.left,
+                width: `min(${PANEL_WIDTH}px, calc(100vw - ${VIEWPORT_MARGIN * 2}px))`,
+                zIndex: 1000,
+                backgroundColor: "var(--canvas-raised)",
+                border: "1px solid var(--border-default)",
+                boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
+                transformOrigin: "top right",
+              }}
+            >
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}>
                 Notificaciones
@@ -247,9 +257,11 @@ export default function NotificationBell() {
                 })}
               </div>
             )}
-          </div>,
-          document.body,
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   )
 }

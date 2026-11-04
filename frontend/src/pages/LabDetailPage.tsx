@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useParams, useNavigate } from "react-router-dom"
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 import { getLaboratorio, getToc, enrollLaboratorio, ApiError, type LaboratorioDetalle, type NivelDificultad } from "./api"
 import Navbar from "../components/Navbar"
@@ -29,9 +29,22 @@ interface TocSeccion {
   tiene_practica: boolean
 }
 
+interface LocationState {
+  nombre?: string
+  nivel_dificultad?: NivelDificultad
+}
+
 export default function LabDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  // CatalogPage manda esto en el <Link state={...}> para que la badge/título
+  // (layoutId compartido) puedan aparecer de inmediato acá y completar la
+  // transición animada — si no, se renderizarían recién cuando termine el
+  // fetch, ya tarde para conectar visualmente con la tarjeta de origen.
+  // En visita directa (refresh, link externo) no hay state: sin transición,
+  // que es lo correcto — no hay tarjeta de la que "venir".
+  const navState = (location.state as LocationState | null) ?? null
   const [lab, setLab] = useState<LaboratorioDetalle | null>(null)
   const [toc, setToc] = useState<TocSeccion[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,6 +53,8 @@ export default function LabDetailPage() {
   const [enrollError, setEnrollError] = useState("")
   const authed = !!localStorage.getItem("token")
   const role = localStorage.getItem("role")
+  const headerNombre = lab?.nombre ?? navState?.nombre
+  const headerDificultad = lab?.nivel_dificultad ?? navState?.nivel_dificultad
 
   const handleEnroll = async () => {
     if (!lab) return
@@ -88,6 +103,37 @@ export default function LabDetailPage() {
               ← Volver al catálogo
             </button>
 
+            {/* Header (badge + título) fuera del branch de loading a propósito:
+                si venimos de un click en el catálogo, navState ya tiene estos
+                datos y puede pintarlos de inmediato — sin esperar al fetch —
+                para que el layoutId compartido conecte con la tarjeta de origen. */}
+            {headerDificultad && headerNombre && (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <motion.span
+                    layoutId={`dificultad-${id}`}
+                    className="text-[10px] font-bold px-2.5 py-1 chamfer-sm uppercase tracking-wide"
+                    style={{
+                      backgroundColor: "color-mix(in srgb, " + DIFICULTAD_COLOR[headerDificultad] + " 14%, transparent)",
+                      color: DIFICULTAD_COLOR[headerDificultad],
+                      border: `1px solid ${DIFICULTAD_COLOR[headerDificultad]}`,
+                    }}
+                  >
+                    {DIFICULTAD_LABEL[headerDificultad]}
+                  </motion.span>
+                  {lab && (
+                    <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
+                      {lab.total_secciones} sección{lab.total_secciones === 1 ? "" : "es"}
+                    </span>
+                  )}
+                </div>
+
+                <motion.h1 layoutId={`lab-title-${id}`} className="text-2xl sm:text-3xl font-black uppercase mb-3" style={{ color: "var(--text-heading)" }}>
+                  {headerNombre}
+                </motion.h1>
+              </>
+            )}
+
             {loading ? (
               <div className="flex flex-col gap-3">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -100,25 +146,6 @@ export default function LabDetailPage() {
               </p>
             ) : (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <span
-                    className="text-[10px] font-bold px-2.5 py-1 chamfer-sm uppercase tracking-wide"
-                    style={{
-                      backgroundColor: "color-mix(in srgb, " + DIFICULTAD_COLOR[lab.nivel_dificultad] + " 14%, transparent)",
-                      color: DIFICULTAD_COLOR[lab.nivel_dificultad],
-                      border: `1px solid ${DIFICULTAD_COLOR[lab.nivel_dificultad]}`,
-                    }}
-                  >
-                    {DIFICULTAD_LABEL[lab.nivel_dificultad]}
-                  </span>
-                  <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
-                    {lab.total_secciones} sección{lab.total_secciones === 1 ? "" : "es"}
-                  </span>
-                </div>
-
-                <h1 className="text-2xl sm:text-3xl font-black uppercase mb-3" style={{ color: "var(--text-heading)" }}>
-                  {lab.nombre}
-                </h1>
                 <p className="text-sm sm:text-base leading-relaxed mb-5" style={{ color: "var(--text-muted)" }}>
                   {lab.descripcion}
                 </p>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
+import useReducedMotion from "../hooks/useReducedMotion"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 import ScanlineOverlay from "../components/ScanlineOverlay"
@@ -68,9 +69,22 @@ const FEATURES = [
 
 const TICKER = "SISTEMA: OPERATIVO // 3 ROLES ACTIVOS // 8 MÓDULOS CARGADOS // PROGRESO: PERSISTENTE // OWASP TOP 10 CUBIERTO //"
 
+// Un solo boot-reveal orquestado ("Cómo funciona") en vez de que cada
+// sección anime por separado al hacer scroll — ver anti-patrón "universal
+// scroll-triggered fade-up" (mejor: una entrada memorable, el resto ya está ahí).
+const stepsContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+}
+const stepsItem = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+}
+
 export default function WelcomePage() {
   const navigate = useNavigate()
   const [authed, setAuthed] = useState(false)
+  const reduced = useReducedMotion()
 
   useEffect(() => {
     setAuthed(!!localStorage.getItem("token"))
@@ -113,7 +127,7 @@ export default function WelcomePage() {
             <MouseGlow color="255,176,32" size={520} opacity={0.14} />
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={reduced ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="relative z-10 flex flex-col items-center lg:items-start w-full lg:w-1/2 gap-4 sm:gap-5 md:gap-6 lg:gap-8 text-center lg:text-left"
@@ -156,9 +170,9 @@ export default function WelcomePage() {
 
             <div className="relative z-10 flex-1 flex items-center justify-center w-full lg:w-auto">
               <motion.div
-                initial={{ opacity: 0, scale: 0.94 }}
+                initial={reduced ? false : { opacity: 0, scale: 0.94 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.55, ease: "easeOut", delay: 0.15 }}
+                transition={{ duration: 0.55, ease: "easeOut", delay: reduced ? 0 : 0.15 }}
                 className="w-full max-w-[650px]"
               >
                 <ReticleFrame color="var(--signal-amber)" size={20} thickness={2}>
@@ -215,14 +229,18 @@ export default function WelcomePage() {
             </h2>
             <span className="h-px w-8" style={{ backgroundColor: "var(--signal-amber)" }} />
           </div>
-          <div className="grid gap-4 sm:gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-            {STEPS.map((step, i) => (
+          <motion.div
+            className="grid gap-4 sm:gap-6"
+            style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}
+            initial={reduced ? false : "hidden"}
+            whileInView="show"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={stepsContainer}
+          >
+            {STEPS.map((step) => (
               <motion.div
                 key={step.n}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
+                variants={stepsItem}
                 className="chamfer flex flex-col gap-2 p-5"
                 style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}
               >
@@ -237,7 +255,7 @@ export default function WelcomePage() {
                 </p>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -258,13 +276,9 @@ export default function WelcomePage() {
             <span className="h-px w-8" style={{ backgroundColor: "var(--signal-cyan)" }} />
           </div>
           <div className="grid gap-4 sm:gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-            {FEATURES.map((f, i) => (
-              <motion.div
+            {FEATURES.map((f) => (
+              <div
                 key={f.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
                 className="chamfer flex flex-col p-5"
                 style={{ backgroundColor: "var(--canvas)", border: "1px solid var(--border-default)" }}
               >
@@ -279,7 +293,7 @@ export default function WelcomePage() {
                 <p className="text-xs sm:text-sm leading-relaxed m-0" style={{ color: "var(--text-muted)" }}>
                   {f.desc}
                 </p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -288,7 +302,7 @@ export default function WelcomePage() {
       {/* ═══ CTA FINAL ═══ */}
       <section className="w-full px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-20">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={reduced ? false : { opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.4 }}

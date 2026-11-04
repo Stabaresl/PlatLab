@@ -127,6 +127,7 @@ export default function CatalogPage() {
                     >
                       <Link
                         to={`/laboratorios/${lab.id}`}
+                        state={{ nombre: lab.nombre, nivel_dificultad: lab.nivel_dificultad }}
                         className="chamfer flex flex-col h-full p-4 sm:p-5 no-underline transition-colors group"
                         style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)", color: "inherit" }}
                         onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-amber)" }}
@@ -136,18 +137,22 @@ export default function CatalogPage() {
                           <span className="chamfer-sm flex items-center justify-center w-9 h-9 shrink-0" style={{ backgroundColor: "var(--surface-hover)", color: "var(--signal-cyan)" }}>
                             <IconFlask />
                           </span>
-                          <span
+                          {/* layoutId compartido con LabDetailPage — la badge "viaja" de la
+                              tarjeta al hero del detalle en vez de solo aparecer de nuevo. */}
+                          <motion.span
+                            layoutId={`dificultad-${lab.id}`}
                             className="text-[10px] font-bold px-2 py-0.5 chamfer-sm whitespace-nowrap uppercase tracking-wide"
                             style={{ backgroundColor: "color-mix(in srgb, " + DIFICULTAD_COLOR[lab.nivel_dificultad] + " 14%, transparent)", color: DIFICULTAD_COLOR[lab.nivel_dificultad], border: `1px solid ${DIFICULTAD_COLOR[lab.nivel_dificultad]}` }}
                           >
                             {DIFICULTAD_LABEL[lab.nivel_dificultad]}
-                          </span>
+                          </motion.span>
                         </div>
                         {/* h2, no h3 — el h1 de TerminalHeader no tiene ningún h2 de sección
-                            entre medio en esta página, saltar directo a h3 rompía la jerarquía. */}
-                        <h2 className="text-sm sm:text-base font-bold mb-1.5 m-0" style={{ color: "var(--text-heading)" }}>
+                            entre medio en esta página, saltar directo a h3 rompía la jerarquía.
+                            layoutId compartido con el <h1> del detalle, mismo criterio que la badge. */}
+                        <motion.h2 layoutId={`lab-title-${lab.id}`} className="text-sm sm:text-base font-bold mb-1.5 m-0" style={{ color: "var(--text-heading)" }}>
                           {lab.nombre}
-                        </h2>
+                        </motion.h2>
                         <p className="text-xs sm:text-sm leading-relaxed mb-3 flex-1" style={{ color: "var(--text-muted)" }}>
                           {lab.descripcion.length > 110 ? `${lab.descripcion.slice(0, 110)}…` : lab.descripcion}
                         </p>

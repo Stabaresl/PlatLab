@@ -1,6 +1,8 @@
 import { StrictMode, Suspense, lazy, useEffect } from "react"
 import { createRoot } from "react-dom/client"
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion"
+import useReducedMotion from "./hooks/useReducedMotion"
 import "@fontsource/fira-sans/400.css"
 import "@fontsource/fira-sans/500.css"
 import "@fontsource/fira-sans/600.css"
@@ -62,13 +64,25 @@ function PageLoader() {
   )
 }
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <ScrollToTop />
-      <OnboardingTour />
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
+// mode="popLayout" (no "wait"): la página que sale y la que entra se
+// superponen brevemente — necesario para que el layoutId compartido entre
+// CatalogPage (tarjeta) y LabDetailPage (hero) pueda animar la transición
+// en vez de solo cross-fadear. El key en el pathname hace que
+// AnimatePresence trate cada ruta como un elemento distinto.
+function AnimatedRoutes() {
+  const location = useLocation()
+  const reduced = useReducedMotion()
+
+  return (
+    <AnimatePresence mode="popLayout" initial={false}>
+      <motion.div
+        key={location.pathname}
+        initial={reduced ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={reduced ? undefined : { opacity: 0, y: -8 }}
+        transition={{ duration: 0.22, ease: [0.19, 1, 0.22, 1] }}
+      >
+        <Routes location={location}>
           {/* Sin PublicRoute a propósito: el logo/PLAT::LAB del Navbar siempre
               vuelve acá, incluso con sesión iniciada — antes redirigía a
               /dashboard y el usuario nunca podía volver a ver la landing. */}
@@ -89,7 +103,21 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/laboratorios/:id/revision" element={<ProtectedRoute><LabPreviewPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Suspense>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <BrowserRouter>
+      <ScrollToTop />
+      <OnboardingTour />
+      <LayoutGroup>
+        <Suspense fallback={<PageLoader />}>
+          <AnimatedRoutes />
+        </Suspense>
+      </LayoutGroup>
     </BrowserRouter>
   </StrictMode>,
 )
