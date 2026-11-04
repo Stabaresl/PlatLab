@@ -9,15 +9,17 @@ import SectionHeading from "../components/SectionHeading"
 import ProgressRing from "../components/ProgressRing"
 import AvatarBadge from "../components/AvatarBadge"
 import AvatarPicker from "../components/AvatarPicker"
+import AvatarPersonaje from "../components/avatar/AvatarPersonaje"
 import Revelar from "../components/movimiento/Revelar"
 import BarraLlenado from "../components/movimiento/BarraLlenado"
 import NumeroAnimado from "../components/movimiento/NumeroAnimado"
 import { EASE_TACTICO } from "../components/movimiento/curvas"
 import { IconTrophy, IconLock, IconGlasses, IconBackpack } from "../components/icons"
 import { Skeleton } from "../components/ui/skeleton"
-import { ICONO_COSMETICO, ORDEN_RAREZA, RAREZA_COLOR, RAREZA_LABEL, TIPO_LABEL } from "../lib/cosmeticos"
+import { ICONO_COSMETICO, ORDEN_RAREZA, RAREZA_COLOR, RAREZA_LABEL, TIPO_LABEL, conPrueba, piezasPuestas } from "../lib/cosmeticos"
 import {
   getCatalogoGamificacion,
+  resolveMediaUrl,
   type CatalogoGamificacion,
   type CosmeticoPerfilItem,
   type LogroPerfilItem,
@@ -73,7 +75,7 @@ export default function ProfilePage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--canvas)", color: "var(--text-base)" }}>
-      <HeroBackground image="grim" imageOpacity={0.06} overlayOpacity={0.9} texture="matrix" textureOpacity={0.03} />
+      <HeroBackground image="grim" imageOpacity={0.06} overlayOpacity={0.9} texture="ascii" />
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-1">
@@ -172,7 +174,7 @@ function Cabecera({ perfil, tituloNombre }: { perfil: PerfilJugador; tituloNombr
       style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}
     >
       <div className="flex justify-center">
-        <AvatarBadge perfil={perfil} size="lg" tituloNombre={tituloNombre} ranurasVacias />
+        <AvatarBadge perfil={perfil} size="lg" tituloNombre={tituloNombre} />
       </div>
       <div className="flex flex-col items-center sm:items-start gap-3 min-w-0">
         <div className="flex items-baseline gap-3">
@@ -354,6 +356,7 @@ function Inventario({
 }) {
   const [filtro, setFiltro] = useState<FiltroInventario>("todo")
   const [ocupado, setOcupado] = useState<string | null>(null)
+  const [probando, setProbando] = useState<PiezaColeccion | null>(null)
 
   const coleccion = useMemo<PiezaColeccion[]>(() => {
     const propias = new Map(perfil.cosmeticos.map((c) => [c.cosmetico_id, c]))
@@ -408,18 +411,68 @@ function Inventario({
         </div>
       )}
 
-      {visibles.length === 0 ? (
-        <Vacio texto={filtro === "bloqueados" ? "Ya tienes toda la colección" : "Todavía no desbloqueas piezas: termina laboratorios para conseguirlas"} />
-      ) : (
-        <motion.div layout className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(170px, 100%), 1fr))" }}>
-          <AnimatePresence>
-            {visibles.map((pieza, i) => (
-              <TarjetaPieza key={pieza.cosmeticoId} pieza={pieza} indice={i} ocupado={ocupado === pieza.propia?.id} onAlternar={alternar} />
-            ))}
-          </AnimatePresence>
-        </motion.div>
-      )}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_230px] items-start">
+        <div className="order-2 lg:order-1 min-w-0" onMouseLeave={() => setProbando(null)}>
+          {visibles.length === 0 ? (
+            <Vacio texto={filtro === "bloqueados" ? "Ya tienes toda la colección" : "Todavía no desbloqueas piezas: termina laboratorios para conseguirlas"} />
+          ) : (
+            <motion.div layout className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(160px, 100%), 1fr))" }}>
+              <AnimatePresence>
+                {visibles.map((pieza, i) => (
+                  <TarjetaPieza
+                    key={pieza.cosmeticoId}
+                    pieza={pieza}
+                    indice={i}
+                    ocupado={ocupado === pieza.propia?.id}
+                    probando={probando?.cosmeticoId === pieza.cosmeticoId}
+                    onAlternar={alternar}
+                    onProbar={setProbando}
+                  />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </div>
+        <Probador perfil={perfil} probando={probando} />
+      </div>
     </Revelar>
+  )
+}
+
+/** Vista previa: el avatar con la pieza que señalas puesta, la tengas o no. */
+function Probador({ perfil, probando }: { perfil: PerfilJugador; probando: PiezaColeccion | null }) {
+  const puestas = piezasPuestas(perfil)
+  const piezas = conPrueba(puestas, probando ? { tipo: probando.tipo, color: probando.color, nombre: probando.nombre } : null)
+  const preset = perfil.avatar_tipo === "preset" ? perfil.avatar_valor : null
+  const foto = perfil.avatar_tipo === "subido" ? resolveMediaUrl(perfil.avatar_valor) : null
+  const estado = !probando
+    ? "Pasa el mouse o toca una pieza para probártela."
+    : probando.propia?.equipado
+      ? "Ya la llevas puesta. Haz clic en ella para quitártela."
+      : probando.propia
+        ? "Es tuya: haz clic en ella para ponértela."
+        : probando.logroRequerido
+          ? `Todavía no la tienes: se gana con el logro «${probando.logroRequerido}».`
+          : "Todavía no la tienes."
+  return (
+    <aside
+      className="order-1 lg:order-2 lg:sticky lg:top-24 chamfer flex flex-row lg:flex-col items-center gap-4 p-4"
+      style={{ backgroundColor: "var(--surface)", border: `1px solid ${probando ? "var(--signal-cyan)" : "var(--border-default)"}` }}
+      aria-live="polite"
+    >
+      <div className="shrink-0 flex items-end justify-center chamfer-sm" style={{ width: 132, height: 160, background: "radial-gradient(circle at 50% 38%, var(--surface-raised), var(--surface-sunken) 72%)" }}>
+        <AvatarPersonaje preset={preset} foto={foto} piezas={piezas} ancho={112} />
+      </div>
+      <div className="flex flex-col gap-1 min-w-0 lg:text-center">
+        <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--signal-cyan)", fontFamily: "var(--font-mono)" }}>
+          Probador
+        </span>
+        <span className="text-sm font-bold" style={{ color: "var(--text-heading)" }}>
+          {probando ? probando.nombre : "Tu equipo actual"}
+        </span>
+        <span className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{estado}</span>
+      </div>
+    </aside>
   )
 }
 
@@ -427,12 +480,16 @@ function TarjetaPieza({
   pieza,
   indice,
   ocupado,
+  probando,
   onAlternar,
+  onProbar,
 }: {
   pieza: PiezaColeccion
   indice: number
   ocupado: boolean
+  probando: boolean
   onAlternar: (p: CosmeticoPerfilItem) => void
+  onProbar: (p: PiezaColeccion) => void
 }) {
   const Icono = ICONO_COSMETICO[pieza.tipo]
   const rareza = RAREZA_COLOR[pieza.rareza]
@@ -501,11 +558,24 @@ function TarjetaPieza({
     transition: { duration: 0.4, delay: Math.min(indice * 0.04, 0.35), ease: EASE_TACTICO },
   } as const
 
+  const probar = () => onProbar(pieza)
+
   if (!propia) {
+    // Bloqueada: no se equipa, pero se puede probar (clic o foco) para ver cómo quedaría.
     return (
-      <motion.div {...animacion} className="chamfer flex flex-col items-start p-3" style={{ backgroundColor: "var(--surface)", border: "1px dashed var(--border-strong)" }}>
+      <motion.button
+        {...animacion}
+        type="button"
+        whileHover={{ y: -3 }}
+        onMouseEnter={probar}
+        onFocus={probar}
+        onClick={probar}
+        aria-label={`Probar ${pieza.nombre} (bloqueada)`}
+        className="chamfer flex flex-col items-start p-3 text-left cursor-pointer"
+        style={{ backgroundColor: "var(--surface)", border: `1px dashed ${probando ? "var(--signal-cyan)" : "var(--border-strong)"}` }}
+      >
         {contenido}
-      </motion.div>
+      </motion.button>
     )
   }
   return (
@@ -515,12 +585,14 @@ function TarjetaPieza({
       whileHover={{ y: -3 }}
       whileTap={{ scale: 0.97 }}
       disabled={ocupado}
+      onMouseEnter={probar}
+      onFocus={probar}
       onClick={() => onAlternar(propia)}
       aria-pressed={equipada}
       className="chamfer flex flex-col items-start p-3 text-left cursor-pointer transition-colors disabled:cursor-wait"
       style={{
         backgroundColor: equipada ? `rgba(${pieza.color}, 0.08)` : "var(--surface)",
-        border: `1px solid ${equipada ? "var(--signal-green)" : "var(--border-default)"}`,
+        border: `1px solid ${equipada ? "var(--signal-green)" : probando ? "var(--signal-cyan)" : "var(--border-default)"}`,
       }}
     >
       {contenido}

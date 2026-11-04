@@ -336,6 +336,22 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--brillo, var(--signal-amber)) 30%, transparent), transparent);
 }
 
+/* Personaje del avatar (AvatarPersonaje): respira, parpadea y el aura gira. */
+.avatar-vivo .avatar-cuerpo { animation: avatar-respirar 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.avatar-vivo .avatar-ojos { animation: avatar-parpadeo 5.2s infinite; transform-box: fill-box; transform-origin: center; }
+.avatar-vivo .avatar-aura-anillo { animation: avatar-aura-giro 18s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes avatar-respirar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.2px); }
+}
+@keyframes avatar-parpadeo {
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
+}
+@keyframes avatar-aura-giro {
+  to { transform: rotate(360deg); }
+}
+
 /* Flotación lenta de una pieza equipada en el avatar. */
 @keyframes flotar {
   0%, 100% { transform: translateY(0); }

@@ -3,6 +3,8 @@ import { motion } from "framer-motion"
 import { AVATAR_PRESETS } from "../lib/avatarPresets"
 import { useGamificationStore } from "../store/gamificationStore"
 import { resolveMediaUrl, type PerfilJugador } from "../pages/api"
+import { piezasPuestas } from "../lib/cosmeticos"
+import AvatarPersonaje from "./avatar/AvatarPersonaje"
 import { Button } from "./ui/button"
 
 const MAX_TAMANO_MB = 10 // igual que avatar_storage.py — el backend reduce la foto a 512 px
@@ -16,6 +18,7 @@ export default function AvatarPicker({ perfil }: { perfil: PerfilJugador }) {
   const [busy, setBusy] = useState(false)
   const [localError, setLocalError] = useState("")
   const [preview, setPreview] = useState<string | null>(null)
+  const puestas = piezasPuestas(perfil)
 
   const handlePreset = async (clave: string) => {
     if (busy) return
@@ -83,13 +86,13 @@ export default function AvatarPicker({ perfil }: { perfil: PerfilJugador }) {
               )}
               <motion.span
                 key={activo ? "activo" : "inactivo"}
-                initial={activo ? { scale: 0.7, rotate: -12 } : false}
-                animate={{ scale: 1, rotate: 0 }}
+                initial={activo ? { scale: 0.8, y: 4 } : false}
+                animate={{ scale: 1, y: 0 }}
                 transition={{ duration: 0.35, ease: [0.19, 1, 0.22, 1] }}
                 className="relative"
-                style={{ fontSize: 26, lineHeight: 1 }}
               >
-                {p.emoji}
+                {/* Cada personaje se muestra con el equipo que ya tienes puesto. */}
+                <AvatarPersonaje preset={p.clave} piezas={puestas.filter((x) => x.tipo !== "marco")} ancho={48} vista="cabeza" animado={false} />
               </motion.span>
               <span className="relative text-[9px] text-center leading-tight" style={{ color: "var(--text-muted)" }}>{p.nombre}</span>
             </motion.button>

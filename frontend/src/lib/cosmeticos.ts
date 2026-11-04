@@ -3,7 +3,28 @@ import {
   IconAudifonos, IconAura, IconBackpack, IconGlasses, IconGorra, IconGuantes,
   IconHoodie, IconInsignia, IconMarco, IconMask, IconZapatos,
 } from "../components/icons"
-import type { RarezaCosmetico, TipoCosmetico } from "../pages/api"
+import type { PerfilJugador, RarezaCosmetico, TipoCosmetico } from "../pages/api"
+
+/** Lo que lleva puesto el jugador, en la forma que dibuja AvatarPersonaje. */
+export function piezasPuestas(perfil: PerfilJugador | null) {
+  return (perfil?.cosmeticos ?? [])
+    .filter((c) => c.equipado)
+    .map((c) => ({ tipo: c.tipo, color: c.color, nombre: c.nombre }))
+}
+
+/**
+ * Para el probador: el equipo actual con `prueba` puesta en su lugar (una
+ * pieza por tipo; las insignias se suman). Sirve también para piezas que
+ * todavía no se tienen: "así te verías".
+ */
+export function conPrueba(
+  puestas: { tipo: TipoCosmetico; color: string; nombre: string }[],
+  prueba: { tipo: TipoCosmetico; color: string; nombre: string } | null,
+) {
+  if (!prueba) return puestas
+  if (prueba.tipo === "insignia") return [...puestas.filter((p) => p.nombre !== prueba.nombre), prueba]
+  return [...puestas.filter((p) => p.tipo !== prueba.tipo), prueba]
+}
 
 /** Un ícono por tipo de pieza: el mismo en el avatar, el inventario y los logros. */
 export const ICONO_COSMETICO: Record<TipoCosmetico, ComponentType<SVGProps<SVGSVGElement>>> = {
