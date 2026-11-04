@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   listAssignments,
   getLaboratorio,
   getHistory,
+  getProgresoOverview,
+  getCurrentUser,
   acceptInvitation,
   rejectInvitation,
   solicitarConvertirseEnInstructor,
@@ -23,6 +25,11 @@ import SectionHeading from "../components/SectionHeading"
 import ProgressRing from "../components/ProgressRing"
 import TerminalHeader from "../components/TerminalHeader"
 import TiltCard from "../components/TiltCard"
+import Revelar from "../components/movimiento/Revelar"
+import BarraLlenado from "../components/movimiento/BarraLlenado"
+import NumeroAnimado from "../components/movimiento/NumeroAnimado"
+import { webglDisponible } from "../lib/webgl"
+import type { EsferaProgreso } from "../components/three/NucleoProgreso"
 import { IconGauge, IconFlask, IconClock, IconRocket, IconTrophy } from "../components/icons"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -34,11 +41,44 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from ".
 
 type LabStatus = "completado" | "en_progreso" | "pendiente" | "vencida" | "rechazada"
 
+const NucleoProgreso = lazy(() => import("../components/three/NucleoProgreso"))
+
 interface LabRow {
   assignment: Asignacion
   laboratorio: LaboratorioDetalle | null
   status: LabStatus
   puntaje: number | null
+  // null si no se pudo consultar (p. ej. una invitación sin aceptar).
+  secciones: { total: number; completadas: number } | null
+}
+
+const ESTADO_ESFERA: Record<LabStatus, EsferaProgreso["estado"]> = {
+  completado: "integrado",
+  en_progreso: "en_curso",
+  pendiente: "pendiente",
+  vencida: "vencido",
+  rechazada: "pendiente",
+}
+
+// Qué laboratorios terminados ya vio integrarse este estudiante en este
+// navegador: los que falten se animan llegando al núcleo en la próxima visita.
+function claveIntegradas() {
+  return `platlab.nucleo.${getCurrentUser()?.id ?? "anon"}`
+}
+function leerIntegradas(): string[] | null {
+  try {
+    const crudo = localStorage.getItem(claveIntegradas())
+    return crudo ? (JSON.parse(crudo) as string[]) : null
+  } catch {
+    return null
+  }
+}
+function guardarIntegradas(ids: string[]) {
+  try {
+    localStorage.setItem(claveIntegradas(), JSON.stringify(ids))
+  } catch {
+    // Sin almacenamiento (modo privado): la próxima visita repite la animación, nada más.
+  }
 }
 
 const statusColor: Record<LabStatus, string> = {
@@ -75,6 +115,7 @@ export default function StudentDashboard() {
   const [error, setError] = useState("")
   const [busyId, setBusyId] = useState<string | null>(null)
   const [showInstructorModal, setShowInstructorModal] = useState(false)
+  const [aperturasModal, setAperturasModal] = useState(0)
   const [instructorForm, setInstructorForm] = useState({
     tipo: "",
     orcid: "",
@@ -83,9 +124,13 @@ export default function StudentDashboard() {
     motivacion: "",
   })
 
-  const loadData = () => {
-    setLoading(true)
-    listAssignments()
+  const [nuevas, setNuevas] = useState<string[]>([])
+  const nuevasCalculadas = useRef(false)
+  const [conWebgl] = useState(webglDisponible)
+  const [ahora] = useState(() => Date.now())
+
+  const loadData = useCallback(() => {
+    return listAssignments()
       .then(async (assignments) => {
         const rowsData = await Promise.all(
           assignments
@@ -94,34 +139,54 @@ export default function StudentDashboard() {
               const laboratorio = await getLaboratorio(a.laboratorio_id).catch(() => null)
               let status: LabStatus
               let puntaje: number | null = null
+              let secciones: LabRow["secciones"] = null
               if (a.estado === "pendiente") {
                 status = "pendiente"
-              } else if (a.estado === "vencida") {
-                status = "vencida"
               } else {
-                const historial = await getHistory(a.id).catch(() => [])
-                status = historial.length > 0 ? "completado" : "en_progreso"
+                const [historial, progreso] = await Promise.all([
+                  a.estado === "vencida" ? Promise.resolve([]) : getHistory(a.id).catch(() => []),
+                  getProgresoOverview(a.id).catch(() => null),
+                ])
+                status = a.estado === "vencida" ? "vencida" : historial.length > 0 ? "completado" : "en_progreso"
                 const puntajes = historial.map((h) => h.puntaje).filter((p): p is number => p != null)
                 puntaje = puntajes.length > 0 ? Math.max(...puntajes) : null
+                if (progreso) {
+                  secciones = {
+                    total: progreso.secciones.length,
+                    completadas: progreso.secciones.filter((s) => s.estado === "completada").length,
+                  }
+                }
               }
-              return { assignment: a, laboratorio, status, puntaje }
+              return { assignment: a, laboratorio, status, puntaje, secciones }
             }),
         )
         setRows(rowsData)
+
+        // Una sola vez por visita (StrictMode corre el efecto dos veces en desarrollo).
+        const terminados = rowsData.filter((r) => r.status === "completado").map((r) => r.assignment.id)
+        if (!nuevasCalculadas.current) {
+          nuevasCalculadas.current = true
+          const vistas = leerIntegradas()
+          setNuevas(vistas === null ? terminados : terminados.filter((id) => !vistas.includes(id)))
+        }
+        guardarIntegradas(terminados)
       })
       .catch((err) => {
         setError(err instanceof ApiError ? err.message : "No se pudo cargar tu progreso.")
       })
-      .finally(() => setLoading(false))
-  }
+      .finally(() => {
+        setLoading(false)
+        setBusyId(null)
+      })
+  }, [])
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { loadData() }, [loadData])
 
   const handleAccept = async (assignmentId: string) => {
     setBusyId(assignmentId)
     try {
       await acceptInvitation(assignmentId)
-      loadData()
+      await loadData()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo aceptar la invitación.")
       setBusyId(null)
@@ -132,7 +197,7 @@ export default function StudentDashboard() {
     setBusyId(assignmentId)
     try {
       await rejectInvitation(assignmentId)
-      loadData()
+      await loadData()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo rechazar la invitación.")
       setBusyId(null)
@@ -141,9 +206,24 @@ export default function StudentDashboard() {
 
   const completed = rows.filter((r) => r.status === "completado").length
   const inProgress = rows.filter((r) => r.status === "en_progreso").length
+  const pendientes = rows.filter((r) => r.status === "pendiente").length
+  const vencidos = rows.filter((r) => r.status === "vencida").length
   const total = rows.length
-  const pendingCount = total - completed - inProgress
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0
+
+  const esferas = useMemo<EsferaProgreso[]>(
+    () =>
+      rows.map((r) => ({
+        id: r.assignment.id,
+        estado: ESTADO_ESFERA[r.status],
+        seccionesTotal: r.secciones?.total ?? 0,
+        seccionesCompletadas: r.secciones?.completadas ?? 0,
+      })),
+    [rows],
+  )
+  const nombresNuevas = rows
+    .filter((r) => nuevas.includes(r.assignment.id))
+    .map((r) => r.laboratorio?.nombre ?? "un laboratorio")
 
   const calificaciones = useMemo(
     () =>
@@ -184,21 +264,98 @@ export default function StudentDashboard() {
             ) : (
               <>
                 {/* ═══ PROGRESO ═══ */}
-                <section className="mb-8 sm:mb-10">
-                  <SectionHeading icon={<IconGauge />} title="Mi Progreso" subtitle="Tu avance general en la plataforma" />
+                <Revelar como="section" className="mb-8 sm:mb-10">
+                  <SectionHeading icon={<IconGauge />} title="Mi Progreso" subtitle="Cada laboratorio es una esfera en órbita; cuando lo terminas, se suma a tu núcleo" />
 
-                  <div className="chamfer flex flex-col sm:flex-row items-center gap-6 sm:gap-8 p-4 sm:p-6" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
-                    <ProgressRing percent={pct} size={104} label="completado" />
-                    <div className="flex-1 w-full grid grid-cols-3 gap-3 sm:gap-4">
-                      <StatCard label="Completados" value={completed} color="var(--signal-green)" icon={<IconRocket />} />
-                      <StatCard label="En Progreso" value={inProgress} color="var(--signal-cyan)" icon={<IconFlask />} />
-                      <StatCard label="Pendientes" value={Math.max(0, pendingCount)} color="var(--text-muted)" icon={<IconClock />} />
+                  <div
+                    className="chamfer grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] overflow-hidden"
+                    style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}
+                  >
+                    <div className="relative" style={{ backgroundColor: "var(--surface-sunken)" }}>
+                      {conWebgl ? (
+                        <Suspense fallback={<div style={{ height: 320 }} />}>
+                          <NucleoProgreso esferas={esferas} nuevas={nuevas} alto={320} />
+                        </Suspense>
+                      ) : (
+                        <div className="flex items-center justify-center" style={{ height: 320 }}>
+                          <ProgressRing percent={pct} size={120} label="completado" />
+                        </div>
+                      )}
+                      <span
+                        className="absolute left-4 top-3 text-[10px] uppercase tracking-widest pointer-events-none"
+                        style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}
+                      >
+                        núcleo · {completed} de {total} integrados
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-5 p-4 sm:p-6 border-t lg:border-t-0 lg:border-l" style={{ borderColor: "var(--border-default)" }}>
+                      <div className="flex items-end justify-between gap-3">
+                        <div className="flex flex-col">
+                          <NumeroAnimado
+                            valor={pct}
+                            sufijo="%"
+                            className="text-4xl sm:text-5xl font-bold text-display leading-none"
+                            style={{ color: "var(--text-heading)" }}
+                          />
+                          <span className="mt-2 text-[11px] uppercase tracking-widest" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                            de tus laboratorios terminados
+                          </span>
+                        </div>
+                        <Link
+                          to="/roadmap"
+                          className="text-[11px] font-semibold no-underline uppercase tracking-wide shrink-0"
+                          style={{ color: "var(--signal-amber)", fontFamily: "var(--font-mono)" }}
+                        >
+                          Roadmap →
+                        </Link>
+                      </div>
+
+                      {total > 0 && (
+                        <BarraLlenado valor={completed} max={total} segmentos color="var(--signal-green)" alto={6} etiqueta={`${completed} de ${total} laboratorios terminados`} />
+                      )}
+
+                      <ul className="grid grid-cols-2 gap-x-4 gap-y-3 m-0 p-0 list-none">
+                        <FilaLeyenda color="var(--signal-green)" etiqueta="Integrados" valor={completed} relleno />
+                        <FilaLeyenda color="var(--signal-cyan)" etiqueta="En curso" valor={inProgress} relleno />
+                        <FilaLeyenda color="var(--text-dim)" etiqueta="Invitaciones" valor={pendientes} />
+                        <FilaLeyenda color="var(--signal-red)" etiqueta="Vencidos" valor={vencidos} />
+                      </ul>
+
+                      <AnimatePresence>
+                        {nombresNuevas.length > 0 && (
+                          <motion.p
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 1.2, duration: 0.4 }}
+                            className="m-0 text-xs leading-relaxed chamfer-sm px-3 py-2"
+                            style={{
+                              color: "var(--text-base)",
+                              backgroundColor: "color-mix(in srgb, var(--signal-green) 10%, transparent)",
+                              border: "1px solid color-mix(in srgb, var(--signal-green) 45%, transparent)",
+                            }}
+                          >
+                            <span style={{ color: "var(--signal-green)", fontFamily: "var(--font-mono)" }}>+{nombresNuevas.length} </span>
+                            Se {nombresNuevas.length === 1 ? "sumó" : "sumaron"} a tu núcleo: {nombresNuevas.join(", ")}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+
+                      {total === 0 ? (
+                        <p className="m-0 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                          Tu núcleo está solo. Inscríbete en un laboratorio del roadmap y aparecerá en órbita; al terminarlo, se le suma.
+                        </p>
+                      ) : (
+                        <p className="m-0 text-xs leading-relaxed" style={{ color: "var(--text-dim)" }}>
+                          Las lunas de cada esfera son sus secciones: se encienden al completarlas y la esfera se acerca al núcleo.
+                        </p>
+                      )}
                     </div>
                   </div>
-                </section>
+                </Revelar>
 
                 {/* ═══ LABORATORIOS ASIGNADOS ═══ */}
-                <section className="mb-8 sm:mb-10">
+                <Revelar como="section" className="mb-8 sm:mb-10">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <SectionHeading icon={<IconFlask />} title="Laboratorios Asignados" />
                     <Link to="/laboratorios" className="text-xs sm:text-sm font-semibold no-underline uppercase tracking-wide transition-opacity hover:opacity-80" style={{ color: "var(--signal-amber)", fontFamily: "var(--font-mono)" }}>
@@ -245,6 +402,20 @@ export default function StudentDashboard() {
                                     Invitado por {row.assignment.instructor_nombre}
                                   </span>
                                 )}
+                                {row.status === "en_progreso" && row.secciones && row.secciones.total > 0 && (
+                                  <div className="flex items-center gap-2 mt-0.5" style={{ width: "min(220px, 100%)" }}>
+                                    <BarraLlenado
+                                      valor={row.secciones.completadas}
+                                      max={row.secciones.total}
+                                      segmentos
+                                      alto={3}
+                                      etiqueta={`${row.secciones.completadas} de ${row.secciones.total} secciones`}
+                                    />
+                                    <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                                      {row.secciones.completadas}/{row.secciones.total}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
 
                               <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -281,10 +452,10 @@ export default function StudentDashboard() {
                       </AnimatePresence>
                     </div>
                   )}
-                </section>
+                </Revelar>
 
                 {/* ═══ CALIFICACIONES ═══ */}
-                <section className="mb-8 sm:mb-10">
+                <Revelar como="section" className="mb-8 sm:mb-10">
                   <SectionHeading icon={<IconTrophy />} title="Mis Calificaciones" subtitle="Mejor puntaje obtenido en cada laboratorio completado" />
 
                   {calificaciones.length === 0 ? (
@@ -314,6 +485,11 @@ export default function StudentDashboard() {
                                   {DIFICULTAD_LABEL[row.laboratorio.nivel_dificultad]}
                                 </span>
                               )}
+                              {puntaje != null && (
+                                <div className="mt-1" style={{ width: "min(240px, 100%)" }}>
+                                  <BarraLlenado valor={puntaje} color={color} alto={3} etiqueta={`Puntaje ${Math.round(puntaje)} de 100`} />
+                                </div>
+                              )}
                             </div>
                             <div className="flex flex-col items-end gap-1 shrink-0">
                               <span className="text-xl sm:text-2xl font-bold text-display leading-none" style={{ color }}>
@@ -328,10 +504,10 @@ export default function StudentDashboard() {
                       })}
                     </div>
                   )}
-                </section>
+                </Revelar>
 
                 {/* ═══ VENCIMIENTOS ═══ */}
-                <section className="mb-8 sm:mb-10">
+                <Revelar como="section" className="mb-8 sm:mb-10">
                   <SectionHeading icon={<IconClock />} title="Próximos Vencimientos" />
 
                   {proximosVencimientos.length === 0 ? (
@@ -342,7 +518,7 @@ export default function StudentDashboard() {
                     <div className="flex flex-col gap-2 sm:gap-3">
                       {proximosVencimientos.map((row) => {
                         const diasRestantes = Math.ceil(
-                          (new Date(row.assignment.fecha_vencimiento!).getTime() - Date.now()) / 86_400_000,
+                          (new Date(row.assignment.fecha_vencimiento!).getTime() - ahora) / 86_400_000,
                         )
                         return (
                           <TiltCard key={row.assignment.id} glowColor="255,71,87" intensity={3} className="chamfer flex items-center justify-between gap-3 p-3 sm:p-4" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-amber)" }}>
@@ -357,8 +533,8 @@ export default function StudentDashboard() {
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
                               <span
-                                className="text-[10px] font-bold px-2 py-1 chamfer-sm whitespace-nowrap uppercase tracking-wide"
-                                style={{ backgroundColor: "rgba(255,71,87,0.12)", color: "var(--signal-red)", border: "1px solid var(--signal-red)" }}
+                                className={`text-[10px] font-bold px-2 py-1 chamfer-sm whitespace-nowrap uppercase tracking-wide${diasRestantes <= 2 ? " pulso-alerta" : ""}`}
+                                style={{ backgroundColor: "color-mix(in srgb, var(--signal-red) 12%, transparent)", color: "var(--signal-red)", border: "1px solid var(--signal-red)" }}
                               >
                                 {diasRestantes <= 0 ? "Vence hoy" : `${diasRestantes} día${diasRestantes === 1 ? "" : "s"}`}
                               </span>
@@ -371,10 +547,10 @@ export default function StudentDashboard() {
                       })}
                     </div>
                   )}
-                </section>
+                </Revelar>
 
                 {/* ═══ INSTRUCTOR CTA ═══ */}
-                <section>
+                <Revelar como="section">
                   <div className="chamfer flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 sm:p-6 gap-4 sm:gap-6" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-strong)" }}>
                     <div className="flex flex-col gap-1" style={{ maxWidth: "600px" }}>
                       <h2 className="flex items-center gap-2 text-base sm:text-lg font-bold uppercase tracking-wide m-0" style={{ color: "var(--text-heading)" }}>
@@ -388,11 +564,17 @@ export default function StudentDashboard() {
                       </p>
                     </div>
 
-                    <Button onClick={() => setShowInstructorModal(true)} className="w-full sm:w-auto chamfer-sm font-mono text-xs uppercase tracking-wide">
+                    <Button
+                      onClick={() => {
+                        setAperturasModal((n) => n + 1)
+                        setShowInstructorModal(true)
+                      }}
+                      className="w-full sm:w-auto chamfer-sm font-mono text-xs uppercase tracking-wide"
+                    >
                       Convertirme en Instructor
                     </Button>
                   </div>
-                </section>
+                </Revelar>
               </>
             )}
           </div>
@@ -400,7 +582,9 @@ export default function StudentDashboard() {
         <Footer />
       </div>
 
+      {/* La key cambia en cada apertura: el modal arranca con su estado limpio (cargando, sin error). */}
       <InstructorRegistrationModal
+        key={aperturasModal}
         open={showInstructorModal}
         form={instructorForm}
         onChange={setInstructorForm}
@@ -410,38 +594,26 @@ export default function StudentDashboard() {
   )
 }
 
-// Puente color de token CSS ("var(--signal-cyan)") → triplete RGB que TiltCard/MouseGlow
-// necesitan para el glow (no se puede resolver var() a RGB en JS sin getComputedStyle).
-const STAT_GLOW: Record<string, string> = {
-  "var(--signal-green)": "51,214,159",
-  "var(--signal-cyan)": "56,214,245",
-  "var(--text-muted)": "136,146,163",
-}
-
-function StatCard({ label, value, color, icon }: { label: string; value: number; color: string; icon?: ReactNode }) {
+/** Una entrada de la leyenda del núcleo: el punto repite el color de la esfera en la escena. */
+function FilaLeyenda({ color, etiqueta, valor, relleno = false }: { color: string; etiqueta: string; valor: number; relleno?: boolean }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-      className="flex-1"
-    >
-      <TiltCard
-        glowColor={STAT_GLOW[color] || "56,214,245"}
-        className="chamfer-sm flex flex-col items-center gap-1.5 sm:gap-2 p-3 sm:p-5"
-        style={{ backgroundColor: "var(--canvas)", border: "1px solid var(--border-default)" }}
-      >
-        {icon && (
-          <div className="chamfer-sm flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8" style={{ backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`, color }}>
-            {icon}
-          </div>
-        )}
-        <span className="text-xl sm:text-3xl font-bold text-display" style={{ color }}>
-          {value}
-        </span>
-        <span className="text-[11px] sm:text-xs font-medium text-center uppercase tracking-wide" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{label}</span>
-      </TiltCard>
-    </motion.div>
+    <li className="flex items-center gap-2.5 min-w-0">
+      <span
+        aria-hidden="true"
+        className="shrink-0 rounded-full"
+        style={{
+          width: 10,
+          height: 10,
+          backgroundColor: relleno ? color : "transparent",
+          border: `2px solid ${color}`,
+          boxShadow: relleno ? `0 0 8px color-mix(in srgb, ${color} 70%, transparent)` : undefined,
+        }}
+      />
+      <span className="text-[11px] uppercase tracking-wide truncate" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+        {etiqueta}
+      </span>
+      <NumeroAnimado valor={valor} className="ml-auto text-lg font-bold text-display leading-none" style={{ color: valor > 0 ? color : "var(--text-dim)" }} />
+    </li>
   )
 }
 
@@ -492,15 +664,13 @@ function InstructorRegistrationModal({
   onClose: () => void
 }) {
   const [estadoActual, setEstadoActual] = useState<SolicitudInstructor | null>(null)
-  const [cargando, setCargando] = useState(false)
+  const [cargando, setCargando] = useState(open)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState("")
   const update = (field: keyof typeof form, value: string) => onChange({ ...form, [field]: value })
 
   useEffect(() => {
     if (!open) return
-    setError("")
-    setCargando(true)
     getMiSolicitudInstructor()
       .then((solicitud) => setEstadoActual(solicitud ?? null))
       .catch(() => setEstadoActual(null))

@@ -1,7 +1,7 @@
 import { StrictMode, Suspense, lazy, useEffect } from "react"
 import { createRoot } from "react-dom/client"
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
-import { AnimatePresence, LayoutGroup, motion } from "framer-motion"
+import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "framer-motion"
 import useReducedMotion from "./hooks/useReducedMotion"
 import "@fontsource/fira-sans/400.css"
 import "@fontsource/fira-sans/500.css"
@@ -119,13 +119,16 @@ function AnimatedRoutes() {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <ScrollToTop />
-      <OnboardingTour />
-      <LayoutGroup>
-        <Suspense fallback={<PageLoader />}>
-          <AnimatedRoutes />
-        </Suspense>
-      </LayoutGroup>
+      {/* Con "reducir movimiento" activo, framer-motion deja solo los fundidos. */}
+      <MotionConfig reducedMotion="user">
+        <ScrollToTop />
+        <OnboardingTour />
+        <LayoutGroup>
+          <Suspense fallback={<PageLoader />}>
+            <AnimatedRoutes />
+          </Suspense>
+        </LayoutGroup>
+      </MotionConfig>
     </BrowserRouter>
   </StrictMode>,
 )

@@ -25,11 +25,4 @@ export function liberar(objeto: THREE.Object3D) {
   })
 }
 
-export function webglDisponible(): boolean {
-  try {
-    const canvas = document.createElement("canvas")
-    return Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl"))
-  } catch {
-    return false
-  }
-}
+export { webglDisponible } from "../../lib/webgl"

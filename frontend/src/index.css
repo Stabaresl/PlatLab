@@ -286,6 +286,63 @@ h1, h2, h3, h4, h5, h6 {
   100% { box-shadow: 0 0 0 10px rgba(255, 176, 32, 0); }
 }
 
+/* ---- Movimiento con significado (ver design.md § Movimiento) ---- */
+
+/* Aviso urgente (vence en ≤2 días): late la opacidad, no el tamaño. */
+@keyframes pulso-alerta {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.pulso-alerta { animation: pulso-alerta 1.4s ease-in-out infinite; }
+
+/* Señal que recorre un conector del roadmap: el camino que ya se puede seguir. */
+@keyframes flujo-conector {
+  from { transform: translateX(-14px); }
+  to { transform: translateX(46px); }
+}
+.flujo-conector {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--text-heading), transparent);
+  animation: flujo-conector 1.5s linear infinite;
+}
+
+/* Anillo de radar alrededor del siguiente paso disponible. */
+@keyframes radar-ping {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(1.32); opacity: 0; }
+}
+.radar-ping {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--signal-cyan);
+  pointer-events: none;
+  animation: radar-ping 2.2s var(--ease-tactical) infinite;
+}
+.radar-ping.retardo { animation-delay: 1.1s; }
+
+/* Brillo que cruza una tarjeta una vez al aparecer (logros ganados). El
+   recorrido lo anima framer-motion al entrar en pantalla; aquí solo la forma. */
+.brillo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--brillo, var(--signal-amber)) 30%, transparent), transparent);
+}
+
+/* Flotación lenta de una pieza equipada en el avatar. */
+@keyframes flotar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.flotar { animation: flotar 3.2s ease-in-out infinite; }
+
 @theme inline {
   --font-heading: var(--font-mono);
   --font-sans: var(--font-body);
