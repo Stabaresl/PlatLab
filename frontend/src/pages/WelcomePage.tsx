@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react"
+import { lazy, Suspense, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import useReducedMotion from "../hooks/useReducedMotion"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
-import ScanlineOverlay from "../components/ScanlineOverlay"
 import TerminalTyper from "../components/TerminalTyper"
 import CountUpStat from "../components/CountUpStat"
 import CyberGrid from "../components/CyberGrid"
@@ -12,8 +11,10 @@ import ReticleFrame from "../components/ReticleFrame"
 import MouseGlow, { trackGlow, untrackGlow } from "../components/MouseGlow"
 import StatusDot from "../components/StatusDot"
 import { Button } from "../components/ui/button"
+import { getCatalogo, getRoadmap } from "./api"
+
+const RedGlobo = lazy(() => import("../components/three/RedGlobo"))
 import grimBg from "../assets/grim.png"
-import termBg from "../assets/term.png"
 
 const STEPS = [
   {
@@ -67,7 +68,7 @@ const FEATURES = [
   },
 ]
 
-const TICKER = "SISTEMA: OPERATIVO // 3 ROLES ACTIVOS // 8 MÓDULOS CARGADOS // PROGRESO: PERSISTENTE // OWASP TOP 10 CUBIERTO //"
+const TICKER = "REDES // SEGURIDAD WEB // CRIPTOGRAFÍA // FORENSE // SALAS EN VIVO HASTA 100 PERSONAS // UN CONTENEDOR AISLADO POR ESTUDIANTE //"
 
 // Un solo boot-reveal orquestado ("Cómo funciona") en vez de que cada
 // sección anime por separado al hacer scroll — ver anti-patrón "universal
@@ -83,11 +84,14 @@ const stepsItem = {
 
 export default function WelcomePage() {
   const navigate = useNavigate()
-  const [authed, setAuthed] = useState(false)
+  const authed = !!localStorage.getItem("token")
   const reduced = useReducedMotion()
+  const [cifras, setCifras] = useState<{ labs: number; pistas: number } | null>(null)
 
   useEffect(() => {
-    setAuthed(!!localStorage.getItem("token"))
+    Promise.all([getCatalogo(), getRoadmap()])
+      .then(([catalogo, roadmap]) => setCifras({ labs: catalogo.count, pistas: roadmap.length }))
+      .catch(() => {})
   }, [])
 
   return (
@@ -168,36 +172,20 @@ export default function WelcomePage() {
               </div>
             </motion.div>
 
-            <div className="relative z-10 flex-1 flex items-center justify-center w-full lg:w-auto">
+            {/* Globo 3D: hosts de una red con paquetes cruzándola (three.js, carga diferida). */}
+            <div className="relative z-10 flex-1 flex items-center justify-center w-full lg:w-auto min-w-0">
               <motion.div
-                initial={reduced ? false : { opacity: 0, scale: 0.94 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.55, ease: "easeOut", delay: reduced ? 0 : 0.15 }}
-                className="w-full max-w-[650px]"
+                initial={reduced ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: reduced ? 0 : 0.15 }}
+                className="w-full max-w-[620px]"
               >
-                <ReticleFrame color="var(--signal-amber)" size={20} thickness={2}>
-                  <div className="relative overflow-hidden w-full aspect-[650/371]" style={{ border: "1px solid var(--border-default)" }}>
-                    <div
-                      className="absolute inset-0"
-                      style={{ backgroundImage: `url(${termBg})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}
-                    />
-                    <div className="absolute inset-0" style={{ backgroundColor: "rgba(8,9,12,0.35)" }} />
-                    <ScanlineOverlay />
-                    <div className="absolute top-0 left-0 right-0 flex items-center gap-1.5 px-3 py-2" style={{ backgroundColor: "rgba(8,9,12,0.55)", borderBottom: "1px solid var(--border-hairline)" }}>
-                      <span className="w-2 h-2" style={{ backgroundColor: "var(--signal-red)" }} />
-                      <span className="w-2 h-2" style={{ backgroundColor: "var(--signal-amber)" }} />
-                      <span className="w-2 h-2" style={{ backgroundColor: "var(--signal-green)" }} />
-                      <span className="ml-2 text-[10px]" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>lab_session --status</span>
-                    </div>
-                    <div className="relative z-10 flex items-center justify-center w-full h-full px-6 sm:px-8">
-                      <p className="text-sm sm:text-base md:text-lg font-medium text-center" style={{ color: "var(--text-heading)", fontFamily: "var(--font-mono)" }}>
-                        Explora, aprende y domina
-                        <br />
-                        la ciberseguridad
-                      </p>
-                    </div>
-                  </div>
-                </ReticleFrame>
+                <Suspense fallback={<div style={{ height: 420 }} />}>
+                  <RedGlobo alto={420} />
+                </Suspense>
+                <p className="text-center text-[11px] uppercase tracking-[0.2em] m-0 -mt-2" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
+                  redes · web · criptografía · forense
+                </p>
               </motion.div>
             </div>
           </section>
@@ -206,11 +194,21 @@ export default function WelcomePage() {
 
       {/* ═══ EN NÚMEROS ═══ */}
       <section className="w-full px-4 sm:px-6 md:px-8 lg:px-12 py-10 sm:py-14" style={{ borderTop: "1px solid var(--border-default)", borderBottom: "1px solid var(--border-default)" }}>
+        {/* Cifras reales: las dos primeras salen de la API, las otras son límites del sistema. */}
         <div className="mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8" style={{ maxWidth: "1000px" }}>
-          <CountUpStat value={3} label="Roles con RBAC" delay={0} />
-          <CountUpStat value={8} label="Módulos del backend" delay={100} />
-          <CountUpStat value={100} suffix="%" label="Progreso guardado" delay={200} />
-          <CountUpStat value={10} label="OWASP Top cubierto" delay={300} />
+          {cifras ? (
+            <>
+              <CountUpStat value={cifras.labs} label="Laboratorios guiados" delay={0} />
+              <CountUpStat value={cifras.pistas} label="Pistas en el roadmap" delay={100} />
+            </>
+          ) : (
+            <>
+              <div aria-hidden="true" />
+              <div aria-hidden="true" />
+            </>
+          )}
+          <CountUpStat value={100} label="Personas por sala" delay={200} />
+          <CountUpStat value={1} label="Contenedor propio por estudiante" delay={300} />
         </div>
       </section>
 
