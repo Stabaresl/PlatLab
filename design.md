@@ -31,7 +31,21 @@ Escala de Tailwind (4 pt). Esquinas cortadas `chamfer` / `chamfer-sm` (marca de 
 ## Movimiento
 - `--ease-tactical`, duraciones `--dur-fast` (180 ms) / `--dur-med` (320 ms).
 - Solo `transform` y `opacity`. Entrada por fundido corto; nada de rebotes.
-- `prefers-reduced-motion`: escenas 3D quietas (un cuadro), transiciones a fundido ≤150 ms.
+- `prefers-reduced-motion`: escenas 3D quietas (un cuadro), transiciones a fundido ≤150 ms. `MotionConfig reducedMotion="user"` en `main.tsx` lo aplica a framer-motion.
+- Cada animación cuenta algo del dato; si no informa, no va. Piezas compartidas en `components/movimiento/`:
+  - `Revelar`: entrada al hacer scroll (una vez), para secciones y tarjetas.
+  - `BarraLlenado`: barra que se llena al verse; con `segmentos`, un tramo por elemento real ("3 de 5").
+  - `NumeroAnimado`: cifra que cuenta hasta su valor (el valor real va en texto para lectores de pantalla).
+- Patrones por pantalla:
+  - Panel del estudiante: `NucleoProgreso` (three.js). Núcleo = estudiante, esfera en órbita = laboratorio, lunas = secciones. Al terminar un laboratorio la esfera viaja en espiral y se acopla; se anima solo la primera vez que se ve (localStorage).
+  - Roadmap: conector verde entre terminados, señal que corre hacia el siguiente disponible (`.flujo-conector`), radar en el siguiente paso (`.radar-ping`), check que se dibuja en los completados.
+  - Perfil: piezas equipadas flotando alrededor del avatar (`.flotar`), brillo único al aparecer un logro ganado, inventario con la colección completa (lo bloqueado dice qué logro lo da).
+  - Urgencia: `.pulso-alerta` (opacidad) solo en vencimientos de ≤2 días.
+
+## Marca
+- Isotipo `components/marca/IsoPlatlab.tsx`: marco de esquinas cortadas, núcleo ámbar y un satélite cian en órbita (el mismo lenguaje del núcleo de progreso). El satélite se mueve con JS; acelera al pasar el puntero.
+- Logotipo `MarcaPlatlab`: isotipo + "PLAT::LAB" en JetBrains Mono con los "::" en ámbar; las letras se decodifican al cargar y al pasar el puntero.
+- `public/favicon.svg` es la versión quieta del isotipo.
 
 ## Microinteracciones
 - Éxito silencioso (el estado cambia en su sitio), sin toasts de celebración salvo logros.
