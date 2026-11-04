@@ -1104,15 +1104,70 @@ export interface PreguntaExamen {
   opciones: string[] | null
 }
 
+// Examen final: 3 intentos por ciclo; si los 3 se reprueban, se bloquea 24 h.
+// Las preguntas solo llegan al iniciar un intento, y salir sin entregar lo
+// cuenta como reprobado (el backend lo cierra al volver a iniciar).
+export interface EstadoExamen {
+  examen_id: string
+  total_preguntas: number
+  max_intentos: number
+  puntaje_aprobacion: number
+  intentos_restantes: number
+  bloqueado_hasta: string | null
+  aprobado: boolean
+  intentos_realizados: number
+  mejor_puntaje: number | null
+  // Quedó un intento abierto: el estudiante salió sin entregar.
+  intento_abierto: boolean
+}
+
+export interface ResultadoExamen {
+  puntaje: number
+  correctas: number
+  total: number
+  numero_intento: number
+  aprobado: boolean
+  estado: EstadoExamen | null
+}
+
 export function getExamen(assignmentId: string) {
-  return api<{ examen_id: string; preguntas: PreguntaExamen[] }>(`/progress/${assignmentId}/exam/`)
+  return api<EstadoExamen>(`/progress/${assignmentId}/exam/`)
+}
+
+export function iniciarExamen(assignmentId: string) {
+  return api<{
+    iniciado: boolean
+    iniciado_en: string | null
+    abandono_cerrado: boolean
+    estado: EstadoExamen
+    preguntas: PreguntaExamen[]
+  }>(`/progress/${assignmentId}/exam/iniciar/`, { method: "POST" })
 }
 
 export function submitExam(assignmentId: string, respuestas: Record<string, string>) {
-  return api<{ puntaje: number; correctas: number; total: number; numero_intento: number }>(
-    `/progress/${assignmentId}/exam/`,
-    { method: "POST", body: JSON.stringify({ respuestas }) },
-  )
+  return api<ResultadoExamen>(`/progress/${assignmentId}/exam/`, {
+    method: "POST",
+    body: JSON.stringify({ respuestas }),
+  })
+}
+
+/**
+ * Entrega de emergencia al cerrar o recargar la pestaña en pleno examen:
+ * `keepalive` deja que la petición termine aunque la página se descargue.
+ * Si no llega, el backend igual cuenta el intento como reprobado.
+ */
+export function entregarExamenAlSalir(assignmentId: string, respuestas: Record<string, string>) {
+  const token = getAccessToken()
+  try {
+    void fetch(`${BASE}/progress/${assignmentId}/exam/`, {
+      method: "POST",
+      keepalive: true,
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ respuestas }),
+    })
+  } catch {
+    // La página ya se está cerrando: no hay nada más que hacer aquí.
+  }
 }
 
 export function getHistory(assignmentId: string) {

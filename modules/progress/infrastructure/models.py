@@ -15,6 +15,8 @@ class ProgresoModel(models.Model):
     estudiante_id = models.UUIDField()
     fecha_inicio = models.DateTimeField(auto_now_add=True)
     ultima_actividad = models.DateTimeField(auto_now=True)
+    # Intento de examen en curso (ver `Progreso.examen_iniciado_en`).
+    examen_iniciado_en = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "progress_progreso"

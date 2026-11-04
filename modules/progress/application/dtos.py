@@ -128,16 +128,45 @@ class EnviarExamenDTO:
 
 
 @dataclass(frozen=True)
+class EstadoExamenDTO:
+    """
+    Intentos del examen final para el estudiante: cuántos le quedan del
+    ciclo de 3, si está bloqueado (y hasta cuándo) y si dejó uno abierto.
+    """
+
+    examen_id: uuid.UUID
+    total_preguntas: int
+    max_intentos: int
+    puntaje_aprobacion: int
+    intentos_restantes: int
+    bloqueado_hasta: datetime | None
+    aprobado: bool
+    intentos_realizados: int
+    mejor_puntaje: float | None
+    intento_abierto: bool
+
+
+@dataclass(frozen=True)
 class EnviarExamenResultDTO:
     puntaje: float
     correctas: int
     total: int
     numero_intento: int
+    aprobado: bool = False
+    estado: EstadoExamenDTO | None = None
 
 
 @dataclass(frozen=True)
 class ObtenerExamenDTO:
-    """`GET /progress/{assignment_id}/exam/` — preguntas para responder (nunca la respuesta)."""
+    """`GET /progress/{assignment_id}/exam/` — estado de intentos (las preguntas salen al iniciar)."""
+
+    asignacion_id: uuid.UUID
+    estudiante_id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class IniciarExamenDTO:
+    """`POST /progress/{assignment_id}/exam/iniciar/` — abre un intento y entrega las preguntas."""
 
     asignacion_id: uuid.UUID
     estudiante_id: uuid.UUID
@@ -152,9 +181,18 @@ class PreguntaExamenItemDTO:
 
 
 @dataclass(frozen=True)
-class ExamenParaResolverDTO:
-    examen_id: uuid.UUID
+class ExamenIniciadoDTO:
+    """
+    `iniciado=False` cuando el examen está bloqueado (sin preguntas).
+    `abandono_cerrado=True` si al iniciar se encontró un intento abierto
+    anterior y se contó como reprobado.
+    """
+
+    iniciado: bool
+    estado: EstadoExamenDTO
     preguntas: list[PreguntaExamenItemDTO]
+    iniciado_en: datetime | None = None
+    abandono_cerrado: bool = False
 
 
 @dataclass(frozen=True)

@@ -20,6 +20,7 @@ from modules.gamification.infrastructure.repositories import (
 )
 from modules.laboratories.infrastructure.repositories import LaboratorioRepository
 from modules.progress.domain.events import ExamGraded, LabCompleted
+from modules.progress.domain.value_objects import PUNTAJE_APROBACION
 from modules.progress.infrastructure.repositories import ProgresoRepository
 from modules.roadmap.infrastructure.repositories import NodoRoadmapRepository
 from modules.rooms.domain.events import SalaCompletadaPorEstudiante
@@ -55,7 +56,12 @@ def _procesar(estudiante_id: uuid.UUID, laboratorio_id: uuid.UUID) -> None:
 
 
 def _on_exam_graded(event: ExamGraded) -> None:
-    """Un laboratorio CON examen recién cuenta como completado (para XP/logros) al calificarse."""
+    """
+    Un laboratorio CON examen cuenta como completado (XP/logros) al aprobarlo
+    (≥ PUNTAJE_APROBACION). Presentarlo y reprobar no da la recompensa.
+    """
+    if event.puntaje < PUNTAJE_APROBACION:
+        return
     resuelto = _resolver_estudiante_y_laboratorio(event.progreso_id)
     if resuelto is None:
         return

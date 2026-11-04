@@ -7,22 +7,19 @@ import {
   submitFlag,
   completeTheorySection,
   getHint,
-  getExamen,
-  submitExam,
   startLabEnvironment,
   stopLabEnvironment,
   getLabEnvironmentStatus,
   ApiError,
   type ProgresoOverview,
   type SeccionProgreso,
-  type PreguntaExamen,
   type ContenidoSeccion,
   type EntornoRealEstado,
 } from "./api"
 import { ContenidoHtml, PasosGuia } from "../components/ContenidoSeccion"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
-import ProgressRing from "../components/ProgressRing"
+import ExamenFinal from "../components/examen/ExamenFinal"
 import StatusDot from "../components/StatusDot"
 import SimulatedTerminal, { type ConsolaHandle } from "../components/SimulatedTerminal"
 import RealTerminal from "../components/RealTerminal"
@@ -209,7 +206,7 @@ export default function ResolverLaboratorioPage() {
               {/* ═══ Área de trabajo ═══ */}
               <div className="flex-1 min-w-0">
                 {vista?.tipo === "examen" ? (
-                  <ExamenPanel assignmentId={assignmentId} onDone={loadOverview} vencido={vencido} />
+                  <ExamenFinal assignmentId={assignmentId} onDone={loadOverview} vencido={vencido} />
                 ) : vista?.tipo === "seccion" ? (
                   <SeccionPanel
                     key={vista.id}
@@ -642,112 +639,5 @@ function Aviso({ ok, msg }: { ok: boolean; msg: string }) {
       <span aria-hidden="true">{ok ? "✓" : "▲"}</span>
       <span>{msg}</span>
     </motion.p>
-  )
-}
-
-function ExamenPanel({ assignmentId, onDone, vencido }: { assignmentId: string; onDone: () => void; vencido: boolean }) {
-  const [preguntas, setPreguntas] = useState<PreguntaExamen[] | null>(null)
-  const [respuestas, setRespuestas] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [resultado, setResultado] = useState<{ puntaje: number; correctas: number; total: number } | null>(null)
-  const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    getExamen(assignmentId)
-      .then((data) => setPreguntas(data.preguntas))
-      .catch((err) => setError(err instanceof ApiError ? err.message : "No se pudo cargar el examen."))
-      .finally(() => setLoading(false))
-  }, [assignmentId])
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setBusy(true)
-    try {
-      const r = await submitExam(assignmentId, respuestas)
-      setResultado(r)
-      onDone()
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo enviar el examen.")
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (loading) return <Skeleton className="chamfer h-40" style={{ backgroundColor: "var(--surface)" }} />
-  if (error) return <p className="text-sm px-3 py-2 chamfer-sm" style={{ color: "var(--signal-red)", backgroundColor: "color-mix(in srgb, var(--signal-red) 8%, transparent)", border: "1px solid var(--signal-red-dim)" }}>▲ {error}</p>
-
-  const respondidas = Object.values(respuestas).filter((r) => r.trim()).length
-  const total = preguntas?.length ?? 0
-
-  if (resultado) {
-    const aprobado = resultado.puntaje >= 60
-    return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="chamfer flex flex-col items-center gap-4 p-6 sm:p-10 text-center max-w-[78ch]" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}>
-        <StatusDot variant={aprobado ? "online" : "danger"} label={aprobado ? "Examen aprobado" : "Examen no aprobado"} />
-        <ProgressRing percent={Math.round(resultado.puntaje)} size={140} stroke={8} color={aprobado ? "var(--signal-green)" : "var(--signal-red)"} />
-        <p className="text-sm m-0" style={{ color: "var(--text-muted)" }}>
-          {resultado.correctas} de {resultado.total} correctas{aprobado ? "" : " · necesitas 60 % para aprobar"}
-        </p>
-        <Button onClick={() => { setResultado(null); setRespuestas({}) }} disabled={vencido} className="chamfer-sm font-mono text-xs uppercase tracking-wide">
-          Reintentar examen
-        </Button>
-      </motion.div>
-    )
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-w-[78ch]">
-      <header className="flex flex-col gap-2 pb-4" style={{ borderBottom: "1px solid var(--border-default)" }}>
-        <h2 className="text-xl sm:text-2xl font-bold m-0" style={{ color: "var(--text-heading)" }}>Examen final</h2>
-        <p className="text-sm m-0" style={{ color: "var(--text-muted)" }}>
-          {total} preguntas · apruebas con 60 % · puedes reintentarlo. Llevas {respondidas} de {total} respondidas.
-        </p>
-      </header>
-      {(preguntas || []).map((p, i) => (
-        <fieldset key={p.id} className="flex flex-col gap-2 border-none p-0 m-0">
-          <legend className="text-sm font-semibold mb-2" style={{ color: "var(--text-heading)" }}>
-            <span style={{ color: "var(--signal-amber)", fontFamily: "var(--font-mono)" }}>{i + 1}.</span> {p.enunciado}
-          </legend>
-          {p.tipo === "opcion_multiple" && p.opciones ? (
-            <div className="flex flex-col gap-1.5">
-              {p.opciones.map((op) => {
-                const checked = respuestas[p.id] === op
-                return (
-                  <label
-                    key={op}
-                    className="chamfer-sm flex items-center gap-2.5 text-sm cursor-pointer px-3 py-2 transition-colors"
-                    style={{ backgroundColor: checked ? "color-mix(in srgb, var(--signal-amber) 8%, transparent)" : "var(--surface)", border: `1px solid ${checked ? "var(--signal-amber)" : "var(--border-default)"}`, color: "var(--text-base)" }}
-                  >
-                    <input
-                      type="radio"
-                      name={p.id}
-                      value={op}
-                      checked={checked}
-                      disabled={vencido}
-                      onChange={(e) => setRespuestas((r) => ({ ...r, [p.id]: e.target.value }))}
-                      style={{ accentColor: "var(--signal-amber)" }}
-                    />
-                    {op}
-                  </label>
-                )
-              })}
-            </div>
-          ) : (
-            <input
-              value={respuestas[p.id] || ""}
-              onChange={(e) => setRespuestas((r) => ({ ...r, [p.id]: e.target.value }))}
-              disabled={vencido}
-              aria-label={`Respuesta a la pregunta ${i + 1}`}
-              className="chamfer-sm w-full px-3 py-2.5 text-sm outline-none disabled:opacity-50 focus-visible:ring-2"
-              style={{ color: "var(--text-heading)", backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}
-            />
-          )}
-        </fieldset>
-      ))}
-      <Button type="submit" disabled={busy || vencido || respondidas === 0} className="self-start chamfer-sm font-mono text-xs uppercase tracking-wide">
-        {busy ? "Calificando…" : "Enviar examen"}
-      </Button>
-    </form>
   )
 }

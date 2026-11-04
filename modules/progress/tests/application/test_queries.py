@@ -366,7 +366,7 @@ def test_obtener_examen_con_secciones_incompletas_lanza_business_rule():
 
 
 @pytest.mark.django_db
-def test_obtener_examen_devuelve_preguntas_sin_respuesta():
+def test_obtener_examen_devuelve_estado_de_intentos_sin_preguntas():
     lab, s1, s2 = _crear_lab_con_dos_secciones()
     lab_repo = LaboratorioRepository()
     examen = lab_repo.add_examen(Examen(laboratorio_id=lab.id))
@@ -403,9 +403,12 @@ def test_obtener_examen_devuelve_preguntas_sin_respuesta():
         ObtenerExamenDTO(asignacion_id=progreso.asignacion_id, estudiante_id=estudiante_id)
     )
 
+    # Las preguntas salen solo al iniciar un intento (mirarlas ya cuenta como presentar).
     assert resultado.examen_id == examen.id
-    assert len(resultado.preguntas) == 1
-    assert resultado.preguntas[0].id == pregunta.id
-    assert resultado.preguntas[0].enunciado == "¿2+2?"
-    assert resultado.preguntas[0].opciones == ["3", "4", "5"]
-    assert not hasattr(resultado.preguntas[0], "respuesta_hash")
+    assert resultado.total_preguntas == 1
+    assert not hasattr(resultado, "preguntas")
+    assert resultado.max_intentos == 3
+    assert resultado.intentos_restantes == 3
+    assert resultado.bloqueado_hasta is None
+    assert resultado.intento_abierto is False
+    assert pregunta.id  # creada para que el examen tenga contenido

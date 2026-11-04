@@ -27,6 +27,10 @@ class Progreso(BaseEntity):
     estudiante_id: uuid.UUID
     fecha_inicio: datetime = field(default_factory=ahora_utc)
     ultima_actividad: datetime = field(default_factory=ahora_utc)
+    # Intento de examen abierto: se fija al iniciarlo y se limpia al
+    # entregarlo. Si sigue puesto al volver, el estudiante salió del
+    # examen sin entregar y ese intento cuenta como reprobado (0).
+    examen_iniciado_en: datetime | None = None
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     def __post_init__(self):
@@ -34,6 +38,10 @@ class Progreso(BaseEntity):
 
     def es_propio_de(self, estudiante_id: uuid.UUID) -> bool:
         return self.estudiante_id == estudiante_id
+
+    @property
+    def tiene_examen_abierto(self) -> bool:
+        return self.examen_iniciado_en is not None
 
 
 @dataclass(eq=False)

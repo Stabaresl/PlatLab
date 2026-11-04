@@ -2,6 +2,7 @@ from django.urls import path
 
 from modules.progress.presentation.views import (
     ContenidoSeccionView,
+    ExamStartView,
     ExamSubmissionView,
     FlagValidationView,
     HintView,
@@ -31,6 +32,7 @@ urlpatterns = [
         ContenidoSeccionView.as_view(),
         name="progress-section-content",
     ),
+    path("<str:assignment_id>/exam/iniciar/", ExamStartView.as_view(), name="progress-exam-start"),
     path("<str:assignment_id>/exam/", ExamSubmissionView.as_view(), name="progress-exam"),
     path("<str:assignment_id>/history/", HistoryView.as_view(), name="progress-history"),
     path("<str:assignment_id>/", ProgresoOverviewView.as_view(), name="progress-overview"),

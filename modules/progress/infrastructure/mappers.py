@@ -22,6 +22,7 @@ def progreso_to_entity(model: ProgresoModel) -> Progreso:
         estudiante_id=model.estudiante_id,
         fecha_inicio=model.fecha_inicio,
         ultima_actividad=model.ultima_actividad,
+        examen_iniciado_en=model.examen_iniciado_en,
     )
 
 

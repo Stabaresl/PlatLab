@@ -147,7 +147,10 @@ export default function StudentDashboard() {
                   a.estado === "vencida" ? Promise.resolve([]) : getHistory(a.id).catch(() => []),
                   getProgresoOverview(a.id).catch(() => null),
                 ])
-                status = a.estado === "vencida" ? "vencida" : historial.length > 0 ? "completado" : "en_progreso"
+                // Terminado = aprobó el examen (≥60) o el laboratorio no tiene examen (puntaje null).
+                // Presentarlo y reprobar deja historial, pero el laboratorio sigue en curso.
+                const aprobado = historial.some((h) => h.puntaje == null || h.puntaje >= 60)
+                status = a.estado === "vencida" ? "vencida" : aprobado ? "completado" : "en_progreso"
                 const puntajes = historial.map((h) => h.puntaje).filter((p): p is number => p != null)
                 puntaje = puntajes.length > 0 ? Math.max(...puntajes) : null
                 if (progreso) {
@@ -243,7 +246,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--canvas)", color: "var(--text-base)" }}>
-      <HeroBackground image="grim" imageOpacity={0.06} overlayOpacity={0.9} texture="grid" textureOpacity={0.03} />
+      <HeroBackground image="grim" imageOpacity={0.06} overlayOpacity={0.9} texture="ascii" />
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-1">

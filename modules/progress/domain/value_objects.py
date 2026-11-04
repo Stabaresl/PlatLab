@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import ClassVar
 
@@ -6,6 +7,28 @@ from modules.shared.domain.exceptions import ValidationError
 
 _ESCALA_INVALIDA_MSG = "La escala máxima de un puntaje debe ser mayor a cero."
 _VALOR_FUERA_DE_RANGO_MSG = "El valor obtenido no puede ser negativo ni superar la escala máxima."
+
+# Examen final: se aprueba con 60 %. Hay 3 intentos; si los 3 salen
+# reprobados, el examen se bloquea 24 h contadas desde el tercero y luego
+# vuelve a haber 3. Aprobar también reinicia la cuenta.
+PUNTAJE_APROBACION = 60
+MAX_INTENTOS_EXAMEN = 3
+ESPERA_TRAS_INTENTOS = timedelta(hours=24)
+
+
+@dataclass(frozen=True)
+class EstadoIntentosExamen:
+    """Cómo queda el examen para un estudiante según sus intentos ya calificados."""
+
+    intentos_restantes: int
+    bloqueado_hasta: datetime | None
+    aprobado: bool
+    intentos_realizados: int
+    mejor_puntaje: float | None
+
+    @property
+    def bloqueado(self) -> bool:
+        return self.bloqueado_hasta is not None
 
 
 class EstadoProgresoSeccion(str, Enum):

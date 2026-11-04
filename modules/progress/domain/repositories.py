@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Protocol
 
 from modules.progress.domain.entities import (
@@ -90,3 +91,15 @@ class IProgresoRepository(Protocol):
         ...
 
     def get_resultados_examen(self, progreso_id: uuid.UUID) -> list[ResultadoExamen]: ...
+
+    def bloquear(self, progreso_id: uuid.UUID) -> Progreso:
+        """
+        Relee el Progreso con bloqueo de fila (dentro de la transacción del
+        caso de uso): iniciar y entregar el examen no pueden pisarse si llegan
+        dos peticiones a la vez.
+        """
+        ...
+
+    def fijar_examen_iniciado(self, progreso_id: uuid.UUID, cuando: datetime | None) -> None:
+        """Abre (`cuando`) o cierra (`None`) el intento de examen en curso."""
+        ...

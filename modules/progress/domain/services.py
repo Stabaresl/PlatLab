@@ -1,9 +1,18 @@
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 
 from modules.progress.domain.entities import ProgresoSeccion
 from modules.progress.domain.exceptions import SeccionNoPerteneceAProgresoError
-from modules.progress.domain.value_objects import ContadorFallos, EstadoProgresoSeccion, Puntaje
+from modules.progress.domain.value_objects import (
+    ESPERA_TRAS_INTENTOS,
+    MAX_INTENTOS_EXAMEN,
+    PUNTAJE_APROBACION,
+    ContadorFallos,
+    EstadoIntentosExamen,
+    EstadoProgresoSeccion,
+    Puntaje,
+)
 
 
 class GestorDeSecuencia:
@@ -96,3 +105,49 @@ class CalificadorDeExamen:
     def calificar(self, resultados: list[bool]) -> Puntaje:
         correctas = sum(1 for r in resultados if r)
         return Puntaje(correctas=correctas, total=len(resultados))
+
+
+class PoliticaDeIntentosExamen:
+    """
+    Regla del examen final: 3 intentos; si los 3 se reprueban seguidos, el
+    examen queda bloqueado 24 h desde el último y después se abre un ciclo
+    nuevo de 3. Aprobar reinicia la cuenta (se puede volver a presentar
+    para mejorar la nota, con la misma regla).
+
+    Recibe `(fecha, puntaje)` de cada intento ya calificado —incluidos los
+    abandonados, que valen 0— y no depende de Django.
+    """
+
+    def evaluar(self, intentos: list[tuple[datetime, float]], ahora: datetime) -> EstadoIntentosExamen:
+        fallos_seguidos = 0
+        ultimo_fallo: datetime | None = None
+        aprobado = False
+        mejor: float | None = None
+
+        for fecha, puntaje in sorted(intentos, key=lambda i: i[0]):
+            # Un ciclo bloqueado que ya cumplió la espera no cuenta para el siguiente.
+            if fallos_seguidos >= MAX_INTENTOS_EXAMEN and ultimo_fallo and fecha >= ultimo_fallo + ESPERA_TRAS_INTENTOS:
+                fallos_seguidos = 0
+            mejor = puntaje if mejor is None else max(mejor, puntaje)
+            if puntaje >= PUNTAJE_APROBACION:
+                aprobado = True
+                fallos_seguidos = 0
+            else:
+                fallos_seguidos += 1
+                ultimo_fallo = fecha
+
+        bloqueado_hasta = None
+        if fallos_seguidos >= MAX_INTENTOS_EXAMEN and ultimo_fallo is not None:
+            fin_espera = ultimo_fallo + ESPERA_TRAS_INTENTOS
+            if ahora < fin_espera:
+                bloqueado_hasta = fin_espera
+            else:
+                fallos_seguidos = 0
+
+        return EstadoIntentosExamen(
+            intentos_restantes=0 if bloqueado_hasta else MAX_INTENTOS_EXAMEN - fallos_seguidos,
+            bloqueado_hasta=bloqueado_hasta,
+            aprobado=aprobado,
+            intentos_realizados=len(intentos),
+            mejor_puntaje=mejor,
+        )

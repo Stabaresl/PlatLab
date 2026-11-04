@@ -1,5 +1,6 @@
 import uuid
 
+from django.db.models import Q
 from django.utils import timezone
 
 from modules.progress.domain.entities import (
@@ -9,7 +10,7 @@ from modules.progress.domain.entities import (
     ProgresoSeccion,
     ResultadoExamen,
 )
-from modules.progress.domain.value_objects import EstadoProgresoSeccion
+from modules.progress.domain.value_objects import PUNTAJE_APROBACION, EstadoProgresoSeccion
 from modules.progress.infrastructure.mappers import (
     historial_to_entity,
     intento_flag_to_entity,
@@ -24,6 +25,10 @@ from modules.progress.infrastructure.models import (
     ProgresoSeccionModel,
     ResultadoExamenModel,
 )
+
+# "Terminado" = laboratorio sin examen (historial sin puntaje) o examen aprobado.
+# Presentar el examen y reprobarlo deja historial, pero no termina el laboratorio.
+_HISTORIAL_APROBADO = Q(puntaje__isnull=True) | Q(puntaje__gte=PUNTAJE_APROBACION)
 
 
 class ProgresoRepository:
@@ -136,7 +141,7 @@ class ProgresoRepository:
                 fila["mejor_puntaje"] = valor
 
         for progreso_id, fecha in HistorialCompletitudModel.objects.filter(
-            progreso_id__in=progresos.keys()
+            _HISTORIAL_APROBADO, progreso_id__in=progresos.keys()
         ).values_list("progreso_id", "fecha_completado"):
             fila = _de(progreso_id)
             fila["completado"] = True
@@ -149,11 +154,10 @@ class ProgresoRepository:
         """Batch: de estas asignaciones, cuáles tienen ≥1 `HistorialCompletitud` (laboratorio terminado)."""
         if not asignacion_ids:
             return set()
-        return set(
-            ProgresoModel.objects.filter(
-                asignacion_id__in=asignacion_ids, historial__isnull=False
-            ).values_list("asignacion_id", flat=True)
-        )
+        aprobadas = HistorialCompletitudModel.objects.filter(
+            _HISTORIAL_APROBADO, progreso__asignacion_id__in=asignacion_ids
+        ).values_list("progreso__asignacion_id", flat=True)
+        return set(aprobadas)
 
     def get_seccion(
         self, progreso_id: uuid.UUID, seccion_id: uuid.UUID
@@ -227,3 +231,9 @@ class ProgresoRepository:
     def get_resultados_examen(self, progreso_id: uuid.UUID) -> list[ResultadoExamen]:
         modelos = ResultadoExamenModel.objects.filter(progreso_id=progreso_id).order_by("fecha")
         return [resultado_examen_to_entity(m) for m in modelos]
+
+    def bloquear(self, progreso_id: uuid.UUID) -> Progreso:
+        return progreso_to_entity(ProgresoModel.objects.select_for_update().get(id=progreso_id))
+
+    def fijar_examen_iniciado(self, progreso_id: uuid.UUID, cuando) -> None:
+        ProgresoModel.objects.filter(id=progreso_id).update(examen_iniciado_en=cuando)

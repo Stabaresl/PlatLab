@@ -9,6 +9,7 @@ from modules.laboratories.infrastructure.repositories import LaboratorioReposito
 from modules.progress.application.dtos import (
     CompletarSeccionTeoricaDTO,
     EnviarExamenDTO,
+    IniciarExamenDTO,
     ObtenerContenidoSeccionDTO,
     ObtenerExamenDTO,
     ObtenerHistorialDTO,
@@ -27,6 +28,7 @@ from modules.progress.application.use_cases.completar_seccion_teorica import (
     CompletarSeccionTeoricaUseCase,
 )
 from modules.progress.application.use_cases.enviar_examen import EnviarExamenUseCase
+from modules.progress.application.use_cases.iniciar_examen import IniciarExamenUseCase
 from modules.progress.application.use_cases.validar_flag import ValidarFlagUseCase
 from modules.progress.infrastructure.asignacion_estado_provider import AsignacionEstadoProvider
 from modules.progress.infrastructure.rate_limiter import ExamenRateLimiter, FlagRateLimiter
@@ -256,17 +258,32 @@ class HintView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
+def _serializar_estado_examen(estado) -> dict:
+    return {
+        "examen_id": str(estado.examen_id),
+        "total_preguntas": estado.total_preguntas,
+        "max_intentos": estado.max_intentos,
+        "puntaje_aprobacion": estado.puntaje_aprobacion,
+        "intentos_restantes": estado.intentos_restantes,
+        "bloqueado_hasta": estado.bloqueado_hasta.isoformat() if estado.bloqueado_hasta else None,
+        "aprobado": estado.aprobado,
+        "intentos_realizados": estado.intentos_realizados,
+        "mejor_puntaje": estado.mejor_puntaje,
+        "intento_abierto": estado.intento_abierto,
+    }
+
+
 class ExamSubmissionView(APIView):
     """
-    `/progress/{assignment_id}/exam/` — HE-09/HI-08, UC-03. `GET` expone
-    las preguntas para responder (nunca la respuesta correcta); `POST`
-    califica el envío.
+    `/progress/{assignment_id}/exam/` — HE-09/HI-08, UC-03. `GET` devuelve
+    el estado de intentos (3 por ciclo, 24 h de espera tras reprobarlos);
+    `POST` califica la entrega del intento abierto.
     """
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request, assignment_id):
-        resultado = ObtenerExamenQuery(
+        estado = ObtenerExamenQuery(
             progreso_repository=ProgresoRepository(),
             laboratorio_repository=LaboratorioRepository(),
         ).execute(
@@ -274,22 +291,7 @@ class ExamSubmissionView(APIView):
                 asignacion_id=_parsear_uuid(assignment_id), estudiante_id=request.user.id
             )
         )
-
-        return Response(
-            {
-                "examen_id": str(resultado.examen_id),
-                "preguntas": [
-                    {
-                        "id": str(p.id),
-                        "enunciado": p.enunciado,
-                        "tipo": p.tipo,
-                        "opciones": p.opciones,
-                    }
-                    for p in resultado.preguntas
-                ],
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response(_serializar_estado_examen(estado), status=status.HTTP_200_OK)
 
     def post(self, request, assignment_id):
         serializer = EnviarExamenRequestSerializer(data=request.data)
@@ -318,6 +320,43 @@ class ExamSubmissionView(APIView):
                 "correctas": resultado.correctas,
                 "total": resultado.total,
                 "numero_intento": resultado.numero_intento,
+                "aprobado": resultado.aprobado,
+                "estado": _serializar_estado_examen(resultado.estado) if resultado.estado else None,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ExamStartView(APIView):
+    """
+    `POST /progress/{assignment_id}/exam/iniciar/` — abre un intento y entrega
+    las preguntas (nunca la respuesta correcta). Si había un intento abierto
+    porque el estudiante salió sin entregar, ese cuenta como reprobado.
+    Con el ciclo de 3 reprobado, responde `iniciado: false` y `bloqueado_hasta`.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, assignment_id):
+        resultado = IniciarExamenUseCase(
+            unit_of_work=BaseUnitOfWork(),
+            event_dispatcher=EventDispatcher(),
+            progreso_repository=ProgresoRepository(),
+            laboratorio_repository=LaboratorioRepository(),
+            estado_asignacion_provider=AsignacionEstadoProvider(),
+        ).execute(
+            IniciarExamenDTO(asignacion_id=_parsear_uuid(assignment_id), estudiante_id=request.user.id)
+        )
+        return Response(
+            {
+                "iniciado": resultado.iniciado,
+                "iniciado_en": resultado.iniciado_en.isoformat() if resultado.iniciado_en else None,
+                "abandono_cerrado": resultado.abandono_cerrado,
+                "estado": _serializar_estado_examen(resultado.estado),
+                "preguntas": [
+                    {"id": str(p.id), "enunciado": p.enunciado, "tipo": p.tipo, "opciones": p.opciones}
+                    for p in resultado.preguntas
+                ],
             },
             status=status.HTTP_200_OK,
         )

@@ -21,6 +21,14 @@ class SeccionRequierePracticaError(BusinessRuleViolationError):
     """
 
 
+class ExamenBloqueadoError(BusinessRuleViolationError):
+    """Se reprobaron los 3 intentos del ciclo: hay que esperar 24 h para volver a presentar."""
+
+
+class ExamenNoIniciadoError(BusinessRuleViolationError):
+    """Se envió el examen sin haberlo iniciado (POST .../exam/iniciar/), o el intento ya se cerró."""
+
+
 class AsignacionVencidaError(ForbiddenError):
     """
     RF-32/HI-07: la `Asignación` de este `Progreso` ya venció — no se

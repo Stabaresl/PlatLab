@@ -1,15 +1,16 @@
 import secrets
 from enum import Enum
 
+from modules.progress.domain.value_objects import PUNTAJE_APROBACION  # noqa: F401 (re-export)
+
 CAPACIDAD_MAXIMA = 100
 CAPACIDAD_POR_DEFECTO = 30
 LONGITUD_CODIGO = 6
 # Sin 0/O ni 1/I/L: el código se dicta en voz alta en el aula o se copia del
 # tablero, y esos caracteres se confunden.
 _ALFABETO_CODIGO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
-# Puntaje mínimo del examen para que la sala cuente el laboratorio como
-# terminado (mismo umbral de aprobación que muestra el frontend).
-PUNTAJE_APROBACION = 60
+# PUNTAJE_APROBACION (importado arriba): una sola fuente para el umbral con
+# el que la sala, la gamificación y el examen cuentan un laboratorio terminado.
 
 
 class EstadoSala(str, Enum):

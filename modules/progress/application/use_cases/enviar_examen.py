@@ -1,43 +1,45 @@
+from dataclasses import replace
+
 from modules.laboratories.domain.entities import Pregunta
 from modules.laboratories.domain.repositories import ILaboratorioRepository
 from modules.laboratories.domain.value_objects import TipoPregunta
 from modules.progress.application.dtos import EnviarExamenDTO, EnviarExamenResultDTO
-from modules.progress.domain.entities import HistorialCompletitud, ResultadoExamen
-from modules.progress.domain.events import ExamGraded
-from modules.progress.domain.exceptions import AsignacionVencidaError
+from modules.progress.application.examen_intentos import estado_examen, registrar_intento, resolver_examen
+from modules.progress.domain.exceptions import (
+    AsignacionVencidaError,
+    ExamenBloqueadoError,
+    ExamenNoIniciadoError,
+)
 from modules.progress.domain.ports import IEstadoAsignacionProvider
 from modules.progress.domain.repositories import IProgresoRepository
 from modules.progress.domain.services import CalificadorDeExamen
-from modules.progress.domain.value_objects import EstadoProgresoSeccion
+from modules.progress.domain.value_objects import PUNTAJE_APROBACION
 from modules.shared.application.base_use_case import BaseUseCase
 from modules.shared.domain.domain_event import DomainEvent
-from modules.shared.domain.exceptions import (
-    BusinessRuleViolationError,
-    NotFoundError,
-    ValidationError,
-)
+from modules.shared.domain.exceptions import ValidationError
+from modules.shared.domain.tiempo import ahora_utc
 from modules.shared.infrastructure.secret_hasher import verificar_secreto
 
-_PROGRESO_NO_ENCONTRADO_MSG = "Progreso no encontrado."
-_SECCIONES_INCOMPLETAS_MSG = "Debes completar todas las secciones antes de enviar el examen."
-_EXAMEN_NO_CONFIGURADO_MSG = "Este laboratorio no tiene examen configurado."
 _PREGUNTA_DESCONOCIDA_MSG = "Las respuestas incluyen una pregunta que no pertenece a este examen."
 _VENCIDA_MSG = "Este laboratorio venció. Ya no se puede continuar."
+_NO_INICIADO_MSG = "Inicia el examen antes de entregarlo (o ese intento ya se cerró)."
+_BLOQUEADO_MSG = "Reprobaste los 3 intentos. Podrás volver a presentar el examen 24 horas después del último."
 
 
 class EnviarExamenUseCase(BaseUseCase[EnviarExamenDTO, EnviarExamenResultDTO]):
     """
     HE-09/HI-08, UC-03, api.md §7 `POST /progress/{assignment_id}/exam/`:
-    califica el envío del examen final. Solo se habilita cuando todas
-    las `ProgresoSeccion` están `completada` (UC-03 E1). Reintentable
-    (decisión de producto confirmada): cada envío crea un
-    `ResultadoExamen` y una fila `HistorialCompletitud` nuevos, con
-    `numero_intento` incremental — nunca sobrescribe un intento
-    anterior. La comparación por tipo de pregunta (Strategy) vive aquí
-    -`_es_correcta`- porque necesita `verificar_secreto` (Infrastructure); el
-    `CalificadorDeExamen` de Domain solo agrega los booleanos ya
-    evaluados en un `Puntaje` (mismo límite de capas que
-    `ValidarFlagUseCase`/`ValidadorDeFlag`).
+    califica la entrega del intento abierto con `IniciarExamenUseCase`. Solo
+    se habilita cuando todas las `ProgresoSeccion` están `completada` (UC-03
+    E1). Cada entrega crea un `ResultadoExamen` y una fila
+    `HistorialCompletitud` nuevos (`numero_intento` incremental, nunca
+    sobrescribe) y cierra el intento. Rige `PoliticaDeIntentosExamen`: 3
+    intentos; tras 3 reprobados, 24 h de espera.
+
+    La comparación por tipo de pregunta (Strategy) vive aquí -`_es_correcta`-
+    porque necesita `verificar_secreto` (Infrastructure); el
+    `CalificadorDeExamen` de Domain solo agrega los booleanos ya evaluados en
+    un `Puntaje` (mismo límite de capas que `ValidarFlagUseCase`).
     """
 
     def __init__(
@@ -56,82 +58,68 @@ class EnviarExamenUseCase(BaseUseCase[EnviarExamenDTO, EnviarExamenResultDTO]):
         self._estado_asignacion_provider = estado_asignacion_provider
 
     def _validate(self, input_dto: EnviarExamenDTO) -> None:
-        progreso = self._progreso_repository.get_by_asignacion(input_dto.asignacion_id)
-        if progreso is None or not progreso.es_propio_de(input_dto.estudiante_id):
-            raise NotFoundError(_PROGRESO_NO_ENCONTRADO_MSG)
+        def _vigente():
+            if self._estado_asignacion_provider is not None:
+                estado = self._estado_asignacion_provider.obtener_estado(input_dto.asignacion_id)
+                if estado is not None and estado.vencida:
+                    raise AsignacionVencidaError(_VENCIDA_MSG)
 
-        if self._estado_asignacion_provider is not None:
-            estado = self._estado_asignacion_provider.obtener_estado(input_dto.asignacion_id)
-            if estado is not None and estado.vencida:
-                raise AsignacionVencidaError(_VENCIDA_MSG)
-
-        secciones = self._progreso_repository.get_secciones(progreso.id)
-        if not secciones or any(s.estado != EstadoProgresoSeccion.COMPLETADA for s in secciones):
-            raise BusinessRuleViolationError(_SECCIONES_INCOMPLETAS_MSG)
-
-        primera_seccion = self._laboratorio_repository.get_seccion_by_id(
-            secciones[0].seccion_id
+        self._progreso, self._examen, self._preguntas = resolver_examen(
+            self._progreso_repository,
+            self._laboratorio_repository,
+            input_dto.asignacion_id,
+            input_dto.estudiante_id,
+            verificar_vigencia=_vigente,
         )
-        examen = self._laboratorio_repository.get_examen_by_laboratorio(
-            primera_seccion.laboratorio_id
-        )
-        if examen is None:
-            raise BusinessRuleViolationError(_EXAMEN_NO_CONFIGURADO_MSG)
 
-        preguntas = self._laboratorio_repository.get_preguntas(examen.id)
-        if not preguntas:
-            raise BusinessRuleViolationError(_EXAMEN_NO_CONFIGURADO_MSG)
-
-        ids_preguntas = {str(p.id) for p in preguntas}
+        ids_preguntas = {str(p.id) for p in self._preguntas}
         if not set(input_dto.respuestas.keys()) <= ids_preguntas:
             raise ValidationError(_PREGUNTA_DESCONOCIDA_MSG)
-
-        self._progreso = progreso
-        self._examen = examen
-        self._preguntas = preguntas
 
     def _execute_domain_logic(
         self, input_dto: EnviarExamenDTO
     ) -> tuple[EnviarExamenResultDTO, list[DomainEvent]]:
+        repo = self._progreso_repository
+        # Bloqueo de fila: dos entregas simultáneas del mismo intento no cuentan doble.
+        progreso = repo.bloquear(self._progreso.id)
+        if not progreso.tiene_examen_abierto:
+            raise ExamenNoIniciadoError(_NO_INICIADO_MSG)
+
+        # El intento abierto todavía no está calificado: el estado previo se mira sin él.
+        previo = estado_examen(
+            repo, _sin_intento_abierto(progreso), self._examen.id, len(self._preguntas), ahora_utc()
+        )
+        if previo.bloqueado_hasta is not None:
+            raise ExamenBloqueadoError(_BLOQUEADO_MSG)
+
         resultados = [
             self._es_correcta(pregunta, input_dto.respuestas.get(str(pregunta.id)))
             for pregunta in self._preguntas
         ]
         puntaje = self._calificador.calificar(resultados)
-
-        self._progreso_repository.registrar_resultado_examen(
-            ResultadoExamen(
-                progreso_id=self._progreso.id,
-                examen_id=self._examen.id,
-                respuestas=input_dto.respuestas,
-                puntaje=puntaje.porcentaje,
-            )
+        numero_intento, evento = registrar_intento(
+            repo, progreso.id, self._examen.id, input_dto.respuestas, puntaje.porcentaje
         )
 
-        numero_intento = len(self._progreso_repository.get_historial(self._progreso.id)) + 1
-        self._progreso_repository.registrar_historial(
-            HistorialCompletitud(
-                progreso_id=self._progreso.id,
-                numero_intento=numero_intento,
-                puntaje=puntaje.porcentaje,
-            )
+        despues = estado_examen(
+            repo, repo.bloquear(progreso.id), self._examen.id, len(self._preguntas), ahora_utc()
         )
-
         result = EnviarExamenResultDTO(
             puntaje=puntaje.porcentaje,
             correctas=puntaje.correctas,
             total=puntaje.total,
             numero_intento=numero_intento,
+            aprobado=puntaje.porcentaje >= PUNTAJE_APROBACION,
+            estado=despues,
         )
-        event = ExamGraded(
-            progreso_id=self._progreso.id,
-            examen_id=self._examen.id,
-            puntaje=puntaje.porcentaje,
-        )
-        return result, [event]
+        return result, [evento]
 
     def _es_correcta(self, pregunta: Pregunta, respuesta: str | None) -> bool:
         if respuesta is None:
             return False
         valor = respuesta.strip().lower() if pregunta.tipo == TipoPregunta.ABIERTA else respuesta
         return verificar_secreto(valor, pregunta.respuesta_hash)
+
+
+def _sin_intento_abierto(progreso):
+    return replace(progreso, examen_iniciado_en=None)
