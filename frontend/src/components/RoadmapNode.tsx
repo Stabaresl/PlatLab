@@ -42,12 +42,15 @@ function RoadmapNode({
   authed,
   isEstudiante,
   busy,
+  destacado = false,
   onEnroll,
 }: {
   nodo: RoadmapNodo
   authed: boolean
   isEstudiante: boolean
   busy: boolean
+  // El primer laboratorio disponible de la pista: lleva radar y etiqueta "Siguiente".
+  destacado?: boolean
   onEnroll: (nodoId: string) => void
 }) {
   const navigate = useNavigate()
@@ -103,33 +106,81 @@ function RoadmapNode({
       tabIndex={!bloqueado ? 0 : undefined}
       onKeyDown={(e) => { if (!bloqueado && (e.key === "Enter" || e.key === " ")) handleActivate() }}
     >
-      <TiltCard
-        glowColor={glow}
-        intensity={bloqueado ? 0 : 6}
-        className="chamfer flex flex-col items-center justify-center shrink-0"
-        style={{
-          width: 96,
-          height: 96,
-          backgroundColor: "var(--surface)",
-          border: `2px solid ${color}`,
-          opacity: bloqueado ? 0.55 : 1,
-          cursor: bloqueado ? "not-allowed" : "pointer",
-        }}
-      >
-        {bloqueado ? (
-          <IconLock style={{ color }} width={22} height={22} />
-        ) : (
-          <span className="text-lg font-bold text-display" style={{ color }}>
-            {nodo.posicion + 1}
+      <div className="relative" style={{ width: 96, height: 96 }}>
+        {destacado && (
+          <>
+            <span aria-hidden="true" className="radar-ping chamfer" />
+            <span aria-hidden="true" className="radar-ping retardo chamfer" />
+          </>
+        )}
+        <TiltCard
+          glowColor={glow}
+          intensity={bloqueado ? 0 : 6}
+          className="chamfer flex flex-col items-center justify-center shrink-0"
+          style={{
+            width: 96,
+            height: 96,
+            backgroundColor: destacado ? "color-mix(in srgb, var(--signal-cyan) 8%, var(--surface))" : "var(--surface)",
+            border: `2px solid ${color}`,
+            opacity: bloqueado ? 0.55 : 1,
+            cursor: bloqueado ? "not-allowed" : "pointer",
+          }}
+        >
+          {bloqueado ? (
+            <IconLock style={{ color }} width={22} height={22} />
+          ) : (
+            <span className="text-lg font-bold text-display" style={{ color }}>
+              {nodo.posicion + 1}
+            </span>
+          )}
+          <span
+            className="mt-1 text-[9px] uppercase tracking-widest text-center px-1 leading-tight"
+            style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
+          >
+            {DIFICULTAD_LABEL[nodo.nivel_dificultad]}
+          </span>
+        </TiltCard>
+
+        {estado === "completado" && (
+          <motion.span
+            aria-hidden="true"
+            className="absolute chamfer-sm flex items-center justify-center"
+            style={{ top: -7, right: -7, width: 22, height: 22, backgroundColor: "var(--signal-green)" }}
+            initial={{ opacity: 0, scale: 0.4 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.35, delay: 0.35, ease: [0.19, 1, 0.22, 1] }}
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <motion.path
+                d="M2.5 7.5 L5.8 10.5 L11.5 3.8"
+                stroke="var(--canvas)"
+                strokeWidth="2.4"
+                strokeLinecap="square"
+                initial={{ pathLength: 0 }}
+                whileInView={{ pathLength: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: 0.6, ease: "easeOut" }}
+              />
+            </svg>
+          </motion.span>
+        )}
+
+        {destacado && (
+          <span
+            className="absolute left-1/2 chamfer-sm px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest whitespace-nowrap"
+            style={{
+              top: -10,
+              transform: "translateX(-50%)",
+              backgroundColor: "var(--signal-cyan)",
+              color: "var(--canvas)",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            Siguiente
           </span>
         )}
-        <span
-          className="mt-1 text-[9px] uppercase tracking-widest text-center px-1 leading-tight"
-          style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
-        >
-          {DIFICULTAD_LABEL[nodo.nivel_dificultad]}
-        </span>
-      </TiltCard>
+      </div>
 
       <span
         className="mt-2 text-[11px] font-semibold text-center max-w-[110px] leading-tight"

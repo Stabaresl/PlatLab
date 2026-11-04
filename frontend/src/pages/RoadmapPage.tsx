@@ -7,6 +7,8 @@ import Footer from "../components/Footer"
 import HeroBackground from "../components/HeroBackground"
 import TerminalHeader from "../components/TerminalHeader"
 import RoadmapLane from "../components/RoadmapLane"
+import BarraLlenado from "../components/movimiento/BarraLlenado"
+import NumeroAnimado from "../components/movimiento/NumeroAnimado"
 import { Button } from "../components/ui/button"
 import { Skeleton } from "../components/ui/skeleton"
 
@@ -23,15 +25,16 @@ export default function RoadmapPage() {
   const authed = !!localStorage.getItem("token")
   const role = localStorage.getItem("role")
 
-  const load = () => {
-    setLoading(true)
+  // `loading` arranca en true: la única carga es la inicial.
+  useEffect(() => {
     getRoadmap()
       .then(setCategorias)
       .catch((err) => setError(err instanceof ApiError ? err.message : "No se pudo cargar el roadmap."))
       .finally(() => setLoading(false))
-  }
+  }, [])
 
-  useEffect(() => { load() }, [])
+  const totalNodos = categorias.reduce((n, c) => n + c.nodos.length, 0)
+  const totalCompletados = categorias.reduce((n, c) => n + c.nodos.filter((x) => x.estado === "completado").length, 0)
 
   const handleEnroll = useCallback(async (nodoId: string) => {
     setBusyNodoId(nodoId)
@@ -43,7 +46,7 @@ export default function RoadmapPage() {
       if (err instanceof ApiError && err.status === 422) {
         setError("Todavía no completaste los laboratorios anteriores de esta pista.")
       } else if (err instanceof ApiError && err.status === 409) {
-        setError("Ya tenés una inscripción vigente en ese laboratorio.")
+        setError("Ya tienes una inscripción vigente en ese laboratorio.")
       } else {
         setError(err instanceof ApiError ? err.message : "No se pudo completar la inscripción.")
       }
@@ -60,7 +63,7 @@ export default function RoadmapPage() {
           <div className="mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12" style={{ maxWidth: "1200px" }}>
             <TerminalHeader
               title="Roadmap"
-              subtitle="Camino curado por el equipo de PlatLAB — completá cada laboratorio para desbloquear el siguiente de su pista."
+              subtitle="Camino curado por el equipo de PlatLAB — completa cada laboratorio para desbloquear el siguiente de su pista."
               prompt="cat /roadmap --tree"
               right={
                 role === "administrador" ? (
@@ -78,6 +81,30 @@ export default function RoadmapPage() {
                 </motion.p>
               )}
             </AnimatePresence>
+
+            {!loading && role === "estudiante" && totalNodos > 0 && (
+              <div
+                className="chamfer flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 p-4 sm:p-5 mb-8 sm:mb-10"
+                style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-default)" }}
+              >
+                <div className="flex items-baseline gap-2 shrink-0">
+                  <NumeroAnimado valor={totalCompletados} className="text-3xl font-bold text-display leading-none" style={{ color: "var(--signal-green)" }} />
+                  <span className="text-sm font-mono" style={{ color: "var(--text-muted)" }}>/ {totalNodos}</span>
+                </div>
+                <div className="flex-1 flex flex-col gap-2 min-w-0">
+                  <span className="text-[11px] uppercase tracking-widest" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                    laboratorios del roadmap completados
+                  </span>
+                  <BarraLlenado
+                    valor={totalCompletados}
+                    max={totalNodos}
+                    color="var(--signal-green)"
+                    alto={6}
+                    etiqueta={`${totalCompletados} de ${totalNodos} laboratorios del roadmap completados`}
+                  />
+                </div>
+              </div>
+            )}
 
             {loading ? (
               <div className="flex flex-col gap-6">
