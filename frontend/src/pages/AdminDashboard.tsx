@@ -147,7 +147,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--canvas)", color: "var(--text-base)" }}>
-      <HeroBackground image="grim" imageOpacity={0.05} overlayOpacity={0.92} texture="none" />
+      <HeroBackground image="grim" imageOpacity={0.05} overlayOpacity={0.92} texture="ascii" />
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-1">

@@ -56,7 +56,7 @@ export default function RoadmapPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--canvas)", color: "var(--text-base)" }}>
-      <HeroBackground image="grim" imageOpacity={0.06} overlayOpacity={0.9} texture="matrix" textureOpacity={0.035} />
+      <HeroBackground image="grim" imageOpacity={0.06} overlayOpacity={0.9} texture="ascii" />
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-1">

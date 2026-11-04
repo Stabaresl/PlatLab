@@ -45,7 +45,7 @@ export default function CatalogPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--canvas)", color: "var(--text-base)" }}>
-      <HeroBackground image="term" imageOpacity={0.07} overlayOpacity={0.9} texture="grid" textureOpacity={0.04} />
+      <HeroBackground image="term" imageOpacity={0.07} overlayOpacity={0.9} texture="ascii" />
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-1">

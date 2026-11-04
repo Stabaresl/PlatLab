@@ -40,11 +40,9 @@ export default function TerminalHeader({
             className="relative z-10 flex items-center gap-1.5 px-4 py-2"
             style={{ borderBottom: "1px solid var(--border-default)" }}
           >
-            <span className="w-2.5 h-2.5" style={{ backgroundColor: "var(--signal-red)" }} />
-            <span className="w-2.5 h-2.5" style={{ backgroundColor: "var(--signal-amber)" }} />
-            <span className="w-2.5 h-2.5" style={{ backgroundColor: "var(--signal-green)" }} />
+            {/* Sin los tres puntos de ventana dibujados (design.md: nada de cromo falso). */}
             <span
-              className="ml-2 text-[10px] sm:text-xs truncate"
+              className="text-[10px] sm:text-xs truncate"
               style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
             >
               root@platlab:~$ {prompt}

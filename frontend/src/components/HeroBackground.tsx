@@ -2,6 +2,7 @@ import grimBg from "../assets/grim.png"
 import termBg from "../assets/term.png"
 import MatrixRain from "./MatrixRain"
 import CyberGrid from "./CyberGrid"
+import FondoAscii from "./FondoAscii"
 
 const IMAGES = { grim: grimBg, term: termBg }
 
@@ -19,7 +20,9 @@ export default function HeroBackground({
   image?: keyof typeof IMAGES
   imageOpacity?: number
   overlayOpacity?: number
-  texture?: "matrix" | "grid" | "none"
+  // "ascii": fondo de página completa (FondoAscii), el mismo aspecto que la
+  // tarjeta del encabezado. Para dashboards y listados, no para el laboratorio.
+  texture?: "matrix" | "grid" | "ascii" | "none"
   textureOpacity?: number
   blur?: number
 }) {
@@ -44,6 +47,7 @@ export default function HeroBackground({
       />
       {texture === "matrix" && <MatrixRain opacity={textureOpacity} />}
       {texture === "grid" && <CyberGrid opacity={textureOpacity} />}
+      {texture === "ascii" && <FondoAscii />}
     </div>
   )
 }

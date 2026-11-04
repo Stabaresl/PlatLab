@@ -14,6 +14,7 @@ import {
   type VistaPreviaSala,
 } from "./api"
 import Navbar from "../components/Navbar"
+import FondoAscii from "../components/FondoAscii"
 import Footer from "../components/Footer"
 import { Button } from "../components/ui/button"
 import { Skeleton } from "../components/ui/skeleton"
@@ -39,6 +40,8 @@ export default function SalasPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--canvas)", color: "var(--text-base)" }}>
+      <FondoAscii />
+      <div className="relative z-10 flex flex-col flex-1">
       <Navbar />
       <main className="flex-1">
         <div className="mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-10 flex flex-col gap-8" style={{ maxWidth: "1200px" }}>
@@ -75,6 +78,7 @@ export default function SalasPage() {
         </div>
       </main>
       <Footer />
+      </div>
     </div>
   )
 }
