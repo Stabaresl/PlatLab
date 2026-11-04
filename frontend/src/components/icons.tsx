@@ -70,3 +70,29 @@ export const IconMask = (props: SVGProps<SVGSVGElement>) => (
 export const IconBackpack = (props: SVGProps<SVGSVGElement>) => (
   <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M7 8V6a5 5 0 0110 0v2M5 10a2 2 0 012-2h10a2 2 0 012 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2v-9zM9 10v3h6v-3M9 20v-4h6v4" /></Base>
 )
+
+// ── Piezas del avatar (una por TipoCosmetico) ──
+export const IconHoodie = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M8 4l4 3 4-3 4 3v4l-3 1v8H7v-8l-3-1V7l4-3zM10 7v3a2 2 0 004 0V7" /></Base>
+)
+export const IconAura = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" /></Base>
+)
+export const IconInsignia = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3zM12 8l1.2 2.4 2.6.4-1.9 1.8.5 2.6L12 14l-2.4 1.2.5-2.6-1.9-1.8 2.6-.4L12 8z" /></Base>
+)
+export const IconGuantes = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M7 21v-5l-2.5-4.5a1.5 1.5 0 012.6-1.5L8 11.5V5a1.5 1.5 0 013 0v5M11 4a1.5 1.5 0 013 0v6M14 5a1.5 1.5 0 013 0v6M17 8a1.5 1.5 0 013 0v6c0 3-2 7-6 7H7" /></Base>
+)
+export const IconZapatos = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16v-4l3-1 3 2 4-1 3 2 5 1v3H3zM3 19h18M9 13l1-2M13 12l1-2" /></Base>
+)
+export const IconGorra = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M5 15a7 7 0 0114 0v1H5v-1zM12 8V6M19 16h3M12 8a7 7 0 00-3 .7" /></Base>
+)
+export const IconAudifonos = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M4 15v-3a8 8 0 0116 0v3M4 15a2 2 0 012-2h1v6H6a2 2 0 01-2-2v-2zM20 15a2 2 0 00-2-2h-1v6h1a2 2 0 002-2v-2z" /></Base>
+)
+export const IconMarco = (props: SVGProps<SVGSVGElement>) => (
+  <Base {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M7 3h14v14l-4 4H3V7l4-4zM8 8h8v8H8z" /></Base>
+)

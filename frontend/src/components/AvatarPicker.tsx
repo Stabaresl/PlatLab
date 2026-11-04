@@ -57,12 +57,14 @@ export default function AvatarPicker({ perfil }: { perfil: PerfilJugador }) {
         {AVATAR_PRESETS.map((p) => {
           const activo = perfil.avatar_tipo === "preset" && perfil.avatar_valor === p.clave
           return (
-            <button
+            <motion.button
               key={p.clave}
               type="button"
               role="radio"
               aria-checked={activo}
               disabled={busy}
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => handlePreset(p.clave)}
               title={p.nombre}
               className="relative chamfer-sm flex flex-col items-center gap-1 p-2 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-wait"
@@ -79,9 +81,18 @@ export default function AvatarPicker({ perfil }: { perfil: PerfilJugador }) {
                   transition={{ duration: 0.2 }}
                 />
               )}
-              <span style={{ fontSize: 26, lineHeight: 1 }}>{p.emoji}</span>
-              <span className="text-[9px] text-center leading-tight" style={{ color: "var(--text-muted)" }}>{p.nombre}</span>
-            </button>
+              <motion.span
+                key={activo ? "activo" : "inactivo"}
+                initial={activo ? { scale: 0.7, rotate: -12 } : false}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ duration: 0.35, ease: [0.19, 1, 0.22, 1] }}
+                className="relative"
+                style={{ fontSize: 26, lineHeight: 1 }}
+              >
+                {p.emoji}
+              </motion.span>
+              <span className="relative text-[9px] text-center leading-tight" style={{ color: "var(--text-muted)" }}>{p.nombre}</span>
+            </motion.button>
           )
         })}
       </div>
