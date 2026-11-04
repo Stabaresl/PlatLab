@@ -356,11 +356,20 @@ function Wait-Plataforma([int]$PuertoElegido) {
 
 function Invoke-Semillas([string]$ModoElegido) {
     Write-Titulo 'Cargando laboratorios, mapa de aprendizaje y catálogo de logros'
-    foreach ($comando in @('seed_demo_data', 'seed_roadmap_labs', 'seed_labs_expansion', 'seed_gamification_catalog')) {
+    # actualizar_contenido_labs va después de los seeds: les pone las guías paso a
+    # paso, la consola realista y el examen (también a instalaciones viejas).
+    foreach ($comando in @('seed_demo_data', 'seed_roadmap_labs', 'seed_labs_expansion', 'seed_gamification_catalog', 'actualizar_contenido_labs')) {
         Write-Info $comando
         Invoke-Compose exec -T web python manage.py $comando | Out-Null
     }
     Write-Ok 'Contenido cargado'
+
+    if ($ModoElegido -ne 'red') {
+        # Si antes se instaló en modo red/aula, las cuentas demo quedaron deshabilitadas.
+        Invoke-Compose exec -T web python manage.py seed_demo_data --activar-cuentas-demo | Out-Null
+        Invoke-Compose exec -T web python manage.py seed_sala_demo | Out-Null
+        Write-Ok 'Cuentas demo activas y sala demo lista (código PRUEBA)'
+    }
 
     if ($ModoElegido -eq 'red') {
         Invoke-Compose exec -T web python manage.py seed_demo_data --desactivar-cuentas-demo | Out-Null
@@ -429,6 +438,7 @@ function Show-Resumen([string]$ModoElegido, [int]$PuertoElegido) {
         Write-Info '  administrador  admin@platlab.demo        Admin1234'
         Write-Info '  instructor     instructor@platlab.demo   Instructor1234'
         Write-Info '  estudiante     estudiante@platlab.demo   Estudiante1234'
+        Write-Info 'Sala de prueba: entra como estudiante a Salas y usa el código PRUEBA.'
     }
     $panel = Get-EnvValor 'DJANGO_ADMIN_URL'
     if ($panel) { Write-Info "Admin de Django:      http://localhost:$PuertoElegido/$panel" }

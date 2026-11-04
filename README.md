@@ -154,10 +154,12 @@ docker compose exec web python manage.py seed_demo_data
 docker compose exec web python manage.py seed_roadmap_labs
 docker compose exec web python manage.py seed_labs_expansion
 docker compose exec web python manage.py seed_gamification_catalog
+docker compose exec web python manage.py actualizar_contenido_labs   # guías paso a paso, consola realista y examen
+docker compose exec web python manage.py seed_sala_demo              # sala de prueba con el código PRUEBA
 docker build -t platlab-target-sqli:latest docker/targets/sqli-login   # imagen del laboratorio con terminal real
 ```
 
-`seed_demo_data` crea los tres usuarios de prueba, un laboratorio plantilla publicado en el catálogo, una copia del instructor con examen y una asignación aceptada del estudiante. Los otros tres cargan el mapa de aprendizaje, los laboratorios adicionales y el catálogo de logros y títulos. Todos son idempotentes: correrlos de nuevo no duplica datos.
+`seed_demo_data` crea los tres usuarios de prueba, un laboratorio plantilla publicado en el catálogo, una copia del instructor con examen y una asignación aceptada del estudiante. Los tres siguientes cargan el mapa de aprendizaje, los laboratorios adicionales y el catálogo de logros y títulos. `actualizar_contenido_labs` pone a los 12 laboratorios su guía estilo AWS (escenario, objetivos, tareas con comando y resultado esperado), la máquina simulada de la consola, la ayuda de la flag, el examen y la conclusión; actualiza en su lugar, así que no borra el avance de nadie. Todos son idempotentes: correrlos de nuevo no duplica datos.
 
 El backend queda en `http://localhost:8000/api/v1/`.
 
@@ -203,14 +205,41 @@ Estas contraseñas son públicas: el instalador en modo **red / aula** desactiva
 
 Con backend + frontend arriba y las semillas cargadas:
 
-1. **Como estudiante** (`estudiante@platlab.demo`): en el Dashboard verás el laboratorio asignado. Ábrelo, recorre las secciones (teoría + guía práctica), envía la flag de la sección práctica y completa el examen final.
-2. **Terminal simulada vs. real**: en una sección con práctica puedes elegir la terminal simulada (guion de comandos, no ejecuta nada real) o la real (xterm.js conectado por WebSocket a un contenedor Docker propio y descartable; tarda unos segundos la primera vez mientras se levanta).
-3. **Como estudiante, pedir ser instructor**: desde el Dashboard, con un ORCID. La solicitud queda pendiente; la plataforma consulta OpenAlex en segundo plano y guarda lo que encontró.
-4. **Como administrador** (`admin@platlab.demo`): panel con usuarios, cola de revisión de laboratorios, actividad reciente y **solicitudes de instructor**, donde ves los datos de quien se inscribió junto a lo que dice OpenAlex de su ORCID, y apruebas o rechazas con un motivo.
-5. **Como instructor** (`instructor@platlab.demo`): la copia del laboratorio duplicada del catálogo, con edición de secciones, flags y examen.
-6. **Catálogo público** (`/laboratorios`, sin login): los laboratorios publicados.
+1. **Como estudiante** (`estudiante@platlab.demo`): en el Dashboard verás el laboratorio asignado. Ábrelo: cada sección práctica es un espacio de trabajo con la guía a la izquierda (objetivos, tareas numeradas con «Copiar» / «Ejecutar en consola», resultado esperado y casilla de hecho) y la consola a la derecha. Envía la flag y presenta el examen final.
+2. **Consola simulada vs. real**: la simulada es una máquina Linux en tu navegador (archivos, red, `ls`, `cd`, `cat`, `grep` con tuberías, `nmap`, `curl`, `nc`, `ping`, `md5sum`, Tab para completar); no ejecuta nada real. La real es xterm.js conectado por WebSocket a un contenedor Docker propio y descartable.
+3. **Salas**: como estudiante entra a **Salas** y escribe el código `PRUEBA` (lo crea `seed_sala_demo`). Recibes el laboratorio con tu propio entorno y apareces en el tablero en vivo. Como instructor o admin, en **Salas → Nueva sala** eliges un laboratorio publicado, el cupo (hasta 100) y un cierre opcional; compartes el código o el enlace de invitación y sigues el tablero (avance, examen, puestos). Quien termina gana un bono de XP según su puesto (150 / 110 / 80 / 50) y logros y títulos de sala.
+4. **Como estudiante, pedir ser instructor**: desde el Dashboard, con un ORCID. La solicitud queda pendiente; la plataforma consulta OpenAlex en segundo plano y guarda lo que encontró.
+5. **Como administrador** (`admin@platlab.demo`): panel con la tabla completa de usuarios (búsqueda por nombre o correo, filtros por rol y estado, cambio de rol, habilitar o deshabilitar), cola de revisión de laboratorios, actividad reciente y **solicitudes de instructor**, donde ves los datos de quien se inscribió junto a lo que dice OpenAlex de su ORCID, y apruebas o rechazas con un motivo.
+6. **Como instructor** (`instructor@platlab.demo`): la copia del laboratorio duplicada del catálogo, con edición de secciones, flags y examen.
+7. **Catálogo público** (`/laboratorios`, sin login): los laboratorios publicados.
 
 Si algo no carga, revisa [Solución de problemas comunes](#solución-de-problemas-comunes).
+
+### La máquina de la consola simulada
+
+La consola de cada sección práctica se arma con `entorno_practica` (API `PUT/PATCH` de secciones). Además del guion de siempre (`comandos`, ahora con `patron` opcional para aceptar variantes), admite un `escenario` que describe la máquina. El intérprete vive en `frontend/src/lib/shell/` y los 12 laboratorios de `modules/laboratories/management/commands/_contenido_*.py` sirven de ejemplo.
+
+```json
+{
+  "prompt": "estudiante@kali:~$",
+  "banner": "Objetivo autorizado: servidor.lab",
+  "comandos": [{ "comando": "./verificar clave", "patron": "(\\./)?verificar\\s+clave", "salida": "FLAG{...}" }],
+  "escenario": {
+    "host": "kali", "ip": "10.10.14.7",
+    "archivos": { "notas.txt": "texto", "/etc/passwd": "root:x:0:0" },
+    "red": [{
+      "ip": "192.168.56.20", "nombre": "servidor.lab", "mac": "08:00:27:5a:11:20",
+      "servicios": [{ "puerto": 22, "servicio": "ssh", "version": "OpenSSH 8.9p1", "banner": "SSH-2.0-OpenSSH_8.9p1" }],
+      "http": [{ "ruta": "/buscar", "cuando": "<script", "cuerpo": "Resultados: {{q}} FLAG{...}" }]
+    }],
+    "efectos": [{ "patron": "steghide extract .*-p gaia", "archivos": { "secreto.txt": "FLAG{...}" } }]
+  }
+}
+```
+
+- `http[].cuando` es una expresión regular contra los datos enviados y la query: permite responder distinto según el payload (inyección, XSS). `{{param}}` refleja el parámetro tal cual.
+- `efectos` crea archivos cuando una línea coincide con el patrón.
+- Cada paso de la guía admite `resultado_esperado`, que se muestra como bloque bajo el comando.
 
 ---
 

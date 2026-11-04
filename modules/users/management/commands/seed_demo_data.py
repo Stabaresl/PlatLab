@@ -136,10 +136,27 @@ class Command(BaseCommand):
                 "están publicadas en el repo. Lo usa el instalador en modo red/aula."
             ),
         )
+        parser.add_argument(
+            "--activar-cuentas-demo",
+            action="store_true",
+            help=(
+                "Lo contrario: vuelve a habilitar las cuentas demo con sus contraseñas "
+                "conocidas. Lo usa el instalador en modo local (solo este equipo), por si "
+                "antes se instaló en modo red/aula y quedaron deshabilitadas."
+            ),
+        )
 
     def handle(self, *args, **options):
         user_repository = UserRepository()
         self._crear_contenido(user_repository)
+
+        if options["activar_cuentas_demo"]:
+            for data in _DEMO_USERS:
+                usuario = user_repository.get_by_email(data["email"])
+                if usuario and (not usuario.is_active or usuario.password_hash == _SIN_PASSWORD):
+                    usuario.is_active = True
+                    usuario.password_hash = make_password(data["password"])
+                    user_repository.update(usuario)
 
         if options["desactivar_cuentas_demo"]:
             for data in _DEMO_USERS:

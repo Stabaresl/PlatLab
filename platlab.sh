@@ -274,11 +274,19 @@ esperar() {
 semillas() {
   titulo "Cargando laboratorios, mapa de aprendizaje y catálogo de logros"
   local c
-  for c in seed_demo_data seed_roadmap_labs seed_labs_expansion seed_gamification_catalog; do
+  # actualizar_contenido_labs va después de los seeds: guías paso a paso, consola realista y examen.
+  for c in seed_demo_data seed_roadmap_labs seed_labs_expansion seed_gamification_catalog actualizar_contenido_labs; do
     info "$c"
     "${COMPOSE[@]}" exec -T web python manage.py "$c" >/dev/null
   done
   ok "Contenido cargado"
+
+  if [ "$MODO" != "red" ]; then
+    # Si antes se instaló en modo red/aula, las cuentas demo quedaron deshabilitadas.
+    "${COMPOSE[@]}" exec -T web python manage.py seed_demo_data --activar-cuentas-demo >/dev/null
+    "${COMPOSE[@]}" exec -T web python manage.py seed_sala_demo >/dev/null
+    ok "Cuentas demo activas y sala demo lista (código PRUEBA)"
+  fi
 
   if [ "$MODO" = "red" ]; then
     "${COMPOSE[@]}" exec -T web python manage.py seed_demo_data --desactivar-cuentas-demo >/dev/null
@@ -331,6 +339,7 @@ resumen() {
     info "  administrador  admin@platlab.demo        Admin1234"
     info "  instructor     instructor@platlab.demo   Instructor1234"
     info "  estudiante     estudiante@platlab.demo   Estudiante1234"
+    info "Sala de prueba: entra como estudiante a Salas y usa el código PRUEBA."
   fi
   panel="$(env_valor DJANGO_ADMIN_URL)"
   [ -n "$panel" ] && info "Admin de Django:      http://localhost:$PUERTO/$panel"
