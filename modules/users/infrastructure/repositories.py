@@ -1,6 +1,6 @@
 import uuid
 
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from modules.users.domain.entities import ProveedorAutenticacion, SolicitudInstructor, User
 from modules.users.domain.value_objects import SolicitudInstructorEstado
@@ -34,7 +34,8 @@ class UserRepository:
     def _filtrar(self, nombre, rol, activo):
         queryset = UserModel.objects.all()
         if nombre:
-            queryset = queryset.filter(nombre_completo__icontains=nombre)
+            # Un solo cuadro de búsqueda en el panel del admin: nombre o correo.
+            queryset = queryset.filter(Q(nombre_completo__icontains=nombre) | Q(email__icontains=nombre))
         if rol:
             queryset = queryset.filter(rol=rol)
         if activo is not None:

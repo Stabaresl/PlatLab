@@ -59,13 +59,19 @@ def _parsear_uuid(valor: str) -> uuid.UUID:
 
 
 def _serializar_usuario(resultado) -> dict:
-    return {
+    datos = {
         "id": str(resultado.id),
         "email": resultado.email,
         "nombre_completo": resultado.nombre_completo,
         "rol": resultado.rol,
         "is_active": resultado.is_active,
     }
+    # Solo el listado trae fechas (tabla de usuarios del panel del admin).
+    for campo in ("date_joined", "last_login"):
+        if hasattr(resultado, campo):
+            valor = getattr(resultado, campo)
+            datos[campo] = valor.isoformat() if valor else None
+    return datos
 
 
 def _serializar_solicitud_instructor(resultado) -> dict:

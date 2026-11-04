@@ -22,6 +22,8 @@ class UsuarioListItemDTO:
     nombre_completo: str
     rol: str
     is_active: bool
+    date_joined: datetime | None = None
+    last_login: datetime | None = None
 
 
 @dataclass(frozen=True)

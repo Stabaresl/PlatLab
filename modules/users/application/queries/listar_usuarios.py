@@ -33,6 +33,8 @@ class ListarUsuariosQuery:
                 nombre_completo=u.nombre_completo,
                 rol=u.rol.value,
                 is_active=u.is_active,
+                date_joined=u.date_joined,
+                last_login=u.last_login,
             )
             for u in usuarios
         ]

@@ -3,30 +3,27 @@ import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   getAdminDashboard,
-  listUsers,
   listReviewQueue,
   listAudit,
   listPublishedCustomLabs,
   setCatalogVisibility,
   ApiError,
-  disableUser,
-  enableUser,
   type AdminDashboard as AdminDashboardData,
-  type UsuarioItem,
   type Rol,
   type LaboratorioEnRevisionItem,
   type RegistroAuditoriaItem,
   type LaboratorioPersonalizadoPublicadoItem,
 } from "./api"
 import Navbar from "../components/Navbar"
+import AccesoSalas from "../components/salas/AccesoSalas"
 import Footer from "../components/Footer"
 import HeroBackground from "../components/HeroBackground"
 import SectionHeading from "../components/SectionHeading"
 import ProgressRing from "../components/ProgressRing"
 import TerminalHeader from "../components/TerminalHeader"
-import StatusDot from "../components/StatusDot"
 import TiltCard from "../components/TiltCard"
 import SolicitudesInstructorPanel from "../components/SolicitudesInstructorPanel"
+import UsuariosPanel from "../components/UsuariosPanel"
 import ActivityTimeline, { type ActivityItem, type ActivityTone } from "../components/ActivityTimeline"
 import { IconChart, IconUsers, IconTrophy, IconFlask, IconActivity, IconGlobe, IconClock } from "../components/icons"
 import { Skeleton } from "../components/ui/skeleton"
@@ -95,24 +92,16 @@ const ROLE_GLOW: Record<Rol, string> = {
 
 export default function AdminDashboard() {
   const [dashboard, setDashboard] = useState<AdminDashboardData | null>(null)
-  const [users, setUsers] = useState<UsuarioItem[]>([])
   const [reviewQueue, setReviewQueue] = useState<LaboratorioEnRevisionItem[]>([])
   const [auditLog, setAuditLog] = useState<RegistroAuditoriaItem[]>([])
   const [customLabs, setCustomLabs] = useState<LaboratorioPersonalizadoPublicadoItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [busyUserId, setBusyUserId] = useState<string | null>(null)
   const [visibilityBusyId, setVisibilityBusyId] = useState<string | null>(null)
 
-  const PAGE_SIZE = 4
-  const [page, setPage] = useState(0)
-  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE))
-  const visible = users.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
-
   // Ordenar+mapear el log completo es lo único realmente caro acá — sin
-  // memo, cambiar de página o togglear un usuario (busyUserId,
-  // visibilityBusyId) volvía a ordenar todo el historial de auditoría
-  // en cada render aunque auditLog no hubiera cambiado.
+  // memo, togglear la visibilidad de un laboratorio volvía a ordenar todo
+  // el historial de auditoría en cada render aunque auditLog no cambiara.
   const actividadReciente = useMemo(
     () =>
       [...auditLog]
@@ -124,11 +113,10 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([getAdminDashboard(), listUsers(), listReviewQueue(), listAudit(), listPublishedCustomLabs()])
-      .then(([dashboardData, usersData, reviewQueueData, auditData, customLabsData]) => {
+    Promise.all([getAdminDashboard(), listReviewQueue(), listAudit(), listPublishedCustomLabs()])
+      .then(([dashboardData, reviewQueueData, auditData, customLabsData]) => {
         if (cancelled) return
         setDashboard(dashboardData)
-        setUsers(usersData)
         setReviewQueue(reviewQueueData)
         setAuditLog(auditData)
         setCustomLabs(customLabsData)
@@ -157,18 +145,6 @@ export default function AdminDashboard() {
     }
   }
 
-  const toggleUser = async (user: UsuarioItem) => {
-    setBusyUserId(user.id)
-    try {
-      const updated = user.is_active ? await disableUser(user.id) : await enableUser(user.id)
-      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo actualizar el usuario.")
-    } finally {
-      setBusyUserId(null)
-    }
-  }
-
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: "var(--canvas)", color: "var(--text-base)" }}>
       <HeroBackground image="grim" imageOpacity={0.05} overlayOpacity={0.92} texture="none" />
@@ -177,6 +153,7 @@ export default function AdminDashboard() {
         <main className="flex-1">
           <div className="mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10" style={{ maxWidth: "1200px" }}>
             <TerminalHeader title="Panel del Administrador" subtitle="Estado general de la plataforma" prompt="whoami → administrador" />
+            <div className="mb-6 sm:mb-8"><AccesoSalas rol="administrador" /></div>
 
             <AnimatePresence>
               {error && (
@@ -375,66 +352,7 @@ export default function AdminDashboard() {
                 </section>
 
                 {/* ═══ USUARIOS ═══ */}
-                <section>
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-0 mb-5">
-                    <SectionHeading icon={<IconUsers />} title="Usuarios" subtitle={`Total: ${users.length} usuarios registrados`} />
-
-                    <div className="flex items-center gap-2 self-start sm:self-auto">
-                      <CarouselButton label="Anterior" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>←</CarouselButton>
-                      <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{page + 1}/{totalPages}</span>
-                      <CarouselButton label="Siguiente" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>→</CarouselButton>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:gap-4 mb-5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
-                    <AnimatePresence mode="popLayout">
-                      {visible.map((user) => (
-                        <motion.div
-                          key={user.id}
-                          layout
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.25 }}
-                        >
-                          <TiltCard
-                            glowColor={ROLE_GLOW[user.rol] || "56,214,245"}
-                            className="chamfer flex flex-col p-4 sm:p-5 h-full"
-                            style={{ backgroundColor: "var(--surface)", border: `1px solid ${user.is_active ? "var(--border-strong)" : "var(--border-default)"}` }}
-                          >
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="chamfer-sm flex items-center justify-center w-10 h-10 text-sm font-bold shrink-0" style={{ backgroundColor: "var(--surface-hover)", color: ROLE_COLORS[user.rol] || "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                                {user.nombre_completo.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-heading)" }}>{user.nombre_completo}</span>
-                                <span className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{user.email}</span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 mt-auto flex-wrap">
-                              <span
-                                className="text-[10px] font-bold px-2 py-0.5 chamfer-sm uppercase tracking-wide"
-                                style={{ backgroundColor: `color-mix(in srgb, ${ROLE_COLORS[user.rol]} 14%, transparent)`, color: ROLE_COLORS[user.rol], border: `1px solid ${ROLE_COLORS[user.rol]}` }}
-                              >
-                                {ROLE_LABELS[user.rol] || user.rol}
-                              </span>
-                              <button
-                                type="button"
-                                disabled={busyUserId === user.id}
-                                onClick={() => toggleUser(user)}
-                                className="chamfer-sm px-2 py-0.5 cursor-pointer border-none disabled:opacity-50"
-                                style={{ backgroundColor: user.is_active ? "rgba(51,214,159,0.12)" : "rgba(255,71,87,0.12)" }}
-                              >
-                                <StatusDot variant={user.is_active ? "online" : "danger"} label={user.is_active ? "Activo" : "Inactivo"} />
-                              </button>
-                            </div>
-                          </TiltCard>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                </section>
+                <UsuariosPanel />
               </>
             )}
           </div>
@@ -477,22 +395,5 @@ function SkeletonBlock() {
         <Skeleton key={i} className="chamfer h-20" style={{ backgroundColor: "var(--surface)" }} />
       ))}
     </div>
-  )
-}
-
-function CarouselButton({ label, disabled, onClick, children }: { label: string; disabled: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className="chamfer-sm flex items-center justify-center w-8 h-8 text-sm cursor-pointer border transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-      style={{ backgroundColor: "transparent", borderColor: "var(--border-default)", color: "var(--text-base)" }}
-      onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.borderColor = "var(--signal-amber)"; e.currentTarget.style.backgroundColor = "var(--surface-hover)" } }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; e.currentTarget.style.backgroundColor = "transparent" }}
-    >
-      {children}
-    </button>
   )
 }
